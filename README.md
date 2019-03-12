@@ -2,6 +2,8 @@
 数据库相关知识学习整理。
 
 ## SQL
+- 小册 Mysql 原理
+- 极客时间 Mysql
 - MySQL 必知必会
 - 高性能 MySQL
 - Sequelize 文档翻译
