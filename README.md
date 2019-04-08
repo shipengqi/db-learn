@@ -6,9 +6,9 @@
 ## MySQL
 - 小册 MySQL 原理
 - 极客时间 Mysql
-- MySQL 必知必会
 - 高性能 MySQL
 - Sequelize 文档翻译
+- 架构师之路 InnoDB
 ## Redis
 - Redis 深度历险
 - Redis 设计与实现
