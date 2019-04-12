@@ -16,12 +16,37 @@
 要点就是，集合不对存储内容严格限制 (所谓的**无模式**(`schema-less`))。
 
 ## mongo shell
-mongo shell 用的是 JavaScript。比如 `db.help()` 或者 `db.stats()`。大多数情况下我们会操作集合而不是数据库，
+mongo shell 是一个完整的 JavaScript 解释器。可以运行任意的 JavaScript 程序。比如 `db.help()` 或者 `db.stats()`。大多数情况下我们会操作集合而不是数据库，
 用 `db.COLLECTION_NAME` ，比如 `db.unicorns.help()` 或者 `db.unicorns.count()`。**如果输入 `db.help` (不带括号), 你会看到 `help` 方法的内部实现**。
+
+### .mongorc.js
+如果某些脚本会被频繁加载，可以将它添加到 `.mongorc.js` 文件中，文件会在启动 shell 时自动运行。
+
+`.mongorc.js` 常见的用途是移除那些比较危险的 shell 辅助函数。可以在这个文件中重写那些方法，比如：
+```js
+var no = function() {
+  print("Not on my watch.")
+}
+
+// 禁止删除数据库
+db.droopDatabase = DB.prototype.dropDatabase = no;
+
+// 禁止删除集合
+DBCollection.prototype.drop = no;
+
+// 禁止删除索引
+DBCollection.prototype.dropIndex = no;
+```
+
+### 禁用 .mongorc.js
+启动 shell 时指定 `--norc`，就可以禁止加载 `.mongorc.js` 了。
 
 ## `_id`
 每个文档都会有一个唯一 `_id` 字段。你可以自己生成一个，或者让 MongoDB 帮你生成一个 `ObjectId` 类型的。默认的 `_id` 字段是已被索引的。
 `_id` 是一个 12 字节长的十六进制数，头 4 个字节代表的是当前的时间戳，接着的后 3 个字节表示的是机器 id 号，接着的 2 个字节表示 MongoDB 服务器进程 id，最后的 3 个字节代表递增值。
+
+`ObjectId` 是轻量的，不同机器都能用全局的唯一的方法生成，MongoDB 没有采用比较常规的做法（比如自增的主键），因为在多个服务器上同步自增主键费力费时。能够在分片环境中生成唯一的标识符
+很重要。
 
 ## 数据类型
 - **String**：字符串。存储数据常用的数据类型。在 MongoDB 中，UTF-8 编码的字符串才是合法的。
@@ -79,9 +104,10 @@ db.runCommand({"convertToCapped":"posts",size:10000})
 ##### 值得注意的点
 
 - 无法从固定集合中删除文档。
-- 固定集合没有默认索引，甚至在 `_id` 字段中也没有。
+- 固定集合没有默认索引，甚至在 `_id` 字段中也没有，可以使用`autoIndexID`创建索引。
 - 在插入新的文档时，MongoDB 并不需要寻找磁盘空间来容纳新文档。它只是盲目地将新文档插入到集合末尾。这使得固定集合中的插入操作是非常快速的。
 - 同样的，在读取文档时，MongoDB 会按照插入磁盘的顺序来读取文档，从而使读取操作也非常快。
+- 如果要把已有的集合变为固定集合，先执行`db.runCommand({"convertToCapped":"posts",size:10000})`转化，否则程序可能会连接数据库失败。
 
 ### 删除集合
 `db.collection.drop()` 来删除数据库中的集合。格式 `db.COLLECTION_NAME.drop()`。
@@ -116,6 +142,75 @@ db.mycol.find({key1:value1, key2:value2}).pretty()
 db.mycol.find({$or: [{key1: value1}, {key2:value2}]}).pretty()
 ```
 
+#### 查询数组
+比如：`db.food.insert({"fruit": ["apple", "banana", "peach"]})`。
+
+要查询数组使用：`db.food.find({"fruit": "banana"})`。
+
+##### $all
+如果需要通过多个元素来匹配数组，可以使用`$all`。比如：
+```js
+db.food.insert({"fruit": ["apple", "banana", "peach"]})
+db.food.insert({"fruit": ["apple", "orange", "kumquat"]})
+db.food.insert({"fruit": ["cherry", "banana", "apple"]})
+```
+
+要匹配含有 `apple` 和 `banana` 的文档：
+```js
+db.food.find({"fruit": {$all: ["apple", "banana"]}})
+```
+
+##### $size
+`$size`可以用它查询特定长度的数组。比如：`db.food.find({"fruit": {$size: 3}})`。`$size` 不能与其他查询条件一起使用（比如 `$gt`）。
+
+##### $slice
+`find()` 的第二个参数是可选的，可以指定需要返回的键。`$slice`操作符可以返回某个键匹配的数组元素的一个自己。比如：
+``` js
+db.posts.findOne(criteria, {"comments": {$slice: 10}})
+```
+返回前 10 条评论，后 10 条的话使用 `-10`。
+
+指定偏移量得到返回的元素：
+```js
+db.posts.findOne(criteria, {"comments": {$slice: [23, 10]}})
+```
+
+这里的`$slice`和 Javascript 中的 `slice` 函数用法类似。
+
+#### 查询子文档
+比如下面的文档：
+```js
+{
+   "address": {
+      "city": "Los Angeles",
+      "state": "California",
+      "pincode": "123"
+   },
+   "name": "Tom Benzamin"
+}
+```
+
+要查询地址为 `Los Angeles` 的人可以`db.users.find({"address": {"city": "Los Angeles"}})`。
+
+#### $where
+在一些场景下，可能一般的键值对查询无法满足，这是可以使用 `$where` 子句。但是这种方式应该禁止使用，很不安全。
+```js
+db.food.find({$where: function () {
+  for (var current in this) {
+    for (var other in this) {
+      if (current != other && this[current] == this[other]) {
+        return true;
+      }
+    }
+  }
+  return false;
+}})
+```
+
+如果函数返回 `true`，那么文档会作为结果集中的一部分返回。
+
+**`$where` 子句查询很慢，而且不能使用索引。**
+
 #### 映射（Projection）
 映射（Projection）指的是只选择文档中的必要数据，而非全部数据。如果文档有 5 个字段，而你只需要显示 3 个，则只需选择 3 个字段即可。
 执行 find() 方法时，可以利用 0 或 1 来设置字段列表。** 1 用于显示字段，0 用于隐藏字段**。
@@ -137,6 +232,9 @@ db.mycol.find({},{"title":1, _id:0}).limit(2)
 db.mycol.find({},{"title":1,_id:0}).skip(1).limit(1)
 ```
 
+##### 避免使用 skip 略过大量结果
+skip 如果略过大量结果，会变得很慢，因为要找到需要被略过的数据，然后抛弃。**可以利用上次的查询结果来计算下一次的查询条件**
+
 #### sort()
 `sort()` 方法可以通过一些参数来指定要进行排序的字段，并使用 1 和 -1 来指定排序方式，其中** 1 表示升序，而 -1 表示降序**。
 
@@ -146,7 +244,10 @@ db.mycol.find({},{"title":1,_id:0}).sort({"title":-1})
 
 
 ### 更新
-`update()` 方法更新已有文档中的值，而 `save()` 方法则是用传入该方法的文档来替换已有文档。格式 `db.COLLECTION_NAME.update(SELECTIOIN_CRITERIA, UPDATED_DATA)`。
+`update()` 方法更新已有文档中的值，而 `save()` 方法则是用传入该方法的文档来替换已有文档。格式 `db.COLLECTION_NAME.update(SELECTIOIN_CRITERIA, UPDATED_DATA, UPSERT, MULTI)`。
+
+- `UPSERT`: 为 `true` 时，如果文档不存在则插入文档
+- `MULTI`: 为 `true` 时，更新多个符合条件的文档
 
 ```js
 db.mycol.update({'title':'MongoDB Overview'},{$set:{'title':'New MongoDB Tutorial'}})
@@ -162,7 +263,27 @@ db.mycol.remove({'title':'MongoDB Overview'}, 1)
 ```
 
 ## 索引
-`ensureIndex()` 方法创建索引。格式 `db.COLLECTION_NAME.ensureIndex({KEY:1})`。**1 代表按升序排列字段值。-1 代表按降序排列**。
+数据库索引与书籍的索引类似。有了索引就不需要翻整本书，数据库可以直接在索引中找到条目，直接跳转到目标文档的位置，能使查询速度提高几个数量级。
+
+如果没有索引，那么数据库就会进行**全表扫描**，比如一个用于集合有一百万条文档，我们执行`db.users.find({username: "user101"}).explain()`：
+```js
+{
+  "cursor": "BasicCursor",
+  "nscanned": 1000000,
+  "n": 1,
+  "millis": 721,
+  ...
+}
+```
+
+`nscanned` 扫描的文档数。`millis` 表示查询耗费的毫秒数。`n` 表示查询结果的数量。
+
+由于数据库不知道 `username` 字段是唯一的，Mongo 会查看集合中的每一个文档。这里我们能想到的优化方法就是**使用`limit`限制查询的文档个数**，因为我们知道用户是唯一的，所以`limit(1)`。
+
+但是如果查询用户 `user99999` 呢？使用索引是一个非常好的解决方案。
+
+MongoDB 中 `ensureIndex()` 方法创建索引。格式 `db.COLLECTION_NAME.ensureIndex({KEY:1})`。**1 代表按升序排列字段值。-1 代表按降序排列**。
+**创建索引会耗费一些时间，根据机器的性能和集合的大小而不同**。
 
 ```js
 db.mycol.ensureIndex({"title":1})
@@ -182,6 +303,56 @@ db.mycol.ensureIndex({"title":1,"description":-1})
 - `weights`，文档数值，范围从 1 到 99, 999。表示就字段相对于其他索引字段的重要性。
 - `default_language`，对文本索引而言，用于确定停止词列表，以及词干分析器（stemmer）与断词器（tokenizer）的规则。默认值为 `english`。
 - `language_override`，对文本索引而言，指定了文档所包含的字段名，该语言将覆盖默认语言。默认值为 `language`。
+
+**`background` 这个选项要注意，创建索引可能会非常耗时，尤其是在已有的集合上创建索引，Mongo 为了尽可能快的创建索引，会阻塞对
+数据库的读请求和写请求，知道创建完成。这时可以使用 background` 这个选项，来避免对数据库操作的干扰。但是还是会影响性能，并且比前台创建索引慢的多。**
+
+### 唯一索引
+唯一索引可以确保结婚额的每一个文档的指定键都有唯一值。比如用户名是唯一的：
+```js
+db.users.ensureIndex({"username": 1}, {"unique": true})
+```
+
+在已有的集合中创建唯一索引可能会失败，因为集合中肯能已经存在重复的值了。
+
+### TTL 索引
+TTL 索引允许为每一个文档设置过期时间。文档过期之后会自动删除。可以用来实现缓存。
+```js
+db.cache.ensureIndex({"lastUpdated": 1}, {"expireAfterSeconds": 60 * 60 * 24})
+```
+上面的语句在 `lastUpdated` 字段上建立了 TTL 索引。 如果一个文档的 `lastUpdated` 字段存在并且它的值是**日期类型**（注意，必须是日期类型），
+当服务器时间比 `lastUpdated` 字段的时间晚 `expireAfterSeconds` 秒时，文档就会删除。
+
+**Mongo 每分钟会对 TTL 索引进行一次清理，所以以秒为时间单位保证索引的存活状态是不准确的**。
+
+### 索引管理
+所有数据库索引信息存储在 `system.indexes` 集合中。这个集合只能使用 `ensureIndex` 和 `dropIndexes` 对其操作。
+
+使用 **`db.COLLECTION_NAME.getIndexes()`** 来查看所有索引信息。
+
+### 文本索引
+```js
+db.posts.ensureIndex({post_text:"text"})
+```
+
+上面的代码在 `post_text` 字段上创建文本索引，以便搜索帖子文本之内的内容。
+
+在 `post_text` 字段上创建了文本索引，接下来搜索包含 `tutorialspoint` 文本内容的帖子。
+```js
+db.posts.find({$text:{$search:"tutorialspoint"}})
+```
+
+#### 删除文本索引
+```js
+// 找到索引名称
+db.posts.getIndexes()
+
+// 删掉
+db.posts.dropIndex("post_text_text")
+```
+
+#### 优化全文本搜索
+思路就是使用某些查询条件来是搜索范围变小。比如`db.posts.ensureIndex({date: 1, post_text:"text"})`，`date` 先将范围缩小到特定日期的文档，再进行全文本搜索。
 
 ### 覆盖索引查询
 
@@ -308,6 +479,8 @@ db.users.find({"address.city":"LosAngeles","address.state":"California","address
 - 复合索引最多能有 31 个被索引的字段。
 
 ## 聚合
+**聚合的结果必须限制在 16 MB 以内**（MongoDB 支持的最大相应消息大小）。
+
 聚合操作能将多个文档中的值组合起来，对成组数据执行各种操作，返回单一的结果。使用 `aggregate()` 方法。相当于 SQL 中的 `count(*)` 组合 `group by`。
 ```js
 db.mycol.aggregate([{$group : {_id : "$by_user", num_tutorial : {$sum : 1}}}])
@@ -348,5 +521,12 @@ db.test.aggregate([
     _id: '$createTime',
     completeTotal: {$sum: '$completeNum'},
     failedTotal: {$sum: '$failedNum'}}}
+]);
+
+db.test.aggregate([
+  {$match: {"devSN": 'sdfasdsdfs'}}, // 匹配字段
+  {$unwind: "$wanList"},//把 wanList 展开，wanList 是一个数组，展开这个数组  例如 wanList:[{dd:1},{dd:2},{ff:3}],展开后得到{dd:1},{dd:2},{ff:3}
+  {$match: {"wanList.status":1}},// 展开wanList之后再次匹配wanList.status为1
+  {"$group": {"_id": "$_id", "wanList": {"$push": "$wanList"}}},// 把wanList展开后得到的结果重组为一个新的数组，如 wanList:[{_id:2342342,dd:1},{_id:97687687,dd:2},{_id:876678,ff:3}]
 ]);
 ```
