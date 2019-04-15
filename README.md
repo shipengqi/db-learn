@@ -25,6 +25,7 @@
 
 ### MongoDB
 - MongoDB 教程
+- MongoDB 权威指南
 
 ### Other
 - 关系型数据库与非关系型数据库
