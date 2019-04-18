@@ -69,7 +69,7 @@ ps -ef | grep redis
 - timeout：请求超时时间
 - loglevel：log信息级别
 - logfile：log文件位置
-- databases：开启数据库的数量
+- databases：开启数据库的数量，默认 16 个。
 - save * *：保存快照的频率，第一个*表示多长时间，第三个*表示执行多少次写操作。在一定时间内执行一定数量的写操作时，自动保存快照。可设置多个条件。
 - rdbcompression：是否使用压缩
 - dbfilename：数据快照文件名（只是文件名）

@@ -47,6 +47,7 @@ typedef struct redisObject {
 **对象的 `ptr` 指针指向对象的底层实现数据结构，而这些数据结构由对象的 `encoding` 属性决定**。
 
 `encoding` 属性记录了对象所使用的编码，也即是说这个对象使用了什么数据结构作为对象的底层实现：
+
 | 编码 | 底层实现 |
 | --- | --- |
 | `REDIS_ENCODING_INT`（`int`） | `long` 类型的整数 |
@@ -58,7 +59,9 @@ typedef struct redisObject {
 | `REDIS_ENCODING_INTSET`（`intset`） | 整数集合 |
 | `REDIS_ENCODING_SKIPLIST`（`skiplist`） | 跳跃表和字典 |
 
+
 每种类型的对象都至少使用了两种不同的编码:
+
 | 类型 | 编码 | 对象 |
 | --- | --- | --- |
 | `REDIS_STRING` | `REDIS_ENCODING_INT` | 使用整数值实现的字符串对象。 |
