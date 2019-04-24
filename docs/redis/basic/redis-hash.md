@@ -6,9 +6,9 @@
 
 `Redis`的字典和`Java`的`HashMap`类似，它是无序字典。包括内部结构的实现也和`HashMap`也是一致的，同样的**数组 + 链表**二维结构。
 
-### 存取
+## 存取
 
-#### HSET
+### HSET
 设置字典`key`值的`field`字段值为`value`。
 
 ```bash
@@ -26,7 +26,7 @@ redis> hset student age 18
 redis> hget student age
 "18"
 ```
-#### HSETNX
+### HSETNX
 和`HSET`一样，但是只在字段`field`不存时才会设置。设置成功，返回`1`。失败，返回`0`。
 ```bash
 HSETNX key field value
@@ -41,7 +41,7 @@ redis> HSETNX nosql phone 16790624778
 (integer) 0
 ```
 
-#### HGET
+### HGET
 获取指定字段`field`的值。
 ```bash
 HSETNX key field value
@@ -55,7 +55,7 @@ redis> HGET student address
 redis> HGET student phone
 "16790624749"
 ```
-#### HGETALL
+### HGETALL
 
 获取`key`所有字段的值。
 ```bash
@@ -77,9 +77,9 @@ redis> HGETALL people
 4) "Forrest Gump"
 ```
 
-### 批量操作
+## 批量操作
 `Hash`和`String`一样，支持操作多个字段。
-#### HMSET
+### HMSET
 将一个或多个`field/value`对设置到哈希表`key`。
 ```bash
 HMSET key field value [field value ...]
@@ -95,7 +95,7 @@ redis> HGET website google
 redis> HGET website yahoo
 "www.yahoo.com"
 ```
-#### HMGET
+### HMGET
 返回`key`中一个或多个指定字段的值。
 ```bash
 HMGET key field [field ...]
@@ -118,8 +118,8 @@ redis> hmget istring notexsitfield
 (error) WRONGTYPE Operation against a key holding the wrong kind of value
 ```
 
-### 自增
-#### HINCRBY
+## 自增
+### HINCRBY
 为`key`中的指定字段`field`增加一个增量`increment`。
 ```bash
 HINCRBY key field increment
@@ -166,7 +166,7 @@ redis> HINCRBY myhash string 1              # 命令执行失败，错误。
 redis> HGET myhash string                   # 原值不变
 "hello,world"
 ```
-#### HINCRBYFLOAT
+### HINCRBYFLOAT
 与`HINCRBY`一样，不同的是`HINCRBYFLOAT`是为指定字段`field`增加一个浮点数增量`increment`。
 ```bash
 # 值和增量都是普通小数
@@ -202,8 +202,8 @@ redis> HGETALL price
 3) "coffee"
 4) "4.5"
 ```
-### 其他
-#### HDEL
+## 其他
+### HDEL
 删除`key`中的一个或多个字段。
 ```bash
 HDEL key field [field ...]
@@ -242,7 +242,7 @@ redis> HGETALL abbr
 1) "d"
 2) "dog"
 ```
-#### HEXISTS
+### HEXISTS
 判断`key`中指定的`field`是否存在。
 ```bash
 HEXISTS key field
@@ -257,7 +257,7 @@ redis> HEXISTS phone myphone
 (integer) 1
 ```
 
-#### HLEN
+### HLEN
 返回`key`哈希表的长度，也就是所有字段的数量。
 ```bash
 HLEN key
@@ -277,7 +277,7 @@ redis> HLEN db
 (integer) 3
 ```
 
-#### HKEYS
+### HKEYS
 返回`key`中的所有字段。
 ```bash
 HKEYS key
@@ -299,7 +299,7 @@ redis> HKEYS fake_key
 ```
 
 
-#### HVALS
+### HVALS
 与`HKEYS`对应，`HVALS`返回`key`中的所有字段的值。
 ```bash
 HVALS key
@@ -321,7 +321,7 @@ redis> HVALS not_exists
 (empty list or set)
 ```
 
-#### HSTLEN
+### HSTLEN
 
 返回`key`中指定`field`的`value`的字符串长度。
 ```bash
@@ -338,8 +338,8 @@ redis> HSTRLEN myhash f2
 redis> HSTRLEN myhash f3
 (integer) 4
 ```
-#### HSCAN
-参考**[SCAN](/2018/08/08/redis-key/#more)**命令。
+### HSCAN
+参考**[SCAN](./redis-key.md)**命令。
 ```bash
 HSCAN key cursor [MATCH pattern] [COUNT count]
 ```

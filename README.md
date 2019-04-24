@@ -7,6 +7,7 @@
   - [高级部分](./mysql/advance)
 - [Redis](./redis)
   - [基础部分](./redis/basic)
+  - [高级部分](./redis/advance)
 - [MongoDB](./mongodb)
   - [基础部分](./mongodb/basic)
   - [高级部分](./mongodb/advance)
@@ -32,6 +33,7 @@
 - Hbase 列式存储
 
 ## TODO
-- Sequelize 文档翻译
-- Node-Redis 文档翻译
-- Mongoose 文档翻译
+- 算法与数据结构之后，再复习数据库相关的算法和数据结构部分
+- `Sequelize` 文档翻译
+- `Node-Redis` 文档翻译
+- `Mongoose` 文档翻译

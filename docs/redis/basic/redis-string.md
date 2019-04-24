@@ -7,7 +7,7 @@ String类型是最常用，也是最简单的的一种类型，string类型是�
 字符串结构使用非常广泛，不仅限于字符串，通常会使用 JSON 序列化成字符串，然后将序列化后的字符串塞进 Redis 来缓存。
 
 
-### 键值对存取
+## 键值对存取
 
 ```bash
 redis> set testkey hello
@@ -60,7 +60,7 @@ redis> TTL testkey
 (integer) 8 # EX 参数覆盖了 PX
 ```
 
-#### SET
+### SET
 ```bash
 SET [key] [value] [EX seconds] [PX milliseconds] [NX|XX]
 ```
@@ -70,7 +70,7 @@ SET [key] [value] [EX seconds] [PX milliseconds] [NX|XX]
 - NX - 只在`key`不存在时才进行设置。
 - XX - 只在`key`存在时才进行设置。
 
-#### SETEX
+### SETEX
 设置`key`值并指定过期时间，单位秒。
 `SET key value EX second`等同于`SETEX key second value`
 ```bash
@@ -81,7 +81,7 @@ redis> GET name
 redis> TTL name
 (integer) 49
 ```
-#### PSETEX
+### PSETEX
 设置`key`值并指定过期时间，单位毫秒。
 `SET key value PX millisecond`等同于`PSETEX key millisecond value`
 ```bash
@@ -92,14 +92,14 @@ redis> GET age
 redis> TTL age
 (integer) 49000
 ```
-#### SETNX
+### SETNX
 如果`key`不存在，则设置其值。设置成功，返回`1`。失败，返回`0`。
 `SET key value NX`等同于`SETNX key value`
 
-#### GET
+### GET
 获取 `key` 对应的 `value`。如果`key`不存在，则返回nil；如果`key`不是字符串类型，则返回错误。
 
-#### GETSET
+### GETSET
 设置`key`的值，并返回其旧值。也就是执行了`set`操作和`get`操作。如果`key`不是字符串类型，则返回错误。
 ```bash
 redis> GETSET testkey3 hello3
@@ -110,7 +110,7 @@ redis> GETSET testkey3 hello4
 ```
 
 
-### 批量操作键值对
+## 批量操作键值对
 同时设置或获取多个字符串，可以节省网络耗时开销。
 ```bash
 > SET name xiaoming
@@ -128,7 +128,7 @@ OK
 3) "17235617235"
 ```
 
-#### MSET
+### MSET
 `MSET`操作具有原子性，所有`key`设置要么全成功，要么全部失败。
 
 #### MSETNX
@@ -153,10 +153,10 @@ redis> GET rmdbs
 "MySQL"
 ```
 
-#### MGET
+### MGET
 返回一个或多个`key`值。
 
-### 自增/自减
+## 自增/自减
 在Redis中，**数值也会也字符串形式存储。**
 **注意，执行自增或自减时，如果`key`不存在，会被初始化为`0`再执行自增或自减操作。如果`key`值为非数字，那么会返回一个错误。数字值的有效范围为 64 位(bit)有符号数字。**
 
@@ -173,11 +173,11 @@ redis> INCRBY age 20
 (integer) 38
 ```
 
-#### INCR
+### INCR
 将`key`的值加`1`。
-#### INCRBY
+### INCRBY
 将`key`的值增加指定的值。
-#### INCRBYFLOAT
+### INCRBYFLOAT
 将`key`的值增加指定的浮点值。
 ```bash
 redis> SET floatkey 9.5
@@ -185,13 +185,13 @@ OK
 redis> INCRBYFLOAT floatkey 0.1
 "9.6"
 ```
-#### DECR
+### DECR
 将`key`的值减`1`。如果`key`不存在，
 ```bash
 redis> DECR count #count 不存在，初始化为 0，再减一
 (integer) -1
 ```
-#### DECRBY
+### DECRBY
 将`key`的值减去指定的值。
 ```bash
 redis> SET count 100
@@ -200,7 +200,7 @@ redis> DECRBY count 20
 (integer) 80
 ```
 
-### APPEND
+## APPEND
 向`key`值字符串的末尾追加指定的`value`；如果`key`不存在，则执行`SET`操作，设置`key`值
 ```bash
 redis> APPEND notexistkey hello
@@ -213,7 +213,7 @@ redis> GET myphone
 "hello - redis"
 ```
 
-### STRLEN
+## STRLEN
 返回key的值的长度。如果`key`不存在，则返回`0`。果key的值不是字符串，则返回一个错误。
 
 ```bash
@@ -226,7 +226,7 @@ redis> STRLEN notexistkey
 (integer) 0
 ```
 
-### SETRANGE
+## SETRANGE
 使用`value`覆盖`key`以偏移量`offset`开始的字符串。
 ```bash
 SETRANGE key offset value
@@ -249,7 +249,7 @@ redis> SETRANGE notexistkey 5 "Redis"
 redis> GET notexistkey
 "\x00\x00\x00\x00\x00Redis"
 ```
-### GETRANGE
+## GETRANGE
 `GETRANGE`类似`javascript`中的`substring`。提取字符串中两个指定的索引号之间的字符。
 ```bash
 GETRANGE key start end
@@ -280,14 +280,14 @@ redis> GETRANGE greeting 0 1008611
 "hello, redis"
 ```
 
-### 位图
+## 位图
 位图不是特殊的数据结构，它的内容其实就是普通的字符串，也就是 `byte` 数组。
 在日常开发中，可能会有一些`bool`型数据需要存取，如果使用普通的`key/value`方式存储，会浪费很多存储空间,比如签到记录，签了是`1`，没签是`0`，记录`365`天。
 如果每个用户存储`365`条记录，当用户量很庞大的时候，需要的存储空间是惊人的。
 
 对于这种操作，Redis 提供了位操作，这样每天的签到记录只占据一个位，`365`天就是`365`个位，`46`个字节就可以完全容纳下，大大节约了存储空间。
 
-#### SETBIT
+### SETBIT
 Redis 的位数组是自动扩展，如果设置了某个偏移位置超出了现有的内容范围，就会自动将位数组进行零扩充。
 ```bash
 SETBIT key offset value
@@ -302,7 +302,7 @@ redis> GETBIT testbit 100
 redis> GETBIT testbit 101
 (integer) 0 # bit 默认被初始化为 0
 ```
-#### GETBIT
+### GETBIT
 获取指定偏移量上的位`bit`的值。
 ```bash
 GETBIT key offset
@@ -320,7 +320,7 @@ redis> GETBIT bit 100
 (integer) 1
 ```
 
-#### BITPOS
+### BITPOS
 
 获取字符串里面第一个被设置为`1`或者`0`的`bit`位。
 `BITPOS`可以用来做查找，例如，查找用户从哪一天开始第一次签到。如果指定了范围参数`start`, `end`，就可以统计在某个时间范围内用户签到了多少天，用户自某天以后的哪天开始签到。
@@ -354,7 +354,7 @@ redis> BITPOS mykey 1 # 查找字符串里面bit值为1的位置
 (integer) -1
 ```
 
-#### BITOP
+### BITOP
 
 对一个或多个保存二进制位的字符串`key`进行位元操作，并将结果保存到`destkey`上。处理不同长度的字符串时，较短的那个字符串所缺少的部分会被看作`0`，空的`key`也被看作是包含`0`的字符串序列。
 ```bash
@@ -391,7 +391,7 @@ redis> GETBIT andresult 3
 (integer) 1
 ```
 
-#### BITCOUNT
+### BITCOUNT
 可以用来做高位统计，例如，统计用户一共签到了多少天。
 计算指定字符串中，比特位被设置为`1`的数量。指定可选参数`start`和`end`时只统计指定位上的字符，否则统计全部。
 ```bash
@@ -414,7 +414,7 @@ redis> BITCOUNT testbit4
 (integer) 2
 ```
 
-#### BITFIELD
+### BITFIELD
 `SETBIT`和`GETBIT`都只能操作一个`bit`，如果要操作多个`bit`就使用`BITFIELD`。
 
 `BITFIELD` 有四个子指令：
@@ -425,7 +425,7 @@ redis> BITCOUNT testbit4
 
 `GET`，`SET`，`INCRBY`最多只能处理`64`个连续的位，超过`64`位，就得使用多个子指令，`BITFIELD`可以一次执行多个子指令。
 
-##### `GET` 子指令
+#### `GET` 子指令
 
 ```bash
 redis> set w hello
@@ -448,7 +448,7 @@ redis> BITFIELD w get u4 0 get u3 2 get i4 0 get i3 2
 ```
 有符号数最多可以获取`64`位，无符号数只能获取`63`位 (`Redis`中的`integer`是有符号数，最大`64`位，不能传递`64`位无符号值)。如果超出位数限制，`Redis`就会告诉你参数错误。
 
-##### `SET` 子指令
+#### `SET` 子指令
  `SET`子指令将第二个字符`e`改成`a`，`a`的`ASCII`码是`97`：
 ```bash
 redis> BITFIELD w set u8 8 97  # 从第 8 个位开始，将接下来的 8 个位用无符号数 97 替换
@@ -457,7 +457,7 @@ redis> get w
 "hallo"
 ```
 
-##### `INCRBY` 子指令
+#### `INCRBY` 子指令
 它用来对指定范围的位进行自增操作。既然提到自增，就有可能出现溢出。如果增加了正数，会出现上溢，如果增加的是负数，就会出现下溢出。
 `Redis`默认的处理是折返。如果出现了溢出，就将溢出的符号位丢掉。如果是`8`位无符号数`255`，加`1`后就会溢出，会全部变零。如果是`8`位有符号数`127`，加`1`后就会溢出变成 `-128`。
 ```bash

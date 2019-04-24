@@ -1,5 +1,4 @@
-# Mysql
-
+# MySQL 入门
 MySQL服务器的进程也被称为**MySQL数据库实例**，简称**数据库实例**。MySQL 服务器进程的默认名称为`mysqld`， 而 MySQL 客户端进程的默认名称为`mysql`。
 
 ## 安装

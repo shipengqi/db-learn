@@ -409,7 +409,7 @@ redis> SMEMBERS my_songs
 
 ## 其他
 ### SSCAN
-参考**[SCAN](/2018/08/08/redis-key/#more)**命令。
+参考**[SCAN](./redis-key.md)**命令。
 ```bash
 SSCAN key cursor [MATCH pattern] [COUNT count]
 ```

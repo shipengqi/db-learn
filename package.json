@@ -1,0 +1,27 @@
+{
+  "name": "db-learn",
+  "version": "1.0.0",
+  "description": "数据库相关知识学习整理。",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "docs:dev": "vuepress dev ./docs",
+    "docs:build": "vuepress build ./docs",
+    "deploy": "./build/deploy.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shipengqi/db-learn.git"
+  },
+  "author": "shipengqi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shipengqi/db-learn/issues"
+  },
+  "homepage": "https://github.com/shipengqi/db-learn#readme",
+  "devDependencies": {
+    "vuepress": "^0.14.11"
+  }
+}
