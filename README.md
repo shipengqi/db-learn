@@ -1,5 +1,5 @@
 # db-learn
-数据库相关知识学习整理。
+数据库相关知识学习整理。[在线阅读](https://www.shipengqi.top/db-learn)。
 
 ## 目录
 - [MySQL](./mysql)
