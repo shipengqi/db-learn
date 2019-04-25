@@ -46,7 +46,8 @@ module.exports = {
           '/mysql/advance/',
           '/mysql/advance/config',
           '/mysql/advance/character',
-          '/mysql/advance/innodb-record-store-structure'
+          '/mysql/advance/innodb-record-store-structure',
+          '/mysql/advance/innodb-page-structure'
         ]
       },
       {
