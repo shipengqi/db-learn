@@ -1,4 +1,4 @@
-# InnoDB记录存储结构
+# InnoDB 记录存储结构
 MySQL服务器上负责对表中数据的读取和写入工作的部分是**存储引擎**，MySQL服务器支持不同类型的存储引擎。真实数据在不同存储引擎中存放的格式一般是不同的，
 甚至有`Memory`存储引擎都不用磁盘来存储数据。
 
@@ -40,7 +40,7 @@ Records: 2  Duplicates: 0  Warnings: 0
 ```
 
 ### COMPACT行格式
-![](../../img/compact-format.jpg)
+![](../../imgs/compact-format.jpg)
 
 一条完整的记录其实可以被分为**记录的额外信息**和**记录的真实数据**两大部分。
 
@@ -72,7 +72,7 @@ MySQL支持一些变长的数据类型，比如`VARCHAR(M)`、`VARBINARY(M)`、�
 ```
 
 把这个字节串组成的变长字段长度列表填入上边的示意图中的效果就是：
-![](../../img/compact-demo.jpg)
+![](../../imgs/compact-demo.jpg)
 
 由于第一行记录中`c1`、`c2`、`c4`列中的字符串都比较短，也就是说内容占用的字节数比较小，用1个字节就可以表示，但是如果变长列的内容占用的字节数比较多，
 可能就需要用2个字节来表示。具体用1个还是2个字节来表示真实数据占用的字节数，`InnoDB`有它的一套规则，我们首先声明一下`W`、`M`和`L`的意思：
@@ -108,11 +108,11 @@ MySQL支持一些变长的数据类型，比如`VARCHAR(M)`、`VARBINARY(M)`、�
 
 3. MySQL规定**`NULL`值列表必须用整数个字节的位表示**，如果使用的二进制位个数不是整数个字节，则在字节的高位补`0`。
 表`record_format_demo`只有`3`个值允许为`NULL`的列，对应`3`个二进制位，不足一个字节，所以在字节的高位补`0`，效果就是这样：
-![](../../img/compact-null-col.jpg)
+![](../../imgs/compact-null-col.jpg)
 
 ##### 记录头信息
 记录头信息，它是由固定的5个字节组成。5个字节也就是40个二进制位，不同的位代表不同的意思，如图：
-![](../../img/compact-record-head.jpg)
+![](../../imgs/compact-record-head.jpg)
 
 这些二进制位代表的详细信息如下表：
 | 名称 | 大小（单位：bit） | 描述 |
@@ -128,7 +128,7 @@ MySQL支持一些变长的数据类型，比如`VARCHAR(M)`、`VARBINARY(M)`、�
 
 
 我们现在直接看一下`record_format_demo`中的两条记录的头信息分别是什么：
-![](../../img/compact-record-head-demo.jpg)
+![](../../imgs/compact-record-head-demo.jpg)
 
 
 #### 记录的真实数据
@@ -148,7 +148,7 @@ MySQL支持一些变长的数据类型，比如`VARCHAR(M)`、`VARBINARY(M)`、�
 **`InnoDB`存储引擎会为每条记录都添加`transaction_id`和`roll_pointer`这两个列，但是`row_id`是可选的（在没有自定义主键以及`Unique`键的情况下才会添加该列）**。
 
 看一下`record_format_demo`加上记录的真实数据的两个记录长什么样：
-![](../../img/compact-record-head-demo2.jpg)
+![](../../imgs/compact-record-head-demo2.jpg)
 
 注意：
 - 表`record_format_demo`使用的是`ascii`字符集，所以`0x61616161`就表示字符串`'aaaa'`，`0x626262`就表示字符串`'bbb'`，以此类推。
@@ -168,7 +168,7 @@ Records: 2  Duplicates: 0  Warnings: 0
 ```
 
 修改该列字符集后记录的变长字段长度列表也发生了变化，如图：
-![](../../img/compact-char-m.jpg)
+![](../../imgs/compact-char-m.jpg)
 
 **对于`CHAR(M)`类型的列来说，当列采用的是定长字符集时，该列占用的字节数不会被加到变长字段长度列表，而如果采用变长字符集时，该列占用的字节数也会被加到变长字段长度列表**。
 
@@ -177,7 +177,7 @@ Records: 2  Duplicates: 0  Warnings: 0
 度而小于`10`个字节时，可以在该记录处直接更新，而不是在存储空间中重新分配一个新的记录空间，导致原有的记录空间成为所谓的碎片。
 
 ### Redundant 行格式
-![](../../img/redundant-format.jpg)
+![](../../imgs/redundant-format.jpg)
 
 把表`record_format_demo`的行格式修改为`Redundant`：
 ```sh
@@ -186,7 +186,7 @@ Query OK, 0 rows affected (0.05 sec)
 Records: 0  Duplicates: 0  Warnings: 0
 ```
 
-![](../../img/redundant-format-demo.jpg)
+![](../../imgs/redundant-format-demo.jpg)
 
 `Redundant` 行格式有什么不同的地方：
 - 字段长度偏移列表

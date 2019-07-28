@@ -37,7 +37,7 @@ C 字符串并不记录自身的长度信息，所以为了获取一个 C 字符
 SDS 在 `len` 属性中记录了 SDS 本身的长度，所以获取一个 SDS 长度的复杂度仅为 `O(1)`。
 
 比如下面的例子，程序只要访问 SDS 的 len 属性， 就可以立即知道 SDS 的长度为 5 字节：
-![](../../img/sds.png)
+![](../../imgs/sds.png)
 
 使用 SDS 确保了获取字符串长度的工作不会成为 Redis 的性能瓶颈。
 
@@ -155,7 +155,7 @@ typedef struct list {
 - `free` 函数用于释放链表节点所保存的值；
 - `match` 函数则用于对比链表节点所保存的值和另一个输入值是否相等。
 
-![](../../img/list-nodes.png)
+![](../../imgs/list-nodes.png)
 
 Redis 的链表实现的特性：
 - 双端：链表节点带有 `prev` 和 `next` 指针，获取某个节点的前置节点和后置节点的复杂度都是 `O(1)`。
@@ -199,7 +199,7 @@ index = hash & dict->ht[0].sizemask = 8 & 3 = 0;
 ```
 计算出键 k0 的索引值 0 ，这表示包含键值对 k0 和 v0 的节点应该被放置到哈希表数组的索引 0 位置上。
 
-![](../../img/hashtable.png)
+![](../../imgs/hashtable.png)
 
 
 ### 解决键冲突
@@ -208,7 +208,7 @@ index = hash & dict->ht[0].sizemask = 8 & 3 = 0;
 Redis 的哈希表使用**链地址法**（separate chaining）来解决键冲突：**每个哈希表节点都有一个 `next` 指针，
 多个哈希表节点可以用 `next` 指针构成一个单向链表，被分配到同一个索引上的多个节点可以用这个单向链表连接起来，这就解决了键冲突的问题**。
 
-![](../../img/hashtable-link.png)
+![](../../imgs/hashtable-link.png)
 
 因为 **`dictEntry` 节点组成的链表没有指向链表表尾的指针，所以为了速度考虑，程序总是将新节点添加到链表的表头位置**（复杂度为 `O(1)`），排在其他已有节点的前面。
 
@@ -276,7 +276,7 @@ Redis 只在两个地方用到了跳跃表 一个是实现有序集合键，另�
 Redis 的跳跃表由 `redis.h/zskiplistNode` 和 `redis.h/zskiplist` 两个结构定义，其中 `zskiplistNode` 结构用于表示跳跃表节点，而 `zskiplist` 结构则用于保存跳跃表
 节点的相关信息，比如节点的数量，以及指向表头节点和表尾节点的指针等等。
 
-![](../../img/skiplist.png)
+![](../../imgs/skiplist.png)
 
 `zskiplist` 结构， 该结构包含以下属性：
 - `header`：指向跳跃表的表头节点。
@@ -468,7 +468,7 @@ redis> OBJECT ENCODING profile
 压缩列表是 Redis 为了节约内存而开发的，由一系列特殊编码的连续内存块组成的顺序型（sequential）数据结构。
 
 压缩列表的各个组成部分：
-![](../../img/ziplist.png)
+![](../../imgs/ziplist.png)
 
 - `zlbytes`，`uint32_t`，4 字节，记录整个压缩列表占用的内存字节数：在对压缩列表进行内存重分配，或者计算 `zlend` 的位置时使用。
 - `zltail`，`uint32_t`，4 字节，记录压缩列表表尾节点距离压缩列表的起始地址有多少字节：通过这个偏移量，程序无须遍历整个压缩列表就可以确定表尾节点的地址。
@@ -479,7 +479,7 @@ redis> OBJECT ENCODING profile
 
 ### 压缩列表节点的构成
 压缩列表节点组成：
-![](../../img/ziplistnode.png)
+![](../../imgs/ziplistnode.png)
 
 每个压缩列表节点可以保存一个字节数组或者一个整数值，其中，字节数组可以是以下三种长度的其中一种：
 1. 长度小于等于 63 （`2^{6}-1`）字节的字节数组
@@ -530,7 +530,7 @@ redis> OBJECT ENCODING profile
 
 ### 连锁更新
 考虑这样一种情况： 在一个压缩列表中， 有多个连续的、长度介于 250 字节到 253 字节之间的节点 e1 至 eN ：
-![](../../img/ziplistupdate.png)
+![](../../imgs/ziplistupdate.png)
 
 e1 至 eN 的所有节点的长度都小于 254 字节，所以记录这些节点的长度只需要 1 字节长的 `previous_entry_length` 属性，
 换句话说， e1 至 eN 的所有节点的 `previous_entry_length` 属性都是 1 字节长的。

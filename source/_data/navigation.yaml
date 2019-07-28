@@ -1,0 +1,166 @@
+logo:
+  text: DB Learn
+  type: link
+  path: index.html
+main:
+- text: MySQL 知识整理
+  type: label
+  children:
+  - text: MySQL 入门
+    type: link
+    path: mysql/README.html
+- text: MySQL 基础部分
+  type: label
+  children:
+  - text: 关系型数据基础
+    type: link
+    path: mysql/basic/README.html
+  - text: 复杂查询语句
+    type: link
+    path: mysql/basic/advanced-query.html
+  - text: 写操作
+    type: link
+    path: mysql/basic/write-operation.html
+  - text: 其他
+    type: link
+    path: mysql/basic/other.html
+- text: MySQL 高级部分
+  type: label
+  children:
+  - text: 高级部分
+    type: link
+    path: mysql/advance/README.html
+  - text: 启动选项和配置文件
+    type: link
+    path: mysql/advance/config.html
+  - text: 字符集和比较规则
+    type: link
+    path: mysql/advance/character.html
+  - text: InnoDB 记录存储结构
+    type: link
+    path: mysql/advance/innodb-record-store-structure.html
+  - text: InnoDB 数据页结构
+    type: link
+    path: mysql/advance/innodb-page-structure.html
+  - text: B+ 树索引
+    type: link
+    path: mysql/advance/b-tree.html
+
+- text: MongoDB 知识整理
+  type: label
+  children:
+  - text: MongoDB 介绍
+    type: link
+    path: mongodb/README.html
+- text: MongoDB 基础部分
+  type: label
+  children:
+  - text: MognoDB 基础
+    type: link
+    path: mongodb/basic/README.html
+- text: MongoDB 高级部分
+  type: label
+  children:
+  - text: MognoDB 高级
+    type: link
+    path: mongodb/advance/README.html
+  - text: 数据迁移
+    type: link
+    path: mongodb/advance/migrate.html
+
+- text: Redis 知识整理
+  type: label
+  children:
+  - text: Redis 入门
+    type: link
+    path: redis/README.html
+- text: Redis 基础部分
+  type: label
+  children:
+  - text: Redis 安装配置
+    type: link
+    path: redis/basic/redis-config.html
+  - text: Redis 数据类型 String
+    type: link
+    path: redis/basic/redis-string.html
+  - text: Redis 数据类型 Hash
+    type: link
+    path: redis/basic/redis-hash.html
+  - text: Redis 数据类型 Set
+    type: link
+    path: redis/basic/redis-set.html
+  - text: Redis 数据类型 Sorted Set
+    type: link
+    path: redis/basic/redis-sortedset.html
+  - text: Redis 数据类型 List
+    type: link
+    path: redis/basic/redis-list.html
+  - text: Redis Key 操作
+    type: link
+    path: redis/basic/redis-key.html
+- text: Redis 高级部分
+  type: label
+  children:
+  - text: 数据结构
+    type: link
+    path: redis/advance/data-structure.html
+  - text: 对象
+    type: link
+    path: redis/advance/redis-object.html
+  - text: 分布式锁
+    type: link
+    path: redis/advance/distributed-lock.html
+  - text: 延时队列
+    type: link
+    path: redis/advance/queue.html
+  - text: 布隆过滤器
+    type: link
+    path: redis/advance/bloom-filter.html
+  - text: 限流
+    type: link
+    path: redis/advance/current-limit.html
+  - text: GeoHash
+    type: link
+    path: redis/advance/geohash.html
+  - text: 持久化
+    type: link
+    path: redis/advance/persistence.html
+  - text: 管道
+    type: link
+    path: redis/advance/pipeline.html
+  - text: 事务
+    type: link
+    path: redis/advance/transaction.html
+  - text: 主从同步
+    type: link
+    path: redis/advance/sync.html
+  - text: 集群
+    type: link
+    path: redis/advance/cluster.html
+  - text: INFO 指令
+    type: link
+    path: redis/advance/info.html
+  - text: Redis 的过期策略
+    type: link
+    path: redis/advance/redis-expire-strategy.html
+  - text: 保护 Redis
+    type: link
+    path: redis/advance/protect-redis.html
+  - text: 一些命令行技巧
+    type: link
+    path: redis/advance/skills.html
+  - text: 慢查询日志
+    type: link
+    path: redis/advance/slowlog.html
+
+- text: THEME
+  type: label
+- text: 使用文档主题
+  type: link
+  path: theme/theme-usage.html
+
+- text: SUPPORT AND FEEDBACK
+  type: label
+- text: Raise an Issue on Github
+  type: link
+  path: https://github.com/shipengqi/db-learn/issues/new

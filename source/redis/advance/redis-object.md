@@ -136,7 +136,7 @@ redis> HSET profile career "Programmer"
 (integer) 1
 ```
 
-![](../../img/hashobject.png)
+![](../../imgs/hashobject.png)
 
 ### `hashtable` 编码
 `hashtable` 编码的哈希对象使用字典作为底层实现，哈希对象中的每个键值对都使用一个字典键值对来保存：

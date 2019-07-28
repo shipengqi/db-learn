@@ -1,3 +1,4 @@
+# 数据迁移
 ## 简单迁移
 如何将一台linux A 上的mongodb数据迁移到另外一台linux B上？
 

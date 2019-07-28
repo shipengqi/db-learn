@@ -8,5 +8,9 @@
 *.sw*
 
 /node_modules
+db.json
+public
 
-/docs/.vuepress/dist/
+themes/doc
+
+.deploy_git

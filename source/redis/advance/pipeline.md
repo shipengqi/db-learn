@@ -6,10 +6,10 @@ Redis 管道 (Pipeline) 本身并不是 Redis 服务器直接提供的技术，�
 
 如果连续执行多条指令，那就会花费多个网络数据包来回的时间。
 
-![](../../img/redis-msgs.jpg)
+![](../../imgs/redis-msgs.jpg)
 
 ## 管道本质
-![](../../img/pipeline.jpg)
+![](../../imgs/pipeline.jpg)
 
 上图就是一个完整的请求交互流程图。我用文字来仔细描述一遍：
 

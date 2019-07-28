@@ -1,27 +1,24 @@
 {
   "name": "db-learn",
-  "version": "1.0.0",
-  "description": "数据库相关知识学习整理。",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
+  "version": "0.1.0",
+  "hexo": {
+    "version": "3.9.0"
   },
   "scripts": {
-    "docs:dev": "vuepress dev ./docs",
-    "docs:build": "vuepress build ./docs",
-    "deploy": "./build/deploy.sh"
+    "start": "hexo s -p 8082",
+    "start:debug": "hexo s -p 8082 --debug",
+    "docs:build": "hexo clean && hexo g",
+    "deploy": "hexo clean && hexo d"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/shipengqi/db-learn.git"
-  },
-  "author": "shipengqi",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/shipengqi/db-learn/issues"
-  },
-  "homepage": "https://github.com/shipengqi/db-learn#readme",
-  "devDependencies": {
-    "vuepress": "^0.14.11"
+  "dependencies": {
+    "hexo": "^3.3.8",
+    "hexo-cli": "^1.0.3",
+    "hexo-deployer-git": "^1.0.0",
+    "hexo-renderer-ejs": "^0.2.0",
+    "hexo-renderer-less": "^0.2.0",
+    "hexo-renderer-marked": "^0.2.10",
+    "hexo-renderer-sass": "^0.3.2",
+    "hexo-server": "^0.2.1",
+    "hexo-theme-doc": "^0.1.0"
   }
 }

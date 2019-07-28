@@ -11,7 +11,7 @@
 - [MongoDB](./mongodb)
   - [基础部分](./mongodb/basic)
   - [高级部分](./mongodb/advance)
-  - [数据迁移](./mongodb/advance/migrate.md)
+  - [数据迁移](./mongodb/advance/migrate.html)
 
 ## Reading list
 ### MySQL

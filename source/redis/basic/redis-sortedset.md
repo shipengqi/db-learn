@@ -640,7 +640,7 @@ redis > ZRANGE sum_point 0 -1 WITHSCORES
 
 ## 其他
 ### ZSCAN
-参考**[SCAN](./redis-key.md)**。
+参考**[SCAN](./redis-key.html)**。
 ```bash
 ZSCAN key cursor [MATCH pattern] [COUNT count]
 ```
