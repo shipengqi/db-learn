@@ -1,3 +1,6 @@
+---
+title: Redis 安装配置
+---
 # Redis 安装配置
 
 Redis安装，配置认证密码，配置service服务。

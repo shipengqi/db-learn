@@ -1,3 +1,6 @@
+---
+title: Redis 数据类型 Set
+---
 # Redis 数据类型 Set
 
 `Redis`的`Set`是`string`类型的无序集合，类似于`List`类型。但是集合中不允许重复成员的存在。一个`Redis`集合中最多可包含`232-1`(40亿)个元素。
@@ -409,7 +412,7 @@ redis> SMEMBERS my_songs
 
 ## 其他
 ### SSCAN
-参考**[SCAN](./redis-key.html)**命令。
+参考**[SCAN](./redis-key.md)**命令。
 ```bash
 SSCAN key cursor [MATCH pattern] [COUNT count]
 ```

@@ -1,3 +1,6 @@
+---
+title: 保护 Redis
+---
 # 保护 Redis
 ## 指令安全
 Redis 有一些非常危险的指令。比如 `keys` 指令会导致 Redis 卡顿，`flushdb` 和 `flushall` 会让 Redis 的所有数据全部清空。

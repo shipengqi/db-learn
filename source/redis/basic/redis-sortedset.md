@@ -1,3 +1,6 @@
+---
+title: Redis 数据类型 Sorted Set
+---
 # Redis 数据类型 Sorted Set
 
 `Redis`的有序集合和`Set`一样也是`String`类型元素的集合,且不允许重复的成员。`Redis`提供的最为特色的数据结构。
@@ -640,7 +643,7 @@ redis > ZRANGE sum_point 0 -1 WITHSCORES
 
 ## 其他
 ### ZSCAN
-参考**[SCAN](./redis-key.html)**。
+参考**[SCAN](./redis-key.md)**。
 ```bash
 ZSCAN key cursor [MATCH pattern] [COUNT count]
 ```

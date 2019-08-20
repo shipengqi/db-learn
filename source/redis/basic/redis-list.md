@@ -1,3 +1,6 @@
+---
+title: Redis 数据类型 List
+---
 # Redis 数据类型 List
 
 `Redis`列表(Lists)是简单的字符串列表，并根据插入顺序进行排序。一个`Redis`列表中最多可存储`232-1`(40亿)个元素。

@@ -1,3 +1,6 @@
+---
+title: Redis 入门
+---
 # Redis 入门
 
 [Redis中文官网的介绍](http://www.redis.cn/)：
@@ -16,11 +19,11 @@ LRU驱动事件（LRU eviction），事务（transactions） 和不同级别的 
 
 `Redis`一共支持5种数据类型：
 
-- [字符串(Strings)](./basic/redis-string.html)
-- [哈希(Hashs)](./basic/redis-hash.html)
-- [列表(Lists)](./basic/redis-list.html)
-- [集合(Sets)](./basic/redis-set.html)
-- [有序集合(SortedSets)](./basic/redis-sortedset.html)
+- [字符串(Strings)](./basic/redis-string.md)
+- [哈希(Hashs)](./basic/redis-hash.md)
+- [列表(Lists)](./basic/redis-list.md)
+- [集合(Sets)](./basic/redis-set.md)
+- [有序集合(SortedSets)](./basic/redis-sortedset.md)
 
 `Memcache`只支持对键值对的存储。而且`Memcache`的`value`存储，最大为`1M`，`Redis`是`512M`。如果存储的`value`比较大，还是使用`Redis`。
 

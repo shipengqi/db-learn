@@ -1,3 +1,6 @@
+---
+title: Redis 数据类型 Hash
+---
 # Redis 数据类型 Hash
 
 `Redis`对`JSON`数据的支持不是很友好。通常把`JSON`转成`String`存储到`Redis`中，但现在的`JSON`数据都是连环嵌套的，每次更新时都要先获取整个`JSON`，然后更改其中一个字段再放上去。
@@ -339,7 +342,7 @@ redis> HSTRLEN myhash f3
 (integer) 4
 ```
 ### HSCAN
-参考**[SCAN](./redis-key.html)**命令。
+参考**[SCAN](./redis-key.md)**命令。
 ```bash
 HSCAN key cursor [MATCH pattern] [COUNT count]
 ```

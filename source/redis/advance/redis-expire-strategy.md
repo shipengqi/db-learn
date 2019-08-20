@@ -1,3 +1,6 @@
+---
+title: Redis 的过期策略
+---
 # Redis 的过期策略
 
 在日常开发中，我们使用 Redis 存储 `key` 时通常会设置一个过期时间，但是 Redis 是怎么删除过期的 `key`，而且 Redis 是单线程的，

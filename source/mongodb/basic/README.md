@@ -1,5 +1,7 @@
-# MognoDB 基础
-## 基本概念
+---
+title: 基本概念
+---
+# 基本概念
 - `database`，和"数据库"一样的概念 (对 Oracle 来说就是 `schema`)。一个 MongoDB 实例中，可以有零个或多个数据库
 - `collections`，数据库中可以有零个或多个 collections (集合)。和传统意义上的`table`基本一致。
 - `documents`，集合是由零个或多个 `documents` (文档)组成。一个文档可以看成是一 `row`。

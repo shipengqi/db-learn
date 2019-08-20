@@ -1,3 +1,6 @@
+---
+title: INFO 指令
+---
 # INFO 指令
 `Info` 指令，可以清晰地知道 Redis 内部一系列运行参数。
 

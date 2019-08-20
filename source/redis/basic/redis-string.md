@@ -1,3 +1,6 @@
+---
+title: Redis 数据类型 String
+---
 # Redis 数据类型 String
 
 String类型是最常用，也是最简单的的一种类型，string类型是二进制安全的。也就是说string可以包含任何数据。比如`jpg图片`或者`序列化的对象` 。
