@@ -3,31 +3,35 @@ title: Redis Key 操作
 ---
 # Redis Key 操作
 
-在日常开发中，查找某个，或某些铁定前缀的`key`，修改他们的值，删除`key`，都是很常用的操作。`Redis`如何从海量的`key`中找出满足特定前缀的`key`列表？
-使用`Redis`的`keys`指令。
+在日常开发中，查找某个，或某些铁定前缀的 `key`，修改他们的值，删除 `key`，都是很常用的操作。 Redis 如何从海量的 `key` 中找出满足特
+定前缀的`key`列表？
 
-`Redis`允许的最大`Key`长度是`512MB`（对`Value`的长度限制也是`512MB`），**但是尽量不要使用过长的`key`，不仅会消耗更多的内存，还会导致查找的效率降低。
-`key`也不应该过于短，开发中应该使用统一的规范来设计`key`，可读性好，也易于维护。比如`user:<user id>:followers`**。
+Redis 的 `keys` 指令。
+
+Redis 允许的最大 `Key` 长度是 `512MB`（对 `Value` 的长度限制也是 `512MB`），**但是尽量不要使用过长的 `key`，不仅会消耗更多的
+内存，还会导致查找的效率降低。`key` 也不应该过于短，开发中应该使用统一的规范来设计 `key`，可读性好，也易于维护。比
+如 `user:<user id>:followers`**。
 
 ## 查找删除
 ### KEYS
-按指定的正则匹配模式`pattern`查找`key`。
+按指定的正则匹配模式 `pattern` 查找 `key`。
 
 ```bash
 KEYS pattern
 ```
 
-- `KEYS *`匹配数据库中所有的`key`
-- `KEYS h?llo`匹配 hello、hallo、hxllo 等
-- `KEYS h*llo`匹配 hllo、heeeeello等
-- `KEYS h[ae]llo`匹配 hello、hallo，但不匹配 hillo
+- `KEYS *` 匹配数据库中所有的 `key`
+- `KEYS h?llo` 匹配 hello、hallo、hxllo 等
+- `KEYS h*llo` 匹配 hllo、heeeeello等
+- `KEYS h[ae]llo` 匹配 hello、hallo，但不匹配 hillo
 
-`KEYS`指令非常简单，但是有两个缺点：
-- 没有 `offset`、`limit` 参数，会返回所有匹配到的`key`。
-- **执行`KEYS`会遍历所有的`key`，如果`Redis`存储了海量的`key`，由于`Redis`是单线程，`KEYS`指令就会阻塞其他指令**，直到`KEYS`执行完毕。
+`KEYS` 指令非常简单，但是有两个缺点：
+- 没有 `offset`、`limit` 参数，会返回所有匹配到的 `key`。
+- **执行 `KEYS` 会遍历所有的 `key`，如果 Redis 存储了海量的 `key`，由于 Redis 是单线程，`KEYS` 指令就会阻塞其他指令**，直
+到 `KEYS` 执行完毕。
 
-所以在数据量很大的情况下，不建议使用`KEYS`，会造成`Redis`服务卡顿，导致其他的指令延时甚至超时报错。
-`Redis`提供了`SCAN`指令来解决这个问题，参考`SCAN`。
+所以在数据量很大的情况下，不建议使用 `KEYS`，会造成 Redis 服务卡顿，导致其他的指令延时甚至超时报错。
+Redis 提供了 `SCAN` 指令来解决这个问题。
 
 ```bash
 # 4 个测试数据
@@ -53,11 +57,11 @@ redis> KEYS *
 4) "one"
 ```
 ### EXISTS
-判断`key`是否存在。
+判断 `key` 是否存在。
 ```bash
 EXISTS key
 ```
-存在返回`1`，不存在返回`0`。
+存在返回 `1`，不存在返回 `0`。
 ```bash
 redis> SET db "redis"
 OK
@@ -72,7 +76,7 @@ redis> EXISTS db
 (integer) 0
 ```
 ### RANDOMKEY
-随机返回一个`key`
+随机返回一个 `key`
 ```bash
 # 设置多个 key
 redis> MSET fruit "apple" drink "beer" food "cookies"
@@ -97,7 +101,7 @@ redis> RANDOMKEY
 (nil)
 ```
 ### TYPE
-返回`key`的值的类型。`key`不存在返回`none`，否则返回值得类型`string`，`list`，`set`，`zset`，`hash`。
+返回 `key` 的值的类型。`key` 不存在返回 `none`，否则返回值得类型 `string`，`list`，`set`，`zset`，`hash`。
 ```bash
 # 字符串
 redis> SET weather "sunny"
@@ -118,7 +122,8 @@ redis> TYPE pat
 set
 ```
 ### SORT
-返回指定`key`中元素,并对元素进行排序，`key`的类型是列表、集合、有序集合。排序默认以数字作为对象，值被解释为双精度浮点数，然后进行比较。
+返回指定 `key` 中元素,并对元素进行排序，`key` 的类型是列表、集合、有序集合。排序默认以数字作为对象，值被解释为双精度浮点数，然后进
+行比较。
 ```bash
 SORT key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC | DESC] [ALPHA] [STORE destination]
 ```
@@ -147,8 +152,8 @@ redis> SORT today_cost DESC
 4) "1.5"
 ```
 
-#### `ALPHA`排序
-`SORT`默认以数字作为对象排序，如果需要对字符串进行排序，使用`ALPHA`参数：
+#### ALPHA 排序
+`SORT` 默认以数字作为对象排序，如果需要对字符串进行排序，使用 `ALPHA` 参数：
 ```bash
 # 网址
 
@@ -176,8 +181,8 @@ redis> SORT website ALPHA
 3) "www.slashdot.com"
 ```
 
-#### 使用`LIMIT`
-类似`SQL`的分页查询，两个参数：
+#### 使用 LIMIT
+类似 SQL 的分页查询，两个参数：
 - offset，指定偏移量
 - count，指定返回数量
 
@@ -265,7 +270,7 @@ redis 127.0.0.1:6379> SET user_level_4 70
 OK
 ```
 ##### BY 选项
-默认情况下，`SORT uid`直接按`uid`中的值排序：
+默认情况下，`SORT uid` 直接按 `uid` 中的值排序：
 ```bash
 redis 127.0.0.1:6379> SORT uid
 1) "1"      # admin
@@ -273,9 +278,9 @@ redis 127.0.0.1:6379> SORT uid
 3) "3"      # peter
 4) "4"      # mary
 ```
-通过使用`BY`选项，可以让`uid`按其他键的元素来排序。
+通过使用 `BY` 选项，可以让 `uid` 按其他键的元素来排序。
 
-比如说， 以下代码让`uid`键按照`user_level_{uid}`的大小来排序：
+比如说， 以下代码让 `uid` 键按照 `user_level_{uid}` 的大小来排序：
 ```bash
 redis 127.0.0.1:6379> SORT uid BY user_level_*
 1) "2"      # jack , level = 10
@@ -283,8 +288,9 @@ redis 127.0.0.1:6379> SORT uid BY user_level_*
 3) "4"      # mary, level = 70
 4) "1"      # admin, level = 9999
 ```
-`user_level_*`是一个占位符， 它先取出`uid`中的值， 然后再用这个值来查找相应的键。
-比如在对`uid`列表进行排序时， 程序就会先取出`uid`的值 1 、 2 、 3 、 4 ， 然后使用`user_level_1`、`user_level_2` 、 `user_level_3` 和 `user_level_4` 的值作为排序 `uid` 的权重。
+`user_level_*` 是一个占位符， 它先取出 `uid` 中的值， 然后再用这个值来查找相应的键。
+比如在对 `uid` 列表进行排序时， 程序就会先取出 `uid` 的值 1 、 2 、 3 、 4 ， 然后使用 `user_level_1`、`user_level_2` 、 
+`user_level_3` 和 `user_level_4` 的值作为排序 `uid` 的权重。
 
 ##### GET 选项
 使用 `GET` 选项， 可以根据排序的结果来取出相应的键值。
@@ -297,10 +303,10 @@ redis 127.0.0.1:6379> SORT uid GET user_name_*
 3) "peter"
 4) "mary"
 ```
-##### 组合使用 `BY`和 `GET`
+##### 组合使用 BY 和 GET
 通过组合使用 `BY` 和 `GET`， 可以让排序结果以更直观的方式显示出来。
 
-比如说， 以下代码先按`user_level_{uid}`来排序 `uid`列表， 再取出相应的 `user_name_{uid}`的值：
+比如说， 以下代码先按 `user_level_{uid}` 来排序 `uid` 列表， 再取出相应的 `user_name_{uid}` 的值：
 ```bash
 redis 127.0.0.1:6379> SORT uid BY user_level_* GET user_name_*
 1) "jack"       # level = 10
@@ -308,12 +314,12 @@ redis 127.0.0.1:6379> SORT uid BY user_level_* GET user_name_*
 3) "mary"       # level = 70
 4) "admin"      # level = 9999
 ```
-现在的排序结果要比只使用 `SORT uid BY user_level_* `要直观得多。
+现在的排序结果要比只使用  `SORT uid BY user_level_* ` 要直观得多。
 
 ##### 获取多个外部键
 可以同时使用多个 `GET` 选项， 获取多个外部键的值。
 
-以下代码就按 `uid`分别获取`user_level_{uid}`和`user_name_{uid}`：
+以下代码就按 `uid` 分别获取 `user_level_{uid}` 和 `user_name_{uid}`：
 ```bash
 redis 127.0.0.1:6379> SORT uid GET user_level_* GET user_name_*
 1) "9999"       # level
@@ -325,7 +331,7 @@ redis 127.0.0.1:6379> SORT uid GET user_level_* GET user_name_*
 7) "70"
 8) "mary"
 ```
-`GET`有一个额外的参数规则，那就是 `——`可以用`#`获取被排序键的值。
+`GET` 有一个额外的参数规则，那就是 `——` 可以用 `#` 获取被排序键的值。
 
 以下代码就将 `uid` 的值、及其相应的 `user_level_*` 和 `user_name_*` 都返回为结果：
 ```bash
@@ -354,7 +360,8 @@ redis 127.0.0.1:6379> SORT uid BY not-exists-key
 ```
 这种用法在单独使用时，没什么实际用处。
 
-不过，通过将这种用法和 `GET` 选项配合， 就可以在不排序的情况下， 获取多个外部键， 相当于执行一个整合的获取操作（类似于 `SQL` 数据库的 `join`关键字）。
+不过，通过将这种用法和 `GET` 选项配合， 就可以在不排序的情况下， 获取多个外部键， 相当于执行一个整合的获取操作（类似于 `SQL` 数
+据库的 `join` 关键字）。
 
 以下代码演示了，如何在不引起排序的情况下，使用 `SORT` 、 `BY` 和 `GET` 获取多个外部键：
 ```bash
@@ -372,7 +379,7 @@ redis 127.0.0.1:6379> SORT uid BY not-exists-key GET # GET user_level_* GET user
 11) "9999"
 12) "admin"
 ```
-##### 将哈希表作为 `GET` 或 `BY` 的参数
+##### 将哈希表作为 GET 或 BY 的参数
 除了可以将字符串键之外， 哈希表也可以作为 `GET` 或 `BY` 选项的参数来使用。
 
 比如说，对于前面给出的用户信息表：
@@ -384,7 +391,8 @@ redis 127.0.0.1:6379> SORT uid BY not-exists-key GET # GET user_level_* GET user
 | 3	  | peter	        | 25               |
 | 4   |	mary	        | 70               |
 
-我们可以不将用户的名字和级别保存在`user_name_{uid}`和`user_level_{uid}`两个字符串键中， 而是用一个带有`name`域和`level`域的哈希表`user_info_{uid}`来保存用户的名字和级别信息：
+我们可以不将用户的名字和级别保存在 `user_name_{uid}` 和 `user_level_{uid}` 两个字符串键中， 而是用一个带有 `name` 域和 `level` 域
+的哈希表 `user_info_{uid}` 来保存用户的名字和级别信息：
 ```bash
 redis 127.0.0.1:6379> HMSET user_info_1 name admin level 9999
 OK
@@ -398,7 +406,7 @@ OK
 redis 127.0.0.1:6379> HMSET user_info_4 name mary level 70
 OK
 ```
-之后， BY 和 GET 选项都可以用 `key->field` 的格式来获取哈希表中的域的值， 其中`key`表示哈希表键， 而`field`则表示哈希表的域：
+之后， BY 和 GET 选项都可以用 `key->field` 的格式来获取哈希表中的域的值， 其中 `key` 表示哈希表键， 而 `field` 则表示哈希表的域：
 ```bash
 redis 127.0.0.1:6379> SORT uid BY user_info_*->level
 1) "2"
@@ -413,8 +421,8 @@ redis 127.0.0.1:6379> SORT uid BY user_info_*->level GET user_info_*->name
 4) "admin"
 ```
 #### 保存排序结果
-我们可以把`SORT`命令返回的排序结果，保存到指定`key`上。如果`key`已存在，会覆盖。
-没有使用`STORE`，`SORT`命令返回列表形式的排序结果；使用`STOR`E参数，`SORT`命令返回排序结果的元素数量。
+我们可以把 `SORT` 命令返回的排序结果，保存到指定 `key` 上。如果 `key` 已存在，会覆盖。
+没有使用 `STORE`，`SORT`命令返回列表形式的排序结果；使用 `STORE` 参数，`SORT` 命令返回排序结果的元素数量。
 ```bash
 redis> RPUSH numbers 1 3 5 7 9
 (integer) 5
@@ -451,11 +459,11 @@ redis> LRANGE sorted-numbers 0 -1
 10) "10"
 ```
 ### DEL
-删除一个或多个`key`。
+删除一个或多个 `key`。
 ```bash
 DEL key [key ...]
 ```
-返回被删除的`key`的数量。
+返回被删除的 `key` 的数量。
 ```bash
 #  删除单个 key
 
@@ -492,11 +500,11 @@ redis> DEL name type website
 ## 重命名
 
 ### RENAME
-将`key`重命名为`newkey`。
+将 `key` 重命名为 `newkey`。
 ```bash
 RENAME key newkey
 ```
-如果`key`和`newkey`相同，或`key`不存在，返回一个错误。当`newkey`已存在，覆盖`newkey`。
+如果 `key` 和 `newkey` 相同，或 `key` 不存在，返回一个错误。当 `newkey` 已存在，覆盖 `newkey`。
 ```bash
 # key 存在且 newkey 不存在
 redis> SET message "hello world"
@@ -531,11 +539,11 @@ redis:1> GET personal_computer
 "lenovo"
 ```
 ### RENAMENX
-与`RENAME`类似，不同的是`RENAMENX`只有在`newkey`不存在的时候，才会重命名。
+与 `RENAME` 类似，不同的是 `RENAMENX` 只有在 `newkey` 不存在的时候，才会重命名。
 ```bash
 RENAMENX key newkey
 ```
-如果`newkey`已经存在返回`0`。
+如果 `newkey` 已经存在返回 `0`。
 ```bash
 # newkey 不存在时，重命名成功
 redis> SET player "MPlyaer"
@@ -559,7 +567,7 @@ redis> get favorite_animal
 ```
 ## 序列化和反序列化
 ### DUMP
-序列化指定的`key`的值，并返回被序列化的值。
+序列化指定的 `key` 的值，并返回被序列化的值。
 ```bash
 redis> SET greeting "hello, dumping world!"
 OK
@@ -572,12 +580,12 @@ redis> DUMP not-exists-key
 ```
 
 ### RESTORE
-将序列化的值反序列化，并将反序列化的值存储到指定的`key`。
+将序列化的值反序列化，并将反序列化的值存储到指定的 `key`。
 ```bash
 RESTORE key ttl serialized-value
 ```
-`ttl`表示以毫秒为单位设置`key`的生存时间；如果`ttl`值为`0`，表示不设置生存时间。
-`Redis`在进行反序化前，首先会对序列化值进行`RDB`较验，如果版本不符或数据不完整，会拒绝反序列化并返回一个错误
+`ttl` 表示以毫秒为单位设置 `key` 的生存时间；如果 `ttl` 值为 `0`，表示不设置生存时间。
+Redis 在进行反序化前，首先会对序列化值进行 `RDB` 较验，如果版本不符或数据不完整，会拒绝反序列化并返回一个错误
 ```bash
 redis> SET greeting "hello, dumping world!"
 OK
@@ -597,13 +605,13 @@ redis> RESTORE fake-message 0 "hello moto moto blah blah"   ;
 ```
 ## 生存时间
 ### EXPIRE
-为指定的`key`设置生存时间。当生存时间为`0`时，`key`会自动删除。
-`key`设置生存时间后，可以再次执行`EXPIRE`命令更新生存时间。
-**注意对`key`的值进行修改甚至使用`RENAME`对`key`进行重命名时，都不会修改`key`的生存时间**
+为指定的 `key` 设置生存时间。当生存时间为 `0` 时，`key` 会自动删除。
+`key` 设置生存时间后，可以再次执行 `EXPIRE` 命令更新生存时间。
+**注意对 `key` 的值进行修改甚至使用 `RENAME` 对 `key` 进行重命名时，都不会修改 `key` 的生存时间**
 ```bash
 EXPIRE key seconds
 ```
-如果`key`不存在或者不能设置生存时间时，返回`0`。
+如果 `key` 不存在或者不能设置生存时间时，返回 `0`。
 ```bash
 redis> SET cache_page "www.google.com"
 OK
@@ -624,12 +632,12 @@ redis> TTL cache_page
 (integer) 29996
 ```
 ### EXPIREAT
-与`EXPIRE`命令类似，不同的是`EXPIREAT`设置的生存时间是`UNIX`时间戳，以秒为单位。
+与 `EXPIRE` 命令类似，不同的是 `EXPIREAT` 设置的生存时间是 `UNIX` 时间戳，以秒为单位。
 
 ```bash
 EXPIREAT key timestamp
 ```
-如果`key`不存在返回`0`。
+如果 `key` 不存在返回 `0`。
 
 ```bash
 redis> SET mykey "Hello"
@@ -642,27 +650,8 @@ redis> EXISTS mykey
 (integer) 0
 ```
 
-### PERSISTAT
-与`PERSIST`命令类似，不同的是它以毫秒为单位设置`key`的过期`UNIX`时间戳。
-
-```bash
-PEXPIREAT key milliseconds-timestamp
-```
-如果`key`不存在返回`0`。
-
-```bash
-redis> SET mykey "Hello"
-OK
-redis> PEXPIREAT mykey 1555555555005
-(integer) 1
-redis> TTL mykey
-(integer) 192569170
-redis> PTTL mykey
-(integer) 192569169649
-```
-
 ### PERSIST
-移除`key`的生存时间，将`key`持久化(永不过期的`key`)。
+移除 `key` 的生存时间，将 `key` 持久化(永不过期的 `key`)。
 ```bash
 # 设置一个 key
 redis> SET mykey "Hello"
@@ -681,12 +670,31 @@ redis> TTL mykey
 (integer) -1
 ```
 
+### PERSISTAT
+与 `PERSIST` 命令类似，不同的是它以毫秒为单位设置 `key` 的过期 UNIX 时间戳。
+
+```bash
+PEXPIREAT key milliseconds-timestamp
+```
+如果 `key` 不存在返回 `0`。
+
+```bash
+redis> SET mykey "Hello"
+OK
+redis> PEXPIREAT mykey 1555555555005
+(integer) 1
+redis> TTL mykey
+(integer) 192569170
+redis> PTTL mykey
+(integer) 192569169649
+```
+
 ### TTL
-获取指定`key`的剩余生存时间。
+获取指定 `key` 的剩余生存时间。
 ```bash
 TTL key
 ```
-如果`key`不存在时返回`-2`，如果`key`但没有生存时间时，返回`-1`。
+如果 `key` 不存在时返回 `-2`，如果 `key` 但没有生存时间时，返回 `-1`。
 ```bash
 # 不存在的 key
 redis> FLUSHDB
@@ -707,12 +715,12 @@ redis> TTL key
 (integer) 10084
 ```
 ### PTTL
-与`TTL`命令类似，不同的是剩余生存时间以毫秒为单位。
+与 `TTL` 命令类似，不同的是剩余生存时间以毫秒为单位。
 
 ```bash
 PTTL key
 ```
-如果`key`不存在返回`0`。
+如果 `key` 不存在返回 `0`。
 
 ```bash
 # 不存在的 key
@@ -737,18 +745,20 @@ redis> PTTL key
 ```
 ## 迁移
 ### MIGRATE
-将指定`key`从当前实例迁移到到目标实例，并从当前实例删除。**原子操作**，由于`Redis`是单线程，所以该指令会造成阻塞，直到迁移完成，失败或者超时。
+将指定 `key` 从当前实例迁移到到目标实例，并从当前实例删除。**原子操作**，由于 Redis 是单线程，所以该指令会造成阻塞，直到迁移完成，
+失败或者超时。
 ```bash
 MIGRATE host port key destination-db timeout [COPY] [REPLACE]
 ```
-- `timeout`，超时时间，以毫秒为单位。`Redis`会在指定时间内完成`IO`操作，如果传送时间内发送`IO`错误或达到了超时时间，命令就会停止，并返回一个`IOERR`错误。
+- `timeout`，超时时间，以毫秒为单位。 Redis 会在指定时间内完成 IO 操作，如果传送时间内发送 IO 错误或达到了超时时间，命令就会停止，并
+返回一个 `IOERR` 错误。
 可选参数：
-- `COPY`：不移除源实例上的`key`。
-- `REPLACE`：替换目标实例上已存在的`key`。
+- `COPY`：不移除源实例上的 `key`。
+- `REPLACE`：替换目标实例上已存在的 `key`。
 迁移流程：
-1. 源实例执行`DUMP`命令进行序列化，并将序列化数据传送到目标实例。
-2. 目标实例使用`RESTORE`命令进行反序列化，并存储数据。
-3. 当前实例和目标实例一样，收到`RESTORE`命令返回的`ok`，当前实例就执行`DEL`命令删除`key`。
+1. 源实例执行 `DUMP` 命令进行序列化，并将序列化数据传送到目标实例。
+2. 目标实例使用 `RESTORE` 命令进行反序列化，并存储数据。
+3. 当前实例和目标实例一样，收到 `RESTORE` 命令返回的 `ok`，当前实例就执行 `DEL` 命令删除 `key`。
 
 ```bash
 #启动实例，使用默认的 6379 端口
@@ -782,12 +792,12 @@ redis 127.0.0.1:7777> GET greeting
 "Hello from 6379 instance"
 ```
 ### MOVE
-移动当前数据库中指定的`key`到指定数据库`db`中，`MOVE`指令是在同一个实例中的迁移。
+移动当前数据库中指定的 `key` 到指定数据库 `db` 中，`MOVE` 指令是在同一个实例中的迁移。
 ```bash
 MOVE key db
 ```
 
-如果源数据库中`key`不存在，或者目标数据库中存在相同的`key`，`MOVE`命令无效。
+如果源数据库中 `key` 不存在，或者目标数据库中存在相同的 `key`，`MOVE` 命令无效。
 
 ```bash
 # key 存在于当前数据库
@@ -860,30 +870,32 @@ SCAN cursor [MATCH pattern] [COUNT count]
 - `cursor`，整数值，游标参数。
 - `MATCH`，指定正则匹配模式，对元素的模式匹配工作是在命令从数据集中取出元素之后， 向客户端返回元素之前的这段时间内进行的，
 所以如果被迭代的数据集中只有少量元素和模式相匹配， 那么迭代命令或许会在多次执行中都不返回任何元素。
-- `COUNT`，指定每次迭代中从数据集里返回的元素数量，默认值为`10`。`COUNT`只是一个`hint`，返回的结果可多可少。
+- `COUNT`，指定每次迭代中从数据集里返回的元素数量，默认值为 `10`。`COUNT` 只是一个 `hint`，返回的结果可多可少。
 
 
 相关命令：
 - `HSCAN`，迭代哈希类型中的键值对。
 - `SSCAN`，迭代集合中的元素。
 - `ZSCAN`，迭代有序集合中的元素（包括元素成员和元素分值）。
-- `SSCAN`，`HSCAN`和`ZSCAN`与`SCAN`都返回一个包含两个元素的`multi-bulk`回复，第一个元素是游标，第二个元素也是一个`multi-bulk`回复，包含了本次被迭代的元素。
-- `SSCAN`，`HSCAN`和`ZSCAN`与`SCAN`类似，不同的是这三个命令的的第一个参数是一个数据库键。
-`SCAN`它迭代的是当前数据库中的所有数据库键，所以不需要提供数据库键。
-- `SSCAN`，`HSCAN`和`ZSCAN`与`SCAN`的返回值也不相同：
-  - `SCAN`返回的每个元素都是一个数据库键。
-  - `SSCAN`返回的每个元素都是一个集合成员。
-  - `HSCAN`返回的每个元素都是一个键值对，一个键值对由一个键和一个值组成。
-  - `ZSCAN`返回的每个元素都是一个有序集合元素，一个有序集合元素由一个成员（member）和一个分值（score）组成。
+- `SSCAN`，`HSCAN`和`ZSCAN`与`SCAN`都返回一个包含两个元素的 `multi-bulk` 回复，第一个元素是游标，第二个元素也是一个 `multi-bulk` 
+回复，包含了本次被迭代的元素。
+- `SSCAN`，`HSCAN` 和 `ZSCAN` 与 `SCAN` 类似，不同的是这三个命令的的第一个参数是一个数据库键。
+`SCAN` 它迭代的是当前数据库中的所有数据库键，所以不需要提供数据库键。
+- `SSCAN`，`HSCAN` 和 `ZSCAN` 与 `SCAN` 的返回值也不相同：
+  - `SCAN` 返回的每个元素都是一个数据库键。
+  - `SSCAN` 返回的每个元素都是一个集合成员。
+  - `HSCAN` 返回的每个元素都是一个键值对，一个键值对由一个键和一个值组成。
+  - `ZSCAN` 返回的每个元素都是一个有序集合元素，一个有序集合元素由一个成员（member）和一个分值（score）组成。
 
-`SCAN`是一个基于游标的迭代器：`SCAN`每次被调用之后，都会向用户返回一个新的游标，用户在下次迭代时需要使用这个新游标作为`SCAN`的游标参数，
-以此来延续之前的迭代过程。
+`SCAN` 是一个基于游标的迭代器：`SCAN` 每次被调用之后，都会向用户返回一个新的游标，用户在下次迭代时需要使用这个新游标作为 `SCAN` 的游
+标参数，以此来延续之前的迭代过程。
 
-**当`SCAN`命令的游标参数被设置为`0`时，服务器将开始一次新的迭代，而当服务器向用户返回值为`0`的游标时，表示迭代已结束**。
-当一个数据集不断地变大时，想要访问这个数据集中的所有元素就需要做越来越多的工作，能否结束一个迭代取决于用户执行迭代的速度是否比数据集增长的速度更快。
+**当 `SCAN` 命令的游标参数被设置为 `0` 时，服务器将开始一次新的迭代，而当服务器向用户返回值为 `0` 的游标时，表示迭代已结束**。
+当一个数据集不断地变大时，想要访问这个数据集中的所有元素就需要做越来越多的工作，能否结束一个迭代取决于用户执行迭代的速度是否比数据集
+增长的速度更快。
 
-对于`SCAN`这类增量式迭代命令来说，因为在对键进行增量式迭代的过程中，键可能会被修改，所以增量式迭代命令只能对被返回的元素提供有限的保证
-（offer limited guarantees about the returned elements）。
+对于 `SCAN` 这类增量式迭代命令来说，因为在对键进行增量式迭代的过程中，键可能会被修改，所以增量式迭代命令只能对被返回的元素提供有限的
+保证（offer limited guarantees about the returned elements）。
 
 **注意返回的结果可能会有重复，需要客户端去重复。**
 

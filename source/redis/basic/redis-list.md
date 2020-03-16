@@ -3,24 +3,22 @@ title: Redis 数据类型 List
 ---
 # Redis 数据类型 List
 
-`Redis`列表(Lists)是简单的字符串列表，并根据插入顺序进行排序。一个`Redis`列表中最多可存储`232-1`(40亿)个元素。
+Redis 列表(Lists)是简单的字符串列表，并根据插入顺序进行排序。一个 Redis 列表中最多可存储 `232-1`(40亿)个元素。
 
+Redis 的列表和 `Java` 的 `LinkedList` 类似，注意它是链表而不是数组。这意味着 `List` 的插入和删除操作非常快，但是索引定位很慢。
+当列表移除了最后一个元素之后，该 `key` 会被自动被删除，内存被回收。
 
-`Redis`的列表和`Java`的`LinkedList`类似，注意它是链表而不是数组。这意味着`List`的插入和删除操作非常快，但是索引定位很慢。
-当列表移除了最后一个元素之后，该`key`会被自动被删除，内存被回收。
-
-
-`Redis`的列表结构常用来做异步队列使用。将需要延后处理的任务结构体序列化成字符串塞进列表，另一个线程从这个列表中读取数据进行处理。
+Redis 的列表结构常用来做异步队列使用。将需要延后处理的任务结构体序列化成字符串塞进列表，另一个线程从这个列表中读取数据进行处理。
 
 ## 存取
 ### LPUSH
-将一个或多个值`value`插入到列表`key`的头部。
+将一个或多个值 `value` 插入到列表 `key` 的头部。
 
 ```bash
 LPUSH key value [value ...]
 ```
-如果有多个`value`，那么从左到右依次插入列表。如果`key`不存在，首先会创建一个空列表再执行`LPUSH`操作。
-命令执行成功，返回列表的长度。如果`key`存在，但不是`List`类型，会返回一个错误。
+如果有多个 `value`，那么从左到右依次插入列表。如果 `key` 不存在，首先会创建一个空列表再执行 `LPUSH` 操作。
+命令执行成功，返回列表的长度。如果 `key` 存在，但不是 `List` 类型，会返回一个错误。
 
 ```bash
 # 加入单个元素
@@ -43,14 +41,14 @@ redis> LRANGE mylist 0 -1
 3) "a"
 ```
 ### LPUSHX
-`LPUSHX`和`LPUSH`相同，不同的是，`LPUSHX`一次只能插入一个`value`，而且只有当`key`存在且是`List`类型时，才会将值`value`插入到列表`key`的头部。
-如果`key`不存在，则不执行操作。
+`LPUSHX` 和 `LPUSH` 相同，不同的是，`LPUSHX` 一次只能插入一个 `value`，而且只有当 `key` 存在且是 `List` 类型时，才会将值 `value`
+插入到列表 `key` 的头部。如果 `key` 不存在，则不执行操作。
 
 ```bash
 LPUSHX key value
 ```
 
-命令执行成功，返回列表的长度。如果`key`存在，但不是`List`类型，会返回一个错误。
+命令执行成功，返回列表的长度。如果 `key` 存在，但不是 `List` 类型，会返回一个错误。
 
 ```bash
 # 对空列表执行 LPUSHX
@@ -75,13 +73,12 @@ redis> lpush key xxx
 (error) WRONGTYPE Operation against a key holding the wrong kind of value
 ```
 ### RPUSH
-`RPUSH`是将一个或多个值`value`插入到列表`key`的尾部。
+`RPUSH` 是将一个或多个值 `value` 插入到列表 `key` 的尾部。
 
 ```bash
 RPUSH key value [value ...]
 ```
-如果`key`不存在，会首先创建一个空列表，再执行`RPUSH`。
-返回执行`RPUSH`后列表的长度。
+如果 `key` 不存在，会首先创建一个空列表，再执行 `RPUSH`。返回执行 `RPUSH` 后列表的长度。
 
 ```bash
 # 添加单个元素
@@ -105,14 +102,14 @@ redis> LRANGE mylist 0 -1
 ```
 
 ### RPUSHX
-`RPUSHX`和`RPUSH`相同，不同的是，`RPUSHX`一次只能插入一个`value`，而且只有当`key`存在且是`List`类型时，才会将值`value`插入到列表`key`的尾部。
-如果`key`不存在，则不执行操作。
+`RPUSHX` 和 `RPUSH` 相同，不同的是，`RPUSHX` 一次只能插入一个 `value`，而且只有当 `key` 存在且是 `List` 类型时，才会将值 `value`
+插入到列表 `key` 的尾部。如果 `key` 不存在，则不执行操作。
 
 ```bash
 RPUSHX key value
 ```
 
-返回执行`RPUSH`后列表的长度。
+返回执行 `RPUSH` 后列表的长度。
 
 ```bash
 # key不存在
@@ -135,13 +132,14 @@ redis> LRANGE greet 0 -1
 ```
 
 ### LINSERT
-将`value`插入`key`中指定`pivot`元素的前面或后面。
-如果`pivot`或`key不`存在则不执行任何操作。
+将 `value` 插入 `key` 中指定 `pivot` 元素的前面或后面。如果 `pivot` 或 `key` 不存在则不执行任何操作。
 ```bash
 LINSERT key BEFORE|AFTER pivot value
 ```
 
-操作成功，返回插入之后，列表的长度。`pivot`不存在，返回`-1`。如果`key`不存在或为空，则返回`0`，如果`key`不是一个列表类型，则返回一个错误。
+操作成功，返回插入之后，列表的长度。`pivot` 不存在，返回 `-1`。如果 `key` 不存在或为空，则返回 `0`，如果 `key` 不是一个列表类型，
+则返回一个错误。
+
 ```bash
 redis> RPUSH mylist "Hello"
 (integer) 1
@@ -167,13 +165,13 @@ redis> LINSERT fake_list BEFORE "nono" "gogogog"
 
 ### LPOP
 
-返回`key`列表中的头元素。
+返回 `key` 列表中的头元素。
 
 ```bash
 LINSERT key BEFORE|AFTER pivot value
 ```
 
-如果`key`不存在，则返回`nil`。
+如果 `key` 不存在，则返回 `nil`。
 
 ```bash
 redis> LLEN course
@@ -188,18 +186,18 @@ redis> LPOP course  # 移除头元素
 
 ### BLPOP
 
-`BLPOP`是`LPOP`类似，但是`BLPOP`在列表为空时，当前连接会被`BLPOP`阻塞，直到超时或有另一个客户端PUSH了可弹出的元素为止。
-当指定多个`key`参数时，会按`key`的先后顺序依次检查各个列表，并弹出第一个非空列表的头元素。
-`timeout`参数表示阻塞的时长，单位为秒，**注意如果`timeout`为`0`，表示可以无限期延长阻塞。**
+`BLPOP` 是 `LPOP` 类似，但是 `BLPOP` 在列表为空时，当前连接会被 `BLPOP` 阻塞，直到超时或有另一个客户端 PUSH 了可弹出的元素为止。
+当指定多个 `key` 参数时，会按 `key` 的先后顺序依次检查各个列表，并弹出第一个非空列表的头元素。`timeout` 参数表示阻塞的时长，单位
+为秒，**注意如果 `timeout` 为 `0`，表示可以无限期延长阻塞。**
 
 ```bash
 BLPOP key [key ...] timeout
 ```
 
-如果列表为空，返回一个`nil`。 否则，返回一个含有两个元素的列表，第一个元素是被弹出元素所属的`key`，第二个元素是被弹出元素的值。
+如果列表为空，返回一个 `nil`。 否则，返回一个含有两个元素的列表，第一个元素是被弹出元素所属的 `key`，第二个元素是被弹出元素的值。
 
-#### `BLPOP`命令的非阻塞行为
-例如，现在有`job`、`command`和`request`三个列表，`job`不存在，而`command`和`request`都是非空列表：
+#### BLPOP 命令的非阻塞行为
+例如，现在有 `job`、`command` 和 `request` 三个列表，`job` 不存在，而 `command` 和 `request` 都是非空列表：
 ```bash
  # 确保key都被删除
 redis> DEL job command request
@@ -218,17 +216,17 @@ redis> BLPOP job command request 0
 2) "update system..."            # 弹出元素的值
 ```
 
-#### `BLPOP`命令的阻塞行为
-当指定的所有`key`都不存在或包含空列表，`BLPOP`命令将阻塞连接，直到等待超时，或有可弹出元素为止。
+#### BLPOP 命令的阻塞行为
+当指定的所有 `key` 都不存在或包含空列表，`BLPOP` 命令将阻塞连接，直到等待超时，或有可弹出元素为止。
 
 
 ### RPOP
-移除并返回`key`列表的尾元素。
+移除并返回 `key` 列表的尾元素。
 ```bash
 RPOP key
 ```
 
-当`key`不存在时，返回`nil`。
+当 `key` 不存在时，返回 `nil`。
 
 ```bash
 edis> RPUSH mylist "one"
@@ -248,13 +246,13 @@ redis> LRANGE mylist 0 -1    # 列表剩下的元素
 2) "two"
 ```
 ### BRPOP
-`BRPOP`和`BLPOP`基本相同，不同点在于一个弹出头部元素，一个是尾部元素，而且会阻塞操作。
+`BRPOP` 和 `BLPOP` 基本相同，不同点在于一个弹出头部元素，一个是尾部元素，而且会阻塞操作。
 
 ```bash
 BRPOP key [key ...] timeout
 ```
 
-注意`BRPOP`弹出的元素，一样会被移除。
+注意 `BRPOP` 弹出的元素，一样会被移除。
 ```bash
 redis> LLEN course
 (integer) 0
@@ -271,12 +269,12 @@ redis> BRPOP course 30
 ```
 
 ### LINDEX
-返回列表`key`中下标为`index`的元素。
+返回列表 `key` 中下标为 `index` 的元素。
 ```bash
 LINDEX key index
 ```
-`index`可以是负数，比如：`-1`表时倒数第一个元素，`-2`表时倒数第二个元素，以次类推。
-如果`index`不在列表有效范围内，返回一个`nil`。如果`key`不是列表类型，返回一个错误。
+`index` 可以是负数，比如：`-1` 表时倒数第一个元素，`-2` 表时倒数第二个元素，以次类推。
+如果 `index` 不在列表有效范围内，返回一个 `nil`。如果 `key` 不是列表类型，返回一个错误。
 
 ```bash
 redis> LPUSH mylist "World"
@@ -292,13 +290,13 @@ redis> LINDEX mylist 3
 (nil)
 ```
 ### LRANGE
-返回列表`key`中指定区间内的元素。以偏移量`start`和`stop`指定的区间内的元素。
+返回列表 `key` 中指定区间内的元素。以偏移量 `start` 和 `stop` 指定的区间内的元素。
 ```bash
 LRANGE key start stop
 ```
-`start`和`stop`索引位的元素都包含在取值范围内，比如执行`LRANGE list 0 10`，结果是一个包含`11`个元素的列表。
-`start`和`stop`超出范围的下标值不会引起错误。
-如果`start`大于最大下标值`end`则会返回一个空列表。如果`stop`大于最大下标值`end`，会自动设置`stop`的值设置为`end`。
+`start` 和 `stop` 索引位的元素都包含在取值范围内，比如执行 `LRANGE list 0 10`，结果是一个包含 `11` 个元素的列表。
+`start` 和 `stop` 超出范围的下标值不会引起错误。
+如果 `start` 大于最大下标值 `end` 则会返回一个空列表。如果 `stop` 大于最大下标值 `end`，会自动设置 `stop` 的值设置为 `end`。
 
 ```bash
 redis> RPUSH fp-language lisp
@@ -317,13 +315,13 @@ redis> LRANGE fp-language 0 1
 
 ## 修改列表元素
 ### LSET
-设置列表`key`中下标为`index`的元素值为`value`。
+设置列表 `key` 中下标为 `index` 的元素值为 `value`。
 
 ```bash
 LSET key index value
 ```
 
-如果`index`超出范围，或对一个空列表进行设置时，会返回错误。
+如果 `index` 超出范围，或对一个空列表进行设置时，会返回错误。
 ```bash
 # 对空列表进行 LSET
 redis> EXISTS list
@@ -350,15 +348,16 @@ redis> LSET list 3 'out of range'
 
 ### RPOPLPUSH
 
-`RPOPLPUSH`是`RPOP`和`LPUSH`两个操作的合并，会执行两个原子操作：
-- 将列表`source`的尾元素弹出，并返回给客户端。
-- 将`source`弹出的元素，作为`destination`列表的头元素插入。
+`RPOPLPUSH` 是 `RPOP` 和 `LPUSH` 两个操作的合并，会执行两个原子操作：
+- 将列表 `source` 的尾元素弹出，并返回给客户端。
+- 将 `source` 弹出的元素，作为 `destination` 列表的头元素插入。
 
 ```bash
 RPOPLPUSH source destination
 ```
 
-如果`source`不存在，返回`nil`。如果`source`和`destination`是同一个列表，就会把尾元素移动至开头，这叫做列表的旋转(rotation)操作。
+如果 `source` 不存在，返回 `nil`。如果 `source` 和 `destination` 是同一个列表，就会把尾元素移动至开头，这叫做**列表
+的旋转**(rotation)操作。
 
 ```bash
 # source 和 destination 不同
@@ -411,14 +410,15 @@ redis> LRANGE number 0 -1
 
 ### BRPOPLPUSH
 
-`BRPOPLPUSH`和`RPOPLPUSH`基本相同，`BRPOPLPUSH`是阻塞版本，当指定的源列表`source`不为空时，其表现和`RPOPLPUSH`一样。
-当`source`为空时，连接将被`BRPOP`命令阻塞，直到等待超时或有可弹出元素为止。
+`BRPOPLPUSH` 和 `RPOPLPUSH` 基本相同，`BRPOPLPUSH` 是阻塞版本，当指定的源列表 `source` 不为空时，其表现和 `RPOPLPUSH` 一样。
+当 `source` 为空时，连接将被 `BRPOP` 命令阻塞，直到等待超时或有可弹出元素为止。
 
 ```bash
 BRPOPLPUSH source destination timeout
 ```
 
-如果指定时间内没有任何元素弹出，返回一个`nil`。 否则，返回一个含有两个元素的列表，其中：第一个元素是被弹出元素所属的`key`，第二个元素是被弹出元素的值。
+如果指定时间内没有任何元素弹出，返回一个 `nil`。 否则，返回一个含有两个元素的列表，其中：第一个元素是被弹出元素所属的 `key`，第二
+个元素是被弹出元素的值。
 ```bash
 # 非空列表
 redis> BRPOPLPUSH msg reciver 500
@@ -438,11 +438,11 @@ redis> BRPOPLPUSH msg reciver 1
 
 ## 其他
 ### LLEN
-返回列表`key`的长度。
+返回列表 `key` 的长度。
 ```bash
 LLEN key
 ```
-如果`key`不存在，返回`0`。如果`key`不是列表类型，返回一个错误。
+如果 `key` 不存在，返回 `0`。如果 `key` 不是列表类型，返回一个错误。
 
 ```bash
 # 空列表
@@ -461,16 +461,16 @@ redis> LLEN job
 ```
 
 ### LREM
-移除元素，指定移除数量`count`，移除列表`key`中与`value`相等的元素。
+移除元素，指定移除数量 `count`，移除列表 `key` 中与 `value` 相等的元素。
 ```bash
 LREM key count value
 ```
 `count`的值可以有下面三种情况：
-- `count > 0`，从表头开始向表尾搜索，移除与`value`相等的元素，数量为`count`。
-- `count < 0`，从表尾开始向表头搜索，移除与`value`相等的元素，数量为`count`的绝对值。
-- `count = 0`，移除表中所有与`value`相等的值。
+- `count > 0`，从表头开始向表尾搜索，移除与 `value` 相等的元素，数量为 `count`。
+- `count < 0`，从表尾开始向表头搜索，移除与 `value` 相等的元素，数量为 `count`的 绝对值。
+- `count = 0`，移除表中所有与 `value` 相等的值。
 
-如果`key`不存在，返回`0`。
+如果 `key` 不存在，返回 `0`。
 
 ```bash
 # 先创建一个表，内容排列是
@@ -522,14 +522,14 @@ redis> LLEN greet
 (integer) 0
 ```
 ### LTRIM
-对列表`key`进行修剪，通过`start`和`stop`指定区间，保留指定区间内的元素，其余的元素删除。
-比如，执行`LTRIM list 0 10`，表示保留列表`list`的前`11`个元素，其余元素删除。
-`start`和`stop`可以是负数，如，`-1`表示列表的最后一个元素， `-2`表示列表的倒数第二个元素，以此类推。
+对列表 `key` 进行修剪，通过 `start` 和 `stop` 指定区间，保留指定区间内的元素，其余的元素删除。
+比如，执行 `LTRIM list 0 10`，表示保留列表 `list` 的前 `11` 个元素，其余元素删除。
+`start` 和 `stop` 可以是负数，如，`-1` 表示列表的最后一个元素， `-2` 表示列表的倒数第二个元素，以此类推。
 ```bash
 LTRIM key start stop
 ```
 
-操作成功返回`OK`，失败会返回错误信息。
+操作成功返回 `OK`，失败会返回错误信息。
 ```bash
 # 1. start 和 stop 都在列表的索引范围之内
 

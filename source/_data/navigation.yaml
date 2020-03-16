@@ -78,6 +78,9 @@ main:
 - text: 对象
   type: link
   path: redis/advance/redis-object.html
+- text: 位图
+  type: link
+  path: redis/advance/bitmap.html
 - text: 分布式锁
   type: link
   path: redis/advance/distributed-lock.html

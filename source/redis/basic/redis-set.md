@@ -3,21 +3,20 @@ title: Redis 数据类型 Set
 ---
 # Redis 数据类型 Set
 
-`Redis`的`Set`是`string`类型的无序集合，类似于`List`类型。但是集合中不允许重复成员的存在。一个`Redis`集合中最多可包含`232-1`(40亿)个元素。
-`Set`类型有一个非常重要的特性，就是支持集合之间的聚合计算操作，这些操作均在服务端完成，效率极高，而且也节省了的网络`I/O`开销。
+Redis 的 `Set` 是 `string` 类型的无序集合，类似于 `List` 类型。但是集合中不允许重复成员的存在。一个 Redis 集合中最多可
+包含 `232-1`(40亿) 个元素。`Set` 类型有一个非常重要的特性，就是支持集合之间的聚合计算操作，这些操作均在服务端完成，效率极高，而且也
+节省了的网络 I/O 开销。
 
-`Redis`的集合和`Java`的`HashSet`类似，它内部的键值对是无序的唯一的。它的内部实现相当于一个特殊的字典，字典中所有的`value`都是一个值`NULL`。
-当集合移除了最后一个元素之后，该`key`会被自动被删除，内存被回收。
-
-`Set`结构可以用来存储活动中奖的`用户ID`，可以保证同一个用户不会中奖两次。
+Redis 的集合和 `Java` 的 `HashSet` 类似，它内部的键值对是无序的唯一的。它的内部实现相当于一个特殊的字典，字典中所有的 `value` 都
+是一个值 `NULL`。当集合移除了最后一个元素之后，该 `key` 会被自动被删除，内存被回收。
 
 ## 存取
 ### SADD
-添加一个或多个`member`元素到集合`key`中。
+添加一个或多个 `member` 元素到集合 `key` 中。
 ```bash
 SADD key member [member ...]
 ```
-返回被添加到集合中的新元素的数量。如果集合`key`不存在，创建集合`key`，并执行`SADD`。如果`key`不是集合类型，将返回一个错误。
+返回被添加到集合中的新元素的数量。如果集合 `key` 不存在，创建集合 `key`，并执行 `SADD`。如果 `key` 不是集合类型，将返回一个错误。
 
 ```bash
 # 添加单个元素
@@ -39,11 +38,11 @@ redis> SMEMBERS blog
 ```
 
 ### SCARD
-返回集合`key`中元素的数量。
+返回集合 `key` 中元素的数量。
 ```bash
 SCARD key
 ```
-如果`key`不存在，返回`0`。
+如果 `key` 不存在，返回 `0`。
 ```bash
 redis> SADD tool pc printer phone
 (integer) 3
@@ -59,12 +58,12 @@ redis> SCARD tool   # 空集合
 ```
 
 ### SMEMBERS
-返回集合`key`的所有成员。
-**注意当`SMEMBERS`处理一个很大的集合键时，由于`Redis`是单线程，它可能会阻塞服务器。**
+返回集合 `key` 的所有成员。
+**注意当 `SMEMBERS` 处理一个很大的集合键时，由于 Redis 是单线程，它可能会阻塞服务器**。
 ```bash
 SMEMBERS key
 ```
-如果`key`不存在，返回空集合。
+如果 `key` 不存在，返回空集合。
 ```bash
 # key 不存在或集合为空
 
@@ -86,12 +85,12 @@ redis> SMEMBERS language
 3) "Clojure"
 ```
 ### SISMEMBER
-判断集合`key`中是否包含`member`元素。
+判断集合 `key` 中是否包含 `member` 元素。
 
 ```bash
 SISMEMBER key member
 ```
-如果包含，返回`1`。如果不包含或`key`不存在，返回`0`。
+如果包含，返回 `1`。如果不包含或 `key` 不存在，返回 `0`。
 
 ```bash
 redis> SMEMBERS joe's_movies
@@ -107,14 +106,16 @@ redis> SISMEMBER joe's_movies "Fast Five"
 ```
 
 ### SRANDMEMBER
-返回集合`key`中的一个或指定数量`count`的随机元素。与`SPOP`类似，但是`SPOP`会删除返回的随机元素，`SRANDMEMBER`不会删除元素。
+返回集合 `key` 中的一个或指定数量 `count` 的随机元素。与 `SPOP` 类似，但是 `SPOP` 会删除返回的随机元素，`SRANDMEMBER` 不会删除
+元素。
 
 ```bash
 SRANDMEMBER key [count]
 ```
-`count`的值可以有下面两种：
-- `count`为正数，且小于集合基数，返回一个包含`count`个元素的数组，数组中的元素各不相同。如果`count`大于等于集合基数，那么返回整个集合。
-- `count`为负数，返回一个数组，数组中的元素可能会重复出现多次，而数组的长度为`count`的绝对值。
+`count` 的值可以有下面两种：
+- `count` 为正数，且小于集合基数，返回一个包含 `count` 个元素的数组，数组中的元素各不相同。如果 `count` 大于等于集合基数，那么返
+回整个集合。
+- `count` 为负数，返回一个数组，数组中的元素可能会重复出现多次，而数组的长度为 `count` 的绝对值。
 
 ```bash
 # 添加元素
@@ -191,7 +192,7 @@ redis> SRANDMEMBER not-eixsts 10
 
 ## 移除
 ### SPOP
-删除并返回集合`key`中的一个**随机元素**。注意返回的是**随机元素**，不是头部也不是尾部元素。
+删除并返回集合 `key` 中的一个**随机元素**。注意返回的是**随机元素**，不是头部也不是尾部元素。
 ```bash
 SPOP key
 ```
@@ -217,11 +218,11 @@ redis> SMEMBERS db
 ```
 
 ### SREM
-删除集合`key`中的一个或多个元素。
+删除集合 `key` 中的一个或多个元素。
 ```bash
 SREM key member [member ...]
 ```
-如果`member`不存在，会被忽略。
+如果 `member` 不存在，会被忽略。
 
 ```bash
 # 测试数据
@@ -277,11 +278,11 @@ redis> SDIFF peter's_movies joe's_movies
 2) "start war"
 ```
 ### SDIFFSTORE
-和`SDIFF`类似，但是`SDIFFSTORE`是将指定的一个或多个集合的差集存储到集合`destination`中。
+和 `SDIFF` 类似，但是 `SDIFFSTORE` 是将指定的一个或多个集合的差集存储到集合 `destination` 中。
 ```bash
 SDIFFSTORE destination key [key ...]
 ```
-如果`destination`已存在，则覆盖。返回**交集**（注意这里不是差集）成员数量。
+如果 `destination` 已存在，则覆盖。返回**交集**（注意这里不是差集）成员数量。
 ```bash
 redis> SMEMBERS joe's_movies
 1) "hi, lady"
@@ -304,7 +305,7 @@ redis> SMEMBERS joe_diff_peter
 ```bash
 SINTER key [key ...]
 ```
-如果`key`不存在，返回的结果集为空。
+如果 `key` 不存在，返回的结果集为空。
 ```bash
 redis> SMEMBERS group_1
 1) "LI LEI"
@@ -319,11 +320,11 @@ redis> SINTER group_1 group_2
 1) "JACK"
 ```
 ### SINTERSTORE
-和`SINTER`类似，但是`SINTERSTORE`是将指定的一个或多个集合的交集存储到集合`destination`中。
+和 `SINTER` 类似，但是 `SINTERSTORE` 是将指定的一个或多个集合的交集存储到集合 `destination` 中。
 ```bash
 SDIFFSTORE destination key [key ...]
 ```
-如果`destination`已存在，则覆盖。返回交集成员数量。
+如果 `destination` 已存在，则覆盖。返回交集成员数量。
 ```bash
 redis> SMEMBERS songs
 1) "good bye joe"
@@ -344,7 +345,7 @@ redis> SMEMBERS song_interset
 ```bash
 SUNION key [key ...]
 ```
-如果`key`不存在，返回的结果集为空。
+如果 `key` 不存在，返回的结果集为空。
 ```bash
 redis> SMEMBERS songs
 1) "Billie Jean"
@@ -357,7 +358,7 @@ redis> SUNION songs my_songs
 2) "Believe Me"
 ```
 ### SUNIONSTORE
-和`SUNION`类似，但是`SUNIONSTORE`是将指定的一个或多个集合的并集存储到集合`destination`中。
+和 `SUNION` 类似，但是 `SUNIONSTORE` 是将指定的一个或多个集合的并集存储到集合 `destination` 中。
 ```bash
 SDIFFSTORE destination key [key ...]
 ```
@@ -381,16 +382,16 @@ redis> SMEMBERS db
 4) "Redis"
 ```
 ### SMOVE
-将指定的`member`元素从`source`集合删除并移动到`destination`集合。该命令原子操作。
+将指定的 `member` 元素从 `source` 集合删除并移动到 `destination` 集合。该命令原子操作。
 
 ```bash
 SMOVE source destination member
 ```
 
-如果`source`不存在或者没有指定的`member`元素，则不执行任何操作，并返回`0`。
-如果`source`和`destination`是同一个集合，就会把尾元素移动至开头，这叫做列表的旋转(rotation)操作。
-如果`destination`已经存在该`member`元素，只删除`source`集合中的`member`元素。
-如果`source`或`destination`不是集合类型，返回错误。
+如果 `source` 不存在或者没有指定的 `member` 元素，则不执行任何操作，并返回 `0`。
+如果 `source` 和 `destination` 是同一个集合，就会把尾元素移动至开头，这叫做列表的旋转(rotation)操作。
+如果 `destination` 已经存在该 `member` 元素，只删除 `source` 集合中的 `member` 元素。
+如果 `source` 或 `destination` 不是集合类型，返回错误。
 
 ```bash
 redis> SMEMBERS songs
@@ -412,7 +413,7 @@ redis> SMEMBERS my_songs
 
 ## 其他
 ### SSCAN
-参考**[SCAN](./redis-key.md)**命令。
+参考 [SCAN](./redis-key.html) 命令。
 ```bash
 SSCAN key cursor [MATCH pattern] [COUNT count]
 ```
