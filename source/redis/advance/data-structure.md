@@ -40,8 +40,14 @@ C 字符串并不记录自身的长度信息，所以为了获取一个 C 字符
 
 SDS 在 `len` 属性中记录了 SDS 本身的长度，所以获取一个 SDS 长度的复杂度仅为 `O(1)`。
 
-比如下面的例子，程序只要访问 SDS 的 len 属性， 就可以立即知道 SDS 的长度为 5 字节：
-![](../../imgs/sds.png)
+```java
+struct SDS<T> {
+  T capacity; // 数组容量
+  T len; // 数组长度
+  byte flags; // 特殊标识位，不理睬它
+  byte[] content; // 数组内容
+}
+```
 
 使用 SDS 确保了获取字符串长度的工作不会成为 Redis 的性能瓶颈。
 
@@ -75,7 +81,9 @@ C 字符串并不记录自身的长度，所以对于一个包含了 N 个字符
 - 如果程序执行的是缩短字符串的操作，比如截断操作（trim），那么在执行这个操作之后，程序需要通过内存重分配来释放字符串不再使用的那部
 分空间 —— 如果忘了这一步就会产生内存泄漏。
 
-**在 SDS 中，`buf` 数组的长度不一定就是字符数量加一，数组里面可以包含未使用的字节，而这些字节的数量就由 SDS 的 `free` 属性记录**。
+**在 SDS 中，byte 数组的长度不一定就是字符数量加一，数组里面可以包含未使用的字节，数组的容量由 SDS 的 `capacity` 属性记录**。
+
+![](../../imgs/redis-sds.jpg)
 
 SDS 实现了空间预分配和惰性空间释放两种优化策略。
 
@@ -83,12 +91,14 @@ SDS 实现了空间预分配和惰性空间释放两种优化策略。
 空间预分配用于优化 SDS 的字符串增长操作：当 SDS 的 API 对一个 SDS 进行修改，并且需要对 SDS 进行空间扩展的时候，程序不仅会为 SDS 分配
 修改所必须要的空间，还会为 SDS 分配额外的未使用空间。
 
+> 注意，**创建字符串时 len 和 capacity 一样长，不会额外分配的未使用空间，因为绝大多数场景下我们不会使用 append 操作来修改字符串**。
+
 额外分配的未使用空间数量由以下公式决定：
 - 如果对 SDS 进行修改之后， SDS 的长度（也即是 `len` 属性的值）将小于 `1 MB` ，那么程序分配和 `len` 属性同样大小的未使用空间，
-这时 SDS `len` 属性的值将和 `free` 属性的值相同。举个例子，如果进行修改之后， SDS 的 `len` 将变成 13 字节，那么程序也会分配 13 字
-节的未使用空间， SDS 的 `buf` 数组的实际长度将变成 `13 + 13 + 1 = 27` 字节（额外的一字节用于保存空字符）。
+举个例子，如果进行修改之后， SDS 的 `len` 将变成 13 字节，那么程序也会分配 13 字节的未使用空间， SDS 的 byte 数组的实际长度
+将变成 `13 + 13 + 1 = 27` 字节（额外的一字节用于保存空字符）。
 - 如果对 SDS 进行修改之后， SDS 的长度将大于等于 `1 MB` ，那么程序会分配 `1 MB` 的未使用空间。例如，如果进行修改之后， SDS 
-的 `len` 将变成 `30 MB`，那么程序会分配 `1 MB` 的未使用空间， SDS 的 `buf` 数组的实际长度将为 `30 MB + 1 MB + 1 byte`。
+的 `len` 将变成 `30 MB`，那么程序会分配 `1 MB` 的未使用空间， SDS 的 byte 数组的实际长度将为 `30 MB + 1 MB + 1 byte`。
 
 在扩展 SDS 空间之前，SDS API 会先检查未使用空间是否足够，如果足够的话，API 就会直接使用未使用空间，而无须执行内存重分配。
 
@@ -116,6 +126,73 @@ C 字符串中的字符必须符合某种编码（比如 ASCII），并且除了
 SDS 的 API 都是二进制安全的，但它们一样遵循 C 字符串以空字符结尾的惯例：这些 API 总会将 SDS 保存的数据的末尾设置为空字符，并且总会在
 为 `buf` 数组分配空间时多分配一个字节来容纳这个空字符，这是为了让那些保存文本数据的 SDS 可以重用一部分 `<string.h>` 库定义的函数。
 
+### embstr vs raw
+Redis 的字符串有两种存储方式，在**长度特别短时，使用 emb 形式存储 (embeded)，当长度超过 44 时，使用 raw 形式存储**。
+这两种类型有什么区别呢？为什么分界线是 44 呢？
+```sh
+> set codehole abcdefghijklmnopqrstuvwxyz012345678912345678
+OK
+> debug object codehole
+Value at:0x7fec2de00370 refcount:1 encoding:embstr serializedlength:45 lru:5958906 lru_seconds_idle:1
+> set codehole abcdefghijklmnopqrstuvwxyz0123456789123456789
+OK
+> debug object codehole
+Value at:0x7fec2dd0b750 refcount:1 encoding:raw serializedlength:46 lru:5958911 lru_seconds_idle:1
+```
+注意上面 debug object 输出中的 encoding 字段，一个字符的差别，存储形式就发生了变化。
+
+来了解一下 Redis 对象头结构体：
+```java
+struct RedisObject {
+    int4 type; // 4bits
+    int4 encoding; // 4bits
+    int24 lru; // 24bits
+    int32 refcount; // 4bytes
+    void *ptr; // 8bytes，64-bit system
+} robj;
+```
+
+- type(4bit) 对象类型 ，
+- encoding(4bit) 同一个类型的 type 会有不同的存储形式
+- lru(24bit) 记录对象的 LRU 信息
+- refcount 每个对象都有个引用计数，当引用计数为零时，对象就会被销毁，内存被回收。
+- ptr 指针将指向对象内容 (body) 的具体存储位置。
+
+一个 RedisObject 对象头需要占据 16 字节的存储空间。
+
+SDS 对象头的大小是 `capacity+3`，至少是 3。意味着分配一个字符串的最小空间占用为 19 字节 (16+3)。
+
+```java
+struct SDS {
+    int8 capacity; // 1byte
+    int8 len; // 1byte
+    int8 flags; // 1byte
+    byte[] content; // 内联数组，长度为 capacity
+}
+```
+
+![](../../imgs/redis-object-sds.jpg)
+
+- embstr 存储形式是将 RedisObject 对象头和 SDS 对象连续存在一起，使用 malloc 方法**一次分配**。
+- raw 存储需要两次 malloc，两个对象头在内存地址上一般是不连续的。
+
+内存分配器 jemalloc/tcmalloc 等分配内存大小的单位都是 2、4、8、16、32、64 等等，为了能容纳一个完整的 embstr 对象，jemalloc 最少
+会分配 32 字节的空间，如果字符串再稍微长一点，那就是 64 字节的空间。如果**总体超出了 64 字节，Redis 认为它是一个大字符串，不再
+使用 emdstr 形式存储，而该用 raw 形式**。
+
+**当内存分配器分配了 64 空间时，那这个字符串的长度最大就是 44**。
+
+#### 为什么是 44 字节？
+
+SDS 结构体中的 content 中的字符串是以字节 `\0` 结尾的字符串，之所以多这 1 个字节，是为了便于直接使用 glibc 的字符串处理函数，以及
+为了便于字符串的调试打印输出。
+
+![](../../imgs/sds-44.jpg)
+
+上图中可以看出，内存分配器分配的 64 个字节中，content 的长度最多只有 45(64-19) 字节了。再减去 `\0` 结尾的一个字节，就是 44 字节。
+
+> 注意，不同版本的 redis，SDS 的结构可能不一样，可能不是 44 字节。
+> 
 ## 链表
 链表提供了高效的节点重排能力，以及顺序性的节点访问方式，并且可以通过增删节点来灵活地调整链表的长度。
 

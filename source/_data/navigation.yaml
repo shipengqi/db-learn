@@ -117,7 +117,7 @@ main:
 - text: INFO 指令
   type: link
   path: redis/advance/info.html
-- text: Redis 的过期策略
+- text: Redis 的过期策略和内存淘汰机制
   type: link
   path: redis/advance/redis-expire-strategy.html
 - text: 保护 Redis
