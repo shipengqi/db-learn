@@ -72,9 +72,12 @@ main:
 
 - text: Redis 高级
   type: label
-- text: 数据结构
+- text: 简单动态字符串
   type: link
-  path: redis/advance/data-structure.html
+  path: redis/advance/sds.html
+- text: 字典
+  type: link
+  path: redis/advance/dict.html
 - text: 对象
   type: link
   path: redis/advance/redis-object.html

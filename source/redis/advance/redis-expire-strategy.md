@@ -41,7 +41,7 @@ Redis 会将每个**设置了过期时间的 `key` 放入到一个独立的字�
 
 Redis 为了限制最大使用内存，提供了配置参数 `maxmemory`，可以在 `redis.conf` 中配置。当内存超出 `maxmemory`，Redis 提供了几种
 策略（maxmemory-policy）让用户选择：
-- `noeviction`：当内存超出 `maxmemory`，写入请求会报错，但是删除和读请求可以继续。（这个是默认的策略）。
+- `noeviction`：当内存超出 `maxmemory`，写入请求会报错，但是删除和读请求可以继续。（这个可是默认的策略）。
 - `allkeys-lru`：当内存超出 `maxmemory`，在所有的 `key` 中，移除最少使用的 `key`。
 - `allkeys-random`：当内存超出 `maxmemory`，在所有的 `key` 中，随机移除某个 `key`。（应该没人用吧）
 - `volatile-lru`：当内存超出 `maxmemory`，在设置了过期时间 `key` 的字典中，移除最少使用的 `key`。
@@ -127,6 +127,18 @@ OK
 因为每一次获取系统时间戳都是一次系统调用。系统调用相对来说是比较费时间的，作为单线程的 Redis 表示承受不起，所以它需要对时间进行缓存，获
 取时间都直接从缓存中直接拿。
 
+## 内存回收机制
+Redis 并不总是可以将空闲内存立即归还给操作系统。
+
+如果当前 Redis 内存有 10G，当你删除了 1GB 的 key 后，再去观察内存，你会发现内存变化不会太大。原因是操作系统回收内存是以页为单位，
+如果这个页上只要有一个 key 还在使用，那么它就不能被回收。Redis 虽然删除了 1GB 的 key，但是这些 key 分散到了很多页面中，每个页面
+都还有其它 key 存在，这就导致了内存不会立即被回收。
+
+不过，如果你执行 flushdb，然后再观察内存会发现内存确实被回收了。原因是所有的 key 都干掉了，大部分之前使用的页面都完全干净了，会立
+即被操作系统回收。
+
+Redis **虽然无法保证立即回收已经删除的 key 的内存，但是它会重用那些尚未回收的空闲内存**。
+
 ## 懒惰删除
 
 ### Redis 为什么要懒惰删除(lazy free)？
@@ -173,3 +185,5 @@ Redis4.0 为这些删除点也带来了异步删除机制，打开这些点需�
 - `lazyfree-lazy-eviction` 内存达到 `maxmemory` 时进行淘汰
 - `lazyfree-lazy-expire` key 过期删除
 - `lazyfree-lazy-server-del` `rename` 指令删除 `destKey`
+
+### 异步删除的实现
