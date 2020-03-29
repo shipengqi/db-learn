@@ -110,6 +110,8 @@ select users.name from demo.users;
 上面的语句和 `select name from users` 没什么区别。但是有一些情形需要完全限定名。比如在涉及外部子查询的语句中，会使用完全限定列名，
 避免列名可能存在多义性。
 
+> **完全限定列名**在引用的列可能出现二义性时，必须使用完全限定列名（用一个点分隔的表名和列名）。
+
 ### `ORDER BY`
 使用 `ORDER BY` 子句对输出进行排序。比如 `select name from users order by age`，按照 `age` 排序。
 
