@@ -167,12 +167,13 @@ select p1.prod_id, p1.prod_name from products as p1, products as p2 where p1.ven
 
 上面第一条使用了子查询，第二条使用了联结，并且一个表使用了两次。
 
-> 自联结通常作为外部语句用来替代从相同表中检索数据时使用的子查询语句。虽然最终的结果是相同的，但有时候处理联结远比处理子查询快得多。应该试一下两种方法，以确定哪一种的性能更好
+> 自联结通常作为外部语句用来替代从相同表中检索数据时使用的子查询语句。虽然最终的结果是相同的，但有时候处理联结远比处理子查询快得多。应
+该试一下两种方法，以确定哪一种的性能更好。
 
 ##### 自然联结
 标准的联结返回所有数据，甚至相同的列多次出现。**自然联结**排除多次出现，使每个列只返回一次。
 
-迄今为止我们建立的每个内部联结都是自然联结，很可能我们永远都不会用到不是自然联结的内部联结。
+事实上，很可能永远都不会用到不是自然联结的内部联结。
 
 ##### 外部联结
 许多联结将一个表中的行与另一个表中的行相关联。但有时候会需要包含没有关联行的那些行。例如，可能需要使用联结来完成以下工作：
@@ -185,15 +186,19 @@ select p1.prod_id, p1.prod_name from products as p1, products as p2 where p1.ven
 ```sql
 select customers.cust_id, orders.order_num from customers inner join orders on customers.cust_id = orders.cust_id;
 ```
-上面的语句检索所有客户及其订单。那么如果想要检索所有客户，包括没有订单的客户，如下：
+
+上面的语句很简单，就是检索所有客户及其订单。那么如果想要检索所有客户，包括没有订单的客户，如下：
+
 ```sql
 select customers.cust_id, orders.order_num from customers left outer join orders on customers.cust_id = orders.cust_id;
 ```
-这条语句使用了关键字`OUTER JOIN`来指定联结的类型。外部联结还包括没有关联行的行。
-**在使用`OUTER JOIN`语法时，必须使用`RIGHT`或`LEFT`关键字指定包括其所有行的表（`RIGHT`指出的是`OUTER JOIN`右边的表，而`LEFT`指出的是`OUTER JOIN`左边的表）**。
-上面的例子使用`LEFT OUTER JOIN`从`FROM`子句的左边表（`customers`表）中选择所有行。
 
-> 两种类型的外部联结可互换使用，而究竟使用哪一种纯粹是根据方便而定。
+这条语句使用了关键字 `OUTER JOIN` 来指定联结的类型。外部联结还包括没有关联行的行。在使用 `OUTER JOIN` 语法时，必须使用 **`RIGHT` 
+或 `LEFT` 关键字指定包括其所有行的表**（`RIGHT` 指的是 `OUTER JOIN` 右边的表，而 `LEFT` 指的是 `OUTER JOIN` 左边的表）。
+
+上面的例子使用 `LEFT OUTER JOIN` 从 `FROM` 子句的左边表（`customers` 表）中选择所有行。
+
+> 可通过颠倒 FROM 或 WHERE 子句中表的顺序，来转换外部联结形式。两种类型的外部联结可互换使用，而究竟使用哪一种纯粹是根据方便而定。
 
 #### 带聚集函数的联结
 检索所有客户及每个客户所下的订单数：
@@ -202,14 +207,12 @@ select customers.cust_id, COUNT(orders.order_num) as num_ord from customers left
 ```
 
 ## 组合查询
-MySQL也允许执行多个查询（多条`SELECT`语句），并将结果作为单个查询结果集返回。这些组合查询通常称为并（`union`）或复合查询（`compound query`）。
+MySQL 也允许执行多个查询（多条 `SELECT` 语句），并将结果作为单个查询结果集返回。这些组合查询通常称为**并**（`union`）或
+**复合查询**（`compound query`）。
 
-需要使用组合查询：
+需要使用组合查询的情况：
 - 在单个查询中从不同的表返回类似结构的数据；
 - 对单个表执行多个查询，按单个查询返回数据。
-
-> 任何具有多个`WHERE`子句的`SELECT`语句都可以作为一个组合查询给出，在以下段落中可以看到这一点。这两种技术在不同的查询中性能也不同。
-因此，应该试一下这两种技术，以确定对特定的查询哪一种性能更好。
 
 ```sql
 select vend_id, prod_id, prod_price from products where prod_price >= 5
@@ -217,24 +220,27 @@ union
 select vend_id, prod_id, prod_price from products where vend_id in (1001,1002);
 ```
 
-转成多条`where`子句的写法：
+转成多条 `where` 子句的写法：
 ```sql
 select vend_id, prod_id, prod_price from products where prod_price >= 5 or vend_id in (1001,1002);
 ```
 
-### UNION规则
-- `UNION`必须由两条或两条以上的`SELECT`语句组成，语句之间用关键字`UNION`分隔。
-- `UNION`中的每个查询必须包含相同的列、表达式或聚集函数（不过各个列不需要以相同的次序列出）。
-- 列数据类型必须兼容：类型不必完全相同，但必须是DBMS可以隐含地转换的类型（例如，不同的数值类型或不同的日期类型）。
+> 任何具有多个 `WHERE` 子句的 `SELECT` 语句都可以作为一个组合查询给出。这两种技术在不同的查询中性能也不同。因此，应该试一下这
+两种技术，以确定对特定的查询哪一种性能更好。
+
+### UNION 规则
+- `UNION` 必须由两条或两条以上的 `SELECT` 语句组成，语句之间用关键字 `UNION` 分隔。
+- `UNION` 中的每个查询**必须包含相同的列、表达式或聚集函数**（不过各个列不需要以相同的次序列出）。
+- **列数据类型必须兼容**：类型不必完全相同，但必须是 DBMS 可以隐含地转换的类型（例如，不同的数值类型或不同的日期类型）。
 
 ### 包含或取消重复的行
-`UNION`从查询结果集中自动去除了重复的行。如果想返回所有匹配行，可使用`UNION ALL`而不是`UNION`。
+`UNION` 从查询结果集中**自动去除了重复的行**。如果想返回所有匹配行，可使用 `UNION ALL` 而不是 `UNION`。
 
 ### 组合查询结果排序
-用`UNION`组合查询时，只能使用一条`ORDER BY`子句，它必须出现在最后一条`SELECT`语句之后。**对于结果集，
-不存在用一种方式排序一部分，而又用另一种方式排序另一部分的情况，因此不允许使用多条`ORDER BY`子句**。
+**用 `UNION` 组合查询时，只能使用一条 `ORDER BY` 子句，它必须出现在最后一条 `SELECT` 语句之后**。对于结果集，不存在用一种方式排序一
+部分，而又用另一种方式排序另一部分的情况，因此不允许使用多条 `ORDER BY` 子句。
 
 ## 全文本搜索
-两个最常使用的引擎为`MyISAM`和`InnoDB`，前者支持全文本搜索，而后者不支持。
+两个最常使用的引擎为 `MyISAM` 和 `InnoDB`，前者支持全文本搜索，而后者不支持。
 
-使用MySQL的`Match()`和`Against()`函数进行全文本搜索。
+使用 MySQL 的 `Match()` 和 `Against()` 函数进行全文本搜索。
