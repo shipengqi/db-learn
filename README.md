@@ -9,7 +9,7 @@
 # install dependencies
 yarn
 
-# start dev server, access http://localhost:8085/db-learn
+# start dev server, access http://localhost:8087/db-learn
 yarn start
 
 # deploy

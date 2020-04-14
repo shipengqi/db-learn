@@ -6,8 +6,8 @@
     "version": "3.9.0"
   },
   "scripts": {
-    "start": "hexo s -p 8085",
-    "start:debug": "hexo s -p 8085 --debug",
+    "start": "hexo s -p 8087",
+    "start:debug": "hexo s -p 8087 --debug",
     "docs:build": "hexo clean && hexo g",
     "deploy": "hexo clean && hexo d"
   },

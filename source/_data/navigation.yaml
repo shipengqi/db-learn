@@ -9,10 +9,13 @@ main:
   type: label
 - text: MySQL 入门
   type: link
-  path: mysql/README.html
-- text: 关系型数据基础
+  path: mysql/getting-started.html
+- text: MySQL 安裝
   type: link
-  path: mysql/basic/README.html
+  path: mysql/basic/install.html
+- text: 简单查询
+  type: link
+  path: mysql/basic/query.html
 - text: 复杂查询语句
   type: link
   path: mysql/basic/advanced-query.html
@@ -25,9 +28,6 @@ main:
 
 - text: MySQL 高级
   type: label
-- text: 锁
-  type: link
-  path: mysql/advance/README.html
 - text: 启动选项和配置文件
   type: link
   path: mysql/advance/config.html
@@ -40,6 +40,9 @@ main:
 - text: InnoDB 数据页结构
   type: link
   path: mysql/advance/innodb-page-structure.html
+- text: 锁
+  type: link
+  path: mysql/advance/lock.html
 
 - text: Redis
   type: label
@@ -47,7 +50,7 @@ main:
   type: label
 - text: Redis 入门
   type: link
-  path: redis/README.html
+  path: redis/getting-started.html
 - text: Redis 安装配置
   type: link
   path: redis/basic/redis-config.html
@@ -135,23 +138,18 @@ main:
 
 - text: MongoDB
   type: label
-- text: MongoDB 基础
-  type: label
+- text: MongoDB 介绍
+  type: link
+  path: mongodb/overview.html
 - text: MongoDB 入门
   type: link
-  path: mongodb/README.html
-- text: 基本概念
-  type: link
-  path: mongodb/basic/README.html
-
-- text: MongoDB 高级
-  type: label
+  path: mongodb/getting-started.html
 - text: 高级部分
   type: link
-  path: mongodb/advance/README.html
-- text: 迁移
+  path: mongodb/advance.html
+- text: 数据迁移
   type: link
-  path: mongodb/advance/migrate.html
+  path: mongodb/migrate.html
 
 - text: THEME
   type: label

@@ -1,9 +1,9 @@
 ---
-title: 迁移
+title: 数据迁移
 ---
-# 迁移
+# 数据迁移
 ## 简单迁移
-如何将一台linux A 上的mongodb数据迁移到另外一台linux B上？
+如何将一台 linux A 上的 mongodb 数据迁移到另外一台 linux B 上？
 
 两个命令即可完成任务：
 - 数据的导出：`mongoexport`

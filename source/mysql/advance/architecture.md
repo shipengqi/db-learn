@@ -122,3 +122,40 @@ MySQL 通过分析器知道了你要做什么，通过优化器知道了该怎�
 ## 存储引擎
 数据库表是由一行一行的记录组成的，但这只是一个逻辑上的概念，物理上如何表示记录，怎么从表中读取数据，怎么把数据写入具体的物理存储器上，这都是存
 储引擎负责的事情。为了实现不同的功能，MySQL 提供了各式各样的存储引擎，不同存储引擎管理的表具体的存储结构可能不同，采用的存取算法也可能不同。
+
+### 常用存储引擎
+| 存储引擎 | 描述 |
+| -----  | ----- |
+| InnoDB |	具备外键支持功能的事务存储引擎 |
+| MEMORY |	置于内存的表 |
+| MyISAM |	主要的非事务处理存储引擎 |
+
+最常用的就是 `InnoDB`。
+
+查看当前服务器程序支持的存储引擎：
+```sh
+SHOW ENGINES;
+
+mysql> SHOW ENGINES;
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| Engine             | Support | Comment                                                        | Transactions | XA   | Savepoints |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| InnoDB             | DEFAULT | Supports transactions, row-level locking, and foreign keys     | YES          | YES  | YES        |
+| MRG_MYISAM         | YES     | Collection of identical MyISAM tables                          | NO           | NO   | NO         |
+| MEMORY             | YES     | Hash based, stored in memory, useful for temporary tables      | NO           | NO   | NO         |
+| BLACKHOLE          | YES     | /dev/null storage engine (anything you write to it disappears) | NO           | NO   | NO         |
+| MyISAM             | YES     | MyISAM storage engine                                          | NO           | NO   | NO         |
+| CSV                | YES     | CSV storage engine                                             | NO           | NO   | NO         |
+| ARCHIVE            | YES     | Archive storage engine                                         | NO           | NO   | NO         |
+| PERFORMANCE_SCHEMA | YES     | Performance Schema                                             | NO           | NO   | NO         |
+| FEDERATED          | NO      | Federated MySQL storage engine                                 | NULL         | NULL | NULL       |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+9 rows in set (0.00 sec)
+
+mysql>
+```
+
+- `Support` 表示该存储引擎是否可用，如果值为 `DEFAULT` 则表示是默认的存储引擎。
+- `Transactions` 表示该存储引擎是否支持事务处理。
+- `XA` 表示着该存储引擎是否支持分布式事务。
+- `Savepoints` 表示着该列是否支持部分事务回滚。
