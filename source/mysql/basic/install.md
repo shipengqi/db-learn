@@ -8,10 +8,11 @@ title: MySQL 安装
 
 ## MySQL 的安装目录
 
-Linux 下的安装目录一般为 `/usr/local/mysql/`。
+Linux 下的安装目录一般为 `/usr/local/mysql/`。Windows 一般为 `C:\Program Files\MySQL\MySQL Server x.x`
+（记住你自己的安装目录）。
 
 ### bin目录
-打开 `/usr/local/mysql/bin`（你的 mysql 安装目录），执行 `tree`：
+打开 `/usr/local/mysql/bin`，执行 `tree`：
 ```
 .
 ├── mysql
@@ -34,13 +35,15 @@ Linux 下的安装目录一般为 `/usr/local/mysql/`。
 /usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/mysql/bin
 ```
 
+#### mysqld
+`mysqld` 是 MySQL 服务端程序。不常用。
+
 #### mysqld_safe
 `mysqld_safe` 是一个启动脚本，最终也是调用 `mysqld`，但是还会另外一个监控进程，在服务器进程挂了的时候，可以帮助重启服务器进程。
-`mysqld_safe` 启动服务器程序时，会将服务器程序的出错信息和其他诊断信息重定向到某个文件中，产生出错日志，这样可以方便我们找
-出发生错误的原因。
+`mysqld_safe` 启动服务端程序时，会将服务端程序的出错信息和其他诊断信息重定向到某个文件中，产生出错日志，这样可以方便找出发生错误的原因。
 
 #### mysql.server
-`mysql.server` 也是一个启动脚本，会间接的调用 `mysqld_safe`，使用 `mysql.server` 启动服务器程序：
+`mysql.server` 也是一个启动脚本，会间接的调用 `mysqld_safe`，使用 `mysql.server` 启动服务端程序：
 ```bash
 mysql.server start
 ```
@@ -53,5 +56,5 @@ mysql --host=<主机名>  --user=<用户名> --password=<密码>
 ```
 
 注意：
-- 最好不要在一行命令中输入密码。
-- 如果使用的是类 UNIX 系统，并且省略 `-u` 参数后，会把你登陆操作系统的用户名当作 MySQL 的用户名去处理。
+- 最好不要在一行命令中输入密码，可能会导致密码泄露。
+- 如果使用的是类 UNIX 系统，并且省略 `-u` 参数后，会把你**登陆操作系统的用户名当作 MySQL 的用户名**去处理。
