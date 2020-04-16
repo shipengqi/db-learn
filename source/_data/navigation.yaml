@@ -40,6 +40,9 @@ main:
 - text: InnoDB 数据页结构
   type: link
   path: mysql/advance/innodb-page-structure.html
+- text: B+ 树索引
+  type: link
+  path: mysql/advance/b-tree.html
 - text: 锁
   type: link
   path: mysql/advance/lock.html

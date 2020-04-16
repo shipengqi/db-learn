@@ -31,6 +31,7 @@ mysqld_safe --help
 ### 配置文件的路径
 #### Windows 操作系统的配置文件
 MySQL 会按照下列路径来寻找配置文件：
+
 | 路径 | 描述 |
 | --- | --- |
 | `%WINDIR%\my.ini`， `%WINDIR%\my.cnf` | |
@@ -38,6 +39,7 @@ MySQL 会按照下列路径来寻找配置文件：
 | `BASEDIR\my.ini`， `BASEDIR\my.cnf` | |
 | `defaults-extra-file` | 命令行指定的额外配置文件路径 |
 | `%APPDATA%\MySQL\.mylogin.cnf` | 登录路径选项（仅限客户端） |
+
 
 - `%WINDIR%` 一般是 `C:\WINDOWS`，可以用 `echo %WINDIR%` 来查看。
 - `BASEDIR` 指的是 MySQL 安装目录的路径
@@ -47,6 +49,7 @@ MySQL 会按照下列路径来寻找配置文件：
 
 #### 类 UNIX 操作系统的配置文件
 MySQL 会按照下列路径来寻找配置文件：
+
 | 路径 | 描述 |
 | --- | --- |
 | `/etc/my.cnf` | |
