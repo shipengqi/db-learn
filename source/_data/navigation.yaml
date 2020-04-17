@@ -28,6 +28,9 @@ main:
 
 - text: MySQL 高级
   type: label
+- text: 基础架构
+  type: link
+  path: mysql/advance/architecture.html
 - text: 启动选项和配置文件
   type: link
   path: mysql/advance/config.html

@@ -5,7 +5,7 @@ title: MySQL 基础架构
 
 一条 SQL 查询语句在 MySQL 内的执行过程，是怎样的？
 
-![mysql-architecture](../../imgs/mysql-architecture.png)
+<img alt="mysql-architecture" src="../../imgs/mysql-architecture.png" width="60%" height="60%">
 
 上图是 MySQL 的基本架构示意图。可以看出，MySQL 大致可以分为两部分：**Server 层**和**存储引擎层**。
 
