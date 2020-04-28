@@ -46,6 +46,9 @@ main:
 - text: B+ 树索引
   type: link
   path: mysql/advance/b-tree.html
+- text: 事务的隔离级别
+  type: link
+  path: mysql/advance/isolation-level.html
 - text: 锁
   type: link
   path: mysql/advance/lock.html
