@@ -7,10 +7,4 @@
 *.sln
 *.sw*
 
-/node_modules
-db.json
 public
-
-themes/doc
-
-.deploy_git
