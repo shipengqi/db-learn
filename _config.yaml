@@ -20,7 +20,7 @@ relative_link: false
 theme: ../node_modules/hexo-theme-doc
 
 theme_config:
-  favicon: images/favicon.ico
+  favicon: ../../../images/favicon.ico
 url: http://www.shipengqi.top/db-learn
 root: /db-learn/
 
