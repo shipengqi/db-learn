@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MySQL 基础架构#一条 SQL 查询语句在 MySQL 内的执行过程，是怎样的？
+上图是 MySQL 的基本架构示意图。可以看出，MySQL 大致可以分为两部分：Server 层和存储引擎层。
+Server 层包括连接器、查询缓存、分析器、优化器、执行器等，涵盖 MySQL 的大多数核心服务功能，以及所有的内置函数（如日期、时间、数学和加密函数等），所 有跨存储引擎的功能都在这一层实现，比如存储过程、触发器、视图等。
+存储引擎层负责数据的存储和提取。支持 InnoDB、MyISAM、Memory 等多个存储引擎。不同的存储引擎共用一个 Server 层。存储引擎向 Server 层提供统一 的调用接口（存储引擎 API），包含了几十个底层函数，像&quot;读取索引第一条内容&rdquo;、&ldquo;读取索引下一条内容&rdquo;、&ldquo;插入记录&quot;等等。
+从 MySQL 5.5.5 版本开始， InnoDB 成为了默认存储引擎。
+接下来看一条 SQL 查询语句的执行过程，如 select * from T where ID=10;。
+连接管理#第一步就是与服务端建立连接。连接器负责跟客户端建立连接、获取权限、维持和管理连接。
+客户端可以采用 TCP/IP、命名管道或共享内存、Unix 域套接字这几种方式之一来与服务端建立连接。
+连接命令：
+mysql -h$ip -P$port -u$user -p  注意，使用 -p 后面尽量不要跟着密码。-p 和密码值之间不能有空白字符（其他参数名之间可以有空白字符）。 如果服务端和客户端安装在同一台机器上，-h 参数可以省略。
+ 建立 TCP 连接后，连接器会进行身份认证，并获取权限。之后，这个连接里面的权限判断逻辑，都将依赖于此时读到的权限。意味着，一个用户成功建立 连接后，即使用管理员账号对这个用户的权限做了修改，也不会影响已经存在连接的权限。只有再新建的连接才会使用新的权限设置。
+每当有一个客户端进程连接到服务器进程时，服务器进程都会创建一个线程来专门处理与这个客户端的交互，当该客户端退出时会与服务器断开连接，服务器并不会 立即把与该客户端交互的线程销毁掉，而是把它缓存起来，在另一个新的客户端再进行连接时，把这个缓存的线程分配给该新客户端。这样就起到了不频繁创建和销 毁线程的效果。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="MySQL 基础架构" />
+<meta property="og:description" content="MySQL 基础架构#一条 SQL 查询语句在 MySQL 内的执行过程，是怎样的？
+上图是 MySQL 的基本架构示意图。可以看出，MySQL 大致可以分为两部分：Server 层和存储引擎层。
+Server 层包括连接器、查询缓存、分析器、优化器、执行器等，涵盖 MySQL 的大多数核心服务功能，以及所有的内置函数（如日期、时间、数学和加密函数等），所 有跨存储引擎的功能都在这一层实现，比如存储过程、触发器、视图等。
+存储引擎层负责数据的存储和提取。支持 InnoDB、MyISAM、Memory 等多个存储引擎。不同的存储引擎共用一个 Server 层。存储引擎向 Server 层提供统一 的调用接口（存储引擎 API），包含了几十个底层函数，像&quot;读取索引第一条内容&rdquo;、&ldquo;读取索引下一条内容&rdquo;、&ldquo;插入记录&quot;等等。
+从 MySQL 5.5.5 版本开始， InnoDB 成为了默认存储引擎。
+接下来看一条 SQL 查询语句的执行过程，如 select * from T where ID=10;。
+连接管理#第一步就是与服务端建立连接。连接器负责跟客户端建立连接、获取权限、维持和管理连接。
+客户端可以采用 TCP/IP、命名管道或共享内存、Unix 域套接字这几种方式之一来与服务端建立连接。
+连接命令：
+mysql -h$ip -P$port -u$user -p  注意，使用 -p 后面尽量不要跟着密码。-p 和密码值之间不能有空白字符（其他参数名之间可以有空白字符）。 如果服务端和客户端安装在同一台机器上，-h 参数可以省略。
+ 建立 TCP 连接后，连接器会进行身份认证，并获取权限。之后，这个连接里面的权限判断逻辑，都将依赖于此时读到的权限。意味着，一个用户成功建立 连接后，即使用管理员账号对这个用户的权限做了修改，也不会影响已经存在连接的权限。只有再新建的连接才会使用新的权限设置。
+每当有一个客户端进程连接到服务器进程时，服务器进程都会创建一个线程来专门处理与这个客户端的交互，当该客户端退出时会与服务器断开连接，服务器并不会 立即把与该客户端交互的线程销毁掉，而是把它缓存起来，在另一个新的客户端再进行连接时，把这个缓存的线程分配给该新客户端。这样就起到了不频繁创建和销 毁线程的效果。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/mysql/07_architecture/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>MySQL 基础架构 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/"class=active>基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>MySQL 基础架构</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#连接管理">连接管理</a></li>
+    <li><a href="#查询缓存">查询缓存</a>
+      <ul>
+        <li><a href="#查询缓存的弊端">查询缓存的弊端</a></li>
+        <li><a href="#按需使用查询缓存">按需使用查询缓存</a></li>
+      </ul>
+    </li>
+    <li><a href="#语法解析">语法解析</a></li>
+    <li><a href="#查询优化">查询优化</a></li>
+    <li><a href="#执行器">执行器</a></li>
+    <li><a href="#存储引擎">存储引擎</a>
+      <ul>
+        <li><a href="#常用存储引擎">常用存储引擎</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="mysql-基础架构">
+  MySQL 基础架构
+  <a class="anchor" href="#mysql-%e5%9f%ba%e7%a1%80%e6%9e%b6%e6%9e%84">#</a>
+</h1>
+<p>一条 SQL 查询语句在 MySQL 内的执行过程，是怎样的？</p>
+<!-- raw HTML omitted -->
+<p>上图是 MySQL 的基本架构示意图。可以看出，MySQL 大致可以分为两部分：<strong>Server 层</strong>和<strong>存储引擎层</strong>。</p>
+<p>Server 层包括连接器、查询缓存、分析器、优化器、执行器等，涵盖 MySQL 的大多数核心服务功能，以及所有的内置函数（如日期、时间、数学和加密函数等），<strong>所
+有跨存储引擎的功能</strong>都在这一层实现，比如存储过程、触发器、视图等。</p>
+<p>存储引擎层负责数据的存储和提取。支持 InnoDB、MyISAM、Memory 等多个存储引擎。不同的存储引擎共用一个 Server 层。存储引擎向 Server 层提供统一
+的调用接口（存储引擎 API），包含了几十个底层函数，像&quot;读取索引第一条内容&rdquo;、&ldquo;读取索引下一条内容&rdquo;、&ldquo;插入记录&quot;等等。</p>
+<p>从 MySQL 5.5.5 版本开始， InnoDB 成为了默认存储引擎。</p>
+<p>接下来看一条 SQL 查询语句的执行过程，如 <code>select * from T where ID=10;</code>。</p>
+<h2 id="连接管理">
+  连接管理
+  <a class="anchor" href="#%e8%bf%9e%e6%8e%a5%e7%ae%a1%e7%90%86">#</a>
+</h2>
+<p>第一步就是与服务端建立连接。<strong>连接器</strong>负责跟客户端建立连接、获取权限、维持和管理连接。</p>
+<p>客户端可以采用 TCP/IP、命名管道或共享内存、Unix 域套接字这几种方式之一来与服务端建立连接。</p>
+<p>连接命令：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mysql -h$ip -P$port -u$user -p
+</code></pre></div><blockquote>
+<p>注意，使用 <code>-p</code> 后面尽量不要跟着密码。<code>-p</code> 和密码值之间不能有空白字符（其他参数名之间可以有空白字符）。
+如果服务端和客户端安装在同一台机器上，<code>-h</code> 参数可以省略。</p>
+</blockquote>
+<p>建立 TCP 连接后，连接器会进行身份认证，并获取权限。之后，这个<strong>连接里面的权限判断逻辑，都将依赖于此时读到的权限</strong>。意味着，一个用户成功建立
+连接后，即使用管理员账号对这个用户的权限做了修改，也不会影响已经存在连接的权限。只有再新建的连接才会使用新的权限设置。</p>
+<p>每当有一个客户端进程连接到服务器进程时，服务器进程都会创建一个线程来专门处理与这个客户端的交互，当该客户端退出时会与服务器断开连接，服务器并不会
+立即把与该客户端交互的线程销毁掉，而是把它缓存起来，在另一个新的客户端再进行连接时，把这个缓存的线程分配给该新客户端。这样就起到了不频繁创建和销
+毁线程的效果。</p>
+<p>MySQL 服务器会为每一个连接进来的客户端分配一个线程，但是线程分配的太多了会严重影响系统性能，所以也需要限制一下可以同时连接到服务器的客户端数量。</p>
+<p>连接完成后，如果没有后续的动作，这个连接就处于空闲状态，可以使用 <code>show processlist</code> 命令查看。<code>Command</code> 列显示为 &ldquo;Sleep&rdquo; 的，就表示是有一
+个空闲连接。</p>
+<p>客户端如果太长时间没动静，连接器就会自动将它断开。这个时间是由参数 <code>wait_timeout</code> 控制的，默认值是 8 小时。</p>
+<p>如果在连接被断开之后，客户端再次发送请求的话，就会收到一个错误提醒：&ldquo;Lost connection to MySQL server during query&rdquo;。这时候如果要继续，就
+需要重连，然后再执行请求了。</p>
+<p>数据库里面，长连接是指连接成功后，如果客户端持续有请求，则一直使用同一个连接。短连接则是指每次执行完很少的几次查询就断开连接，下次查询再重新建立一个。</p>
+<p>建立连接的过程通常是比较复杂的，所以建议在使用中要尽量减少建立连接的动作，也就是尽量使用长连接。</p>
+<p>但是全部使用长连接后，可能会发现，有些时候 MySQL 占用内存涨得特别快，这是因为 MySQL 在执行过程中临时使用的内存是管理在连接对象里面的。这些资源
+会在连接断开的时候才释放。所以如果长连接累积下来，可能导致内存占用太大，被系统强行杀掉（OOM），从现象看就是 MySQL 异常重启了。</p>
+<p>怎么解决这个问题？可以考虑以下两种方案。</p>
+<ul>
+<li>定期断开长连接。使用一段时间，或者程序里面判断执行过一个占用内存的大查询后，断开连接，之后要查询再重连。</li>
+<li>如果是 MySQL 5.7 或更新版本，可以在每次执行一个比较大的操作后，通过执行 <code>mysql_reset_connection</code> 来重新初始化连接资源。这个过程不
+需要重连和重新做权限验证，但是会将连接恢复到刚刚创建完时的状态。</li>
+</ul>
+<h2 id="查询缓存">
+  查询缓存
+  <a class="anchor" href="#%e6%9f%a5%e8%af%a2%e7%bc%93%e5%ad%98">#</a>
+</h2>
+<p>MySQL 处理查询请求时，会把刚刚处理过的查询请求和结果以 key-value 的形式，缓存在内存中。如果下一次有一模一样的请求过来，优先从缓存中查找结果。
+如果命中缓存，就不需要再执行后面的复杂操作，直接返回结果。</p>
+<p>查询缓存可以在不同客户端之间共享。</p>
+<h3 id="查询缓存的弊端">
+  查询缓存的弊端
+  <a class="anchor" href="#%e6%9f%a5%e8%af%a2%e7%bc%93%e5%ad%98%e7%9a%84%e5%bc%8a%e7%ab%af">#</a>
+</h3>
+<p>如果两个查询请求在任何字符上的不同（例如：空格、注释、大小写），都会导致缓存不会命中。</p>
+<p>如果查询请求中包含某些系统函数、用户自定义变量和函数、一些系统表，如 mysql 、information_schema、 performance_schema 数据库中的表，那这
+个请求就不会被缓存。</p>
+<p>查询缓存的失效非常频繁。MySQL 的缓存系统会监测涉及到的每张表，只要该表的结构或者数据被修改，如对该表使用了 INSERT、 UPDATE、DELETE、
+TRUNCATE TABLE、ALTER TABLE、DROP TABLE 或 DROP DATABASE 语句，那这个表上所有的查询缓存都会被清空。对于更新压力大的数据库来说，查
+询缓存的命中率会非常低。除非你的业务表，很长时间才会更新一次。</p>
+<h3 id="按需使用查询缓存">
+  按需使用查询缓存
+  <a class="anchor" href="#%e6%8c%89%e9%9c%80%e4%bd%bf%e7%94%a8%e6%9f%a5%e8%af%a2%e7%bc%93%e5%ad%98">#</a>
+</h3>
+<p>MySQL 提供了 <code>query_cache_type</code> 参数，当设置成 <code>DEMAND</code> 时，默认 SQL 语句不会使用查询缓存。而对于确定要使用查询缓存的语句，可以
+用 <code>SQL_CACHE</code> 显式指定：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> SQL_CACHE <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> T <span style="color:#66d9ef">where</span> ID<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span>;
+</code></pre></div><p>MySQL 在 8.0 中删除了查询缓存的功能。</p>
+<h2 id="语法解析">
+  语法解析
+  <a class="anchor" href="#%e8%af%ad%e6%b3%95%e8%a7%a3%e6%9e%90">#</a>
+</h2>
+<p>如果查询缓存没有命中，接下来就需要真正执行查询语句了。因为客户端程序发送过来的请求只是一段文本而已，MySQL 首先要对这段文本做分析。</p>
+<p>分析器先会做<strong>词法分析</strong>。MySQL 需要识别出文本里面的字符串分别是什么，代表什么。比如从 &ldquo;select&rdquo; 这个关键字，可以判断出是一个查询语句。
+把字符串 &ldquo;T&rdquo; 识别成 &ldquo;表名 T&rdquo;，把字符串 &ldquo;ID&rdquo; 识别成 &ldquo;列 ID&rdquo;。</p>
+<p>接下来要做<strong>语法分析</strong>，根据词法分析的结果，分析器根据语法规则，判断这个 SQL 语句是否满足 MySQL 语法。如果语句不对，就会收
+到 “You have an error in your SQL syntax” 的错误提醒。</p>
+<h2 id="查询优化">
+  查询优化
+  <a class="anchor" href="#%e6%9f%a5%e8%af%a2%e4%bc%98%e5%8c%96">#</a>
+</h2>
+<p>语法解析之后，MySQL 知道了要查询的列是哪些，表是哪个，搜索条件是什么等等。在开始执行之前，还要先经过优化器的处理。因为我们写的 SQL 语句执行起来
+效率可能并不是很高，优化器会对语句做一些优化，如外连接转换为内连接、表达式简化、子查询转为连接、选择索引等等。</p>
+<p>优化器会生成一个执行计划，这个执行计划表明了应该使用哪些索引进行查询，表之间的连接顺序是啥样的。可以使用 EXPLAIN 语句来查看某个语句的执行计划。</p>
+<h2 id="执行器">
+  执行器
+  <a class="anchor" href="#%e6%89%a7%e8%a1%8c%e5%99%a8">#</a>
+</h2>
+<p>MySQL 通过分析器知道了你要做什么，通过优化器知道了该怎么做，接下来就进入了执行器阶段，开始执行语句。</p>
+<p>开始执行的时候，要先判断一下你对这个表 T 有没有执行查询的权限，如果没有，就会返回没有权限的错误。</p>
+<p>打开表的时候，执行器就会根据表的引擎定义，去使用这个引擎提供的接口。</p>
+<p>比如例子中的表 T，ID 字段没有索引，执行器的执行流程：</p>
+<ol>
+<li>调用 InnoDB 引擎接口取这个表的第一行，判断 ID 值是不是 10，如果不是则跳过，如果是则将这行存在结果集中；</li>
+<li>调用引擎接口取“下一行”，重复相同的判断逻辑，直到取到这个表的最后一行。</li>
+<li>执行器将结果集返回给客户端。</li>
+</ol>
+<p>至此，这个语句就执行完成了。对于有索引的表，执行的逻辑也差不多。</p>
+<p>数据库的慢查询日志中有一个 <code>rows_examined</code> 的字段，表示这个语句执行过程中扫描了多少行。这个值就是在执行器每次调用引擎获取数据行的时候累加的。</p>
+<p>在有些场景下，执行器调用一次，在引擎内部则扫描了多行，因此<strong>引擎扫描行数跟 <code>rows_examined</code> 并不是完全相同的</strong>。</p>
+<h2 id="存储引擎">
+  存储引擎
+  <a class="anchor" href="#%e5%ad%98%e5%82%a8%e5%bc%95%e6%93%8e">#</a>
+</h2>
+<p>数据库表是由一行一行的记录组成的，但这只是一个逻辑上的概念，物理上如何表示记录，怎么从表中读取数据，怎么把数据写入具体的物理存储器上，这都是存
+储引擎负责的事情。为了实现不同的功能，MySQL 提供了各式各样的存储引擎，不同存储引擎管理的表具体的存储结构可能不同，采用的存取算法也可能不同。</p>
+<h3 id="常用存储引擎">
+  常用存储引擎
+  <a class="anchor" href="#%e5%b8%b8%e7%94%a8%e5%ad%98%e5%82%a8%e5%bc%95%e6%93%8e">#</a>
+</h3>
+<table>
+<thead>
+<tr>
+<th>存储引擎</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>InnoDB</td>
+<td>具备外键支持功能的事务存储引擎</td>
+</tr>
+<tr>
+<td>MEMORY</td>
+<td>置于内存的表</td>
+</tr>
+<tr>
+<td>MyISAM</td>
+<td>主要的非事务处理存储引擎</td>
+</tr>
+</tbody>
+</table>
+<p>最常用的就是 <code>InnoDB</code>。</p>
+<p>查看当前服务器程序支持的存储引擎：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">SHOW ENGINES;
+
+mysql&gt; SHOW ENGINES;
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| Engine             | Support | Comment                                                        | Transactions | XA   | Savepoints |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| InnoDB             | DEFAULT | Supports transactions, row-level locking, and foreign keys     | YES          | YES  | YES        |
+| MRG_MYISAM         | YES     | Collection of identical MyISAM tables                          | NO           | NO   | NO         |
+| MEMORY             | YES     | Hash based, stored in memory, useful <span style="color:#66d9ef">for</span> temporary tables      | NO           | NO   | NO         |
+| BLACKHOLE          | YES     | /dev/null storage engine <span style="color:#f92672">(</span>anything you write to it disappears<span style="color:#f92672">)</span> | NO           | NO   | NO         |
+| MyISAM             | YES     | MyISAM storage engine                                          | NO           | NO   | NO         |
+| CSV                | YES     | CSV storage engine                                             | NO           | NO   | NO         |
+| ARCHIVE            | YES     | Archive storage engine                                         | NO           | NO   | NO         |
+| PERFORMANCE_SCHEMA | YES     | Performance Schema                                             | NO           | NO   | NO         |
+| FEDERATED          | NO      | Federated MySQL storage engine                                 | NULL         | NULL | NULL       |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+<span style="color:#ae81ff">9</span> rows in set <span style="color:#f92672">(</span>0.00 sec<span style="color:#f92672">)</span>
+
+mysql&gt;
+</code></pre></div><ul>
+<li><code>Support</code> 表示该存储引擎是否可用，如果值为 <code>DEFAULT</code> 则表示是默认的存储引擎。</li>
+<li><code>Transactions</code> 表示该存储引擎是否支持事务处理。</li>
+<li><code>XA</code> 表示着该存储引擎是否支持分布式事务。</li>
+<li><code>Savepoints</code> 表示着该列是否支持部分事务回滚。</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/mysql/07_architecture.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#连接管理">连接管理</a></li>
+    <li><a href="#查询缓存">查询缓存</a>
+      <ul>
+        <li><a href="#查询缓存的弊端">查询缓存的弊端</a></li>
+        <li><a href="#按需使用查询缓存">按需使用查询缓存</a></li>
+      </ul>
+    </li>
+    <li><a href="#语法解析">语法解析</a></li>
+    <li><a href="#查询优化">查询优化</a></li>
+    <li><a href="#执行器">执行器</a></li>
+    <li><a href="#存储引擎">存储引擎</a>
+      <ul>
+        <li><a href="#常用存储引擎">常用存储引擎</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

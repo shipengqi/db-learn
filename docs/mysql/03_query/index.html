@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="注意每条语句后面都要以;结尾。SQL语句是不区分大小写的。
+USE 选择数据库#SHOW# SHOW DATABASES;，查看数据库列表。 SHOW TABLES;，查看数据库中的表。 SHOW COLUMNS，显示某个表中的列，比如 SHOW COLUMNS FROM users。也可以使用 DESCRIBE users，效果 和 SHOW COLUMNS FROM users 是一样的。 SHOW STATUS，用于显示广泛的服务器状态信息。 SHOW CREATE DATABASE 和 SHOW CREATE TABLE，分别用来显示创建特定数据库或表的语句。 SHOW GRANTS，用来显示授予用户（所有用户或特定用户）的安全权限。 SHOW ERRORS 和 SHOW WARNINGS，用来显示服务器错误或警告消息。 HELP SHOW; 查看 SHOW 的用法  SELECT#为了使用 SELECT 所搜表数据，必须至少给出两条信息——想选择什么，以及从什么地方选择。比如select name from users;，会找 出 users 表中的所有 name 列。
+检索多个列：
+select name, age, phone from users; 检索所有列，使用星号 * 通配符：">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="MySQL 简单查询" />
+<meta property="og:description" content="注意每条语句后面都要以;结尾。SQL语句是不区分大小写的。
+USE 选择数据库#SHOW# SHOW DATABASES;，查看数据库列表。 SHOW TABLES;，查看数据库中的表。 SHOW COLUMNS，显示某个表中的列，比如 SHOW COLUMNS FROM users。也可以使用 DESCRIBE users，效果 和 SHOW COLUMNS FROM users 是一样的。 SHOW STATUS，用于显示广泛的服务器状态信息。 SHOW CREATE DATABASE 和 SHOW CREATE TABLE，分别用来显示创建特定数据库或表的语句。 SHOW GRANTS，用来显示授予用户（所有用户或特定用户）的安全权限。 SHOW ERRORS 和 SHOW WARNINGS，用来显示服务器错误或警告消息。 HELP SHOW; 查看 SHOW 的用法  SELECT#为了使用 SELECT 所搜表数据，必须至少给出两条信息——想选择什么，以及从什么地方选择。比如select name from users;，会找 出 users 表中的所有 name 列。
+检索多个列：
+select name, age, phone from users; 检索所有列，使用星号 * 通配符：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/mysql/03_query/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>MySQL 简单查询 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/"class=active>简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>MySQL 简单查询</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#use-选择数据库"><code>USE</code> 选择数据库</a></li>
+    <li><a href="#show"><code>SHOW</code></a></li>
+    <li><a href="#select"><code>SELECT</code></a>
+      <ul>
+        <li><a href="#distinct"><code>DISTINCT</code></a></li>
+        <li><a href="#limit"><code>LIMIT</code></a></li>
+        <li><a href="#完全限定的表名和列名">完全限定的表名和列名</a></li>
+        <li><a href="#order-by"><code>ORDER BY</code></a></li>
+        <li><a href="#过滤数据">过滤数据</a></li>
+      </ul>
+    </li>
+    <li><a href="#计算字段">计算字段</a>
+      <ul>
+        <li><a href="#拼接字段">拼接字段</a></li>
+        <li><a href="#别名">别名</a></li>
+        <li><a href="#算术计算">算术计算</a></li>
+      </ul>
+    </li>
+    <li><a href="#数据处理函数">数据处理函数</a>
+      <ul>
+        <li><a href="#文本函数">文本函数</a></li>
+        <li><a href="#日期和时间处理函数">日期和时间处理函数</a></li>
+        <li><a href="#数值函数">数值函数</a></li>
+      </ul>
+    </li>
+    <li><a href="#聚合函数">聚合函数</a>
+      <ul>
+        <li><a href="#avg">AVG</a></li>
+        <li><a href="#count">COUNT</a></li>
+        <li><a href="#max">MAX</a></li>
+        <li><a href="#min">MIN</a></li>
+        <li><a href="#sum">SUM</a></li>
+        <li><a href="#聚合不同值">聚合不同值</a></li>
+      </ul>
+    </li>
+    <li><a href="#分组">分组</a>
+      <ul>
+        <li><a href="#过滤分组">过滤分组</a></li>
+        <li><a href="#分组和排序">分组和排序</a></li>
+      </ul>
+    </li>
+    <li><a href="#select-子句顺序">SELECT 子句顺序</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><p><strong>注意每条语句后面都要以<code>;</code>结尾。SQL语句是不区分大小写的。</strong></p>
+<h2 id="use-选择数据库">
+  <code>USE</code> 选择数据库
+  <a class="anchor" href="#use-%e9%80%89%e6%8b%a9%e6%95%b0%e6%8d%ae%e5%ba%93">#</a>
+</h2>
+<h2 id="show">
+  <code>SHOW</code>
+  <a class="anchor" href="#show">#</a>
+</h2>
+<ul>
+<li><code>SHOW DATABASES;</code>，查看数据库列表。</li>
+<li><code>SHOW TABLES;</code>，查看数据库中的表。</li>
+<li><code>SHOW COLUMNS</code>，显示某个表中的列，比如 <code>SHOW COLUMNS FROM users</code>。也可以使用 <code>DESCRIBE users</code>，效果
+和 <code>SHOW COLUMNS FROM users</code> 是一样的。</li>
+<li><code>SHOW STATUS</code>，用于显示广泛的服务器状态信息。</li>
+<li><code>SHOW CREATE DATABASE</code> 和 <code>SHOW CREATE TABLE</code>，分别用来显示创建特定数据库或表的语句。</li>
+<li><code>SHOW GRANTS</code>，用来显示授予用户（所有用户或特定用户）的安全权限。</li>
+<li><code>SHOW ERRORS</code> 和 <code>SHOW WARNINGS</code>，用来显示服务器错误或警告消息。</li>
+<li><code>HELP SHOW;</code> 查看 <code>SHOW</code> 的用法</li>
+</ul>
+<h2 id="select">
+  <code>SELECT</code>
+  <a class="anchor" href="#select">#</a>
+</h2>
+<p>为了使用 <code>SELECT</code> 所搜表数据，必须至少给出两条信息——<strong>想选择什么，以及从什么地方选择</strong>。比如<code>select name from users;</code>，会找
+出 <code>users</code> 表中的所有 <code>name</code> 列。</p>
+<p>检索多个列：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name, age, phone <span style="color:#66d9ef">from</span> users;
+</code></pre></div><p>检索所有列，使用星号 <code>*</code> 通配符：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> users;
+</code></pre></div><h3 id="distinct">
+  <code>DISTINCT</code>
+  <a class="anchor" href="#distinct">#</a>
+</h3>
+<p><code>DISTINCT</code> 关键字用来去重。比如下面的语句，只会返回 <code>name</code> 不同的用户：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> <span style="color:#66d9ef">distinct</span> name <span style="color:#66d9ef">from</span> users;
+</code></pre></div><blockquote>
+<p><code>DISTINCT</code> 关键字应用于所有列而不仅是前置它的列。如果给出 <code>SELECT DISTINCT vend_id, prod_price</code>，会分别作用于了 <code>vend_id</code>
+和 <code>prod_price</code> 列。</p>
+</blockquote>
+<h3 id="limit">
+  <code>LIMIT</code>
+  <a class="anchor" href="#limit">#</a>
+</h3>
+<p><code>SELECT</code> 语句返回所有匹配的行，为了返回第一行或前几行，可使用 <code>LIMIT</code> 子句。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">5</span>;
+</code></pre></div><p>上面的语句最多返回5行。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">limit</span> <span style="color:#ae81ff">5</span>,<span style="color:#ae81ff">5</span>;
+</code></pre></div><p>上面的语句的意思是从第五行开始，最多返回 5 行。</p>
+<blockquote>
+<p><strong>MySQL 5 支持 LIMIT 的另一种替代语法。<code>LIMIT 4 OFFSET 3</code> 意为从行 3 开始取 4 行，就像 <code>LIMIT 3, 4</code> 一样</strong>。</p>
+</blockquote>
+<h3 id="完全限定的表名和列名">
+  完全限定的表名和列名
+  <a class="anchor" href="#%e5%ae%8c%e5%85%a8%e9%99%90%e5%ae%9a%e7%9a%84%e8%a1%a8%e5%90%8d%e5%92%8c%e5%88%97%e5%90%8d">#</a>
+</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> users.name <span style="color:#66d9ef">from</span> demo.users;
+</code></pre></div><p>上面的语句和 <code>select name from users</code> 没什么区别。但是有一些情形需要完全限定名。比如在涉及外部子查询的语句中，会使用完全限定列名，
+避免列名可能存在多义性。</p>
+<blockquote>
+<p><strong>完全限定列名</strong>在引用的列可能出现二义性时，必须使用完全限定列名（用一个点分隔的表名和列名）。</p>
+</blockquote>
+<h3 id="order-by">
+  <code>ORDER BY</code>
+  <a class="anchor" href="#order-by">#</a>
+</h3>
+<p>使用 <code>ORDER BY</code> 子句对输出进行排序。比如 <code>select name from users order by age</code>，按照 <code>age</code> 排序。</p>
+<h4 id="按多个列排序">
+  按多个列排序
+  <a class="anchor" href="#%e6%8c%89%e5%a4%9a%e4%b8%aa%e5%88%97%e6%8e%92%e5%ba%8f">#</a>
+</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> age, weight;
+</code></pre></div><p>会先按照 <code>age</code> 排序，如果有多行有相同的 <code>age</code>，再按照 <code>weight</code> 排序。</p>
+<h4 id="排序方向">
+  排序方向
+  <a class="anchor" href="#%e6%8e%92%e5%ba%8f%e6%96%b9%e5%90%91">#</a>
+</h4>
+<p>升序排序（从 A 到 Z）是默认的排序顺序，如果要进行降序排序，需要指定 <code>DESC</code> 关键字。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name, age <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> age <span style="color:#66d9ef">desc</span>;
+</code></pre></div><p>结果会是</p>
+<pre><code>+--------+------+
+| name   | age  |
++--------+------+
+| ming   | 18   |
+| qiang  | 17   |
+| liang  | 16   |
+| long   | 16   |
++--------+------+
+</code></pre><p><strong>多个列降序排序</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> age <span style="color:#66d9ef">desc</span>, weight;
+</code></pre></div><p>上面的示例，对 <code>age</code> 列降序排序，<code>weight</code> 还是默认的升序排序。可以看出 <strong><code>DESC</code> 关键字只会作用到其前面的列</strong>。</p>
+<blockquote>
+<p><strong>如果想在多个列上进行降序排序，必须对每个列指定 <code>DESC</code> 关键字。</strong>
+<strong><code>ASC</code></strong> 是升序排列的关键字，没什么用，因为默认就是升序。</p>
+</blockquote>
+<h3 id="过滤数据">
+  过滤数据
+  <a class="anchor" href="#%e8%bf%87%e6%bb%a4%e6%95%b0%e6%8d%ae">#</a>
+</h3>
+<p>通常数据库检索数据都会指定过滤条件（filter condition）。</p>
+<p>在 <code>SELECT</code> 语句中，数据根据 <code>WHERE</code> 子句中指定的搜索条件进行过滤。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> age <span style="color:#f92672">=</span> <span style="color:#ae81ff">18</span>;
+
+<span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;ming&#39;</span>;
+</code></pre></div><p>会找到 <code>age</code> 等于 18 的行。</p>
+<blockquote>
+<p><strong>如果同时使用 <code>ORDER BY</code> 和 <code>WHERE</code> 子句时，<code>ORDER BY</code> 必须位于 <code>WHERE</code> 之后，否则将会产生错误。</strong></p>
+</blockquote>
+<h4 id="where条件操作符">
+  <code>WHERE</code>条件操作符
+  <a class="anchor" href="#where%e6%9d%a1%e4%bb%b6%e6%93%8d%e4%bd%9c%e7%ac%a6">#</a>
+</h4>
+<table>
+<thead>
+<tr>
+<th>操作符</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>=</code></td>
+<td>等于</td>
+</tr>
+<tr>
+<td><code>&lt;&gt;</code></td>
+<td>不等于</td>
+</tr>
+<tr>
+<td><code>!=</code></td>
+<td>不等于</td>
+</tr>
+<tr>
+<td><code>&lt;</code></td>
+<td>小于</td>
+</tr>
+<tr>
+<td><code>&lt;=</code></td>
+<td>小于等于</td>
+</tr>
+<tr>
+<td><code>&gt;</code></td>
+<td>大于</td>
+</tr>
+<tr>
+<td><code>&gt;=</code></td>
+<td>大于等于</td>
+</tr>
+<tr>
+<td><code>BETWEEN</code></td>
+<td>在指定的两个值之间</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>BETWEEN</code> 操作符使用</strong>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> age <span style="color:#66d9ef">between</span> <span style="color:#ae81ff">15</span> <span style="color:#66d9ef">and</span> <span style="color:#ae81ff">18</span>;
+</code></pre></div><p>检索年龄在 15 和 18 之间的用户。</p>
+<p><code>AND</code> 关键字前后分别是开始值和结束值。查询到的数据<strong>包括指定的开始值和结束值</strong>。</p>
+<h4 id="空值检查">
+  空值检查
+  <a class="anchor" href="#%e7%a9%ba%e5%80%bc%e6%a3%80%e6%9f%a5">#</a>
+</h4>
+<p>创建表时，列的值可以为<strong>空值 <code>NULL</code></strong>。</p>
+<p><code>IS NULL</code> 子句可用来检查具有 <code>NULL</code> 值的列。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> phone <span style="color:#66d9ef">IS</span> <span style="color:#66d9ef">NULL</span>;
+</code></pre></div><h4 id="and">
+  AND
+  <a class="anchor" href="#and">#</a>
+</h4>
+<p>可使用 <code>AND</code> 操作符给 <code>WHERE</code> 子句附加条件。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> age <span style="color:#f92672">=</span> <span style="color:#ae81ff">18</span> <span style="color:#66d9ef">and</span> weight <span style="color:#f92672">=</span> <span style="color:#ae81ff">60</span>;
+</code></pre></div><h4 id="or">
+  OR
+  <a class="anchor" href="#or">#</a>
+</h4>
+<p>和 <code>AND</code> 差不多，只不过是匹配任一满足的条件。</p>
+<h4 id="操作符优先级">
+  操作符优先级
+  <a class="anchor" href="#%e6%93%8d%e4%bd%9c%e7%ac%a6%e4%bc%98%e5%85%88%e7%ba%a7">#</a>
+</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> age <span style="color:#f92672">=</span> <span style="color:#ae81ff">18</span> <span style="color:#66d9ef">or</span> agr <span style="color:#f92672">=</span> <span style="color:#ae81ff">19</span> <span style="color:#66d9ef">and</span> weight <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">60</span>;
+</code></pre></div><p>上面的语句是什么结果？
+是找出年龄是 18 或者 19，体重在 60 以上的行？并不是。</p>
+<p>SQL在处理 <code>OR</code> 操作符前，优先处理 <code>AND</code> 操作符。当 SQL 看到上述 <code>WHERE</code> 子句时，它理解为由年龄为 19，并且体重在 60 以上的用户，或者
+年龄为 18，不管体重多少的用户。</p>
+<p>正确的语法：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> (age <span style="color:#f92672">=</span> <span style="color:#ae81ff">18</span> <span style="color:#66d9ef">or</span> agr <span style="color:#f92672">=</span> <span style="color:#ae81ff">19</span>) <span style="color:#66d9ef">and</span> weight <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">60</span>;
+</code></pre></div><p><strong>SQL 会首先过滤圆括号内的条件</strong>。</p>
+<h4 id="in">
+  IN
+  <a class="anchor" href="#in">#</a>
+</h4>
+<p><code>IN</code> 操作符用来指定条件范围，匹配圆括号中的值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> age <span style="color:#66d9ef">in</span> (<span style="color:#ae81ff">18</span>, <span style="color:#ae81ff">19</span>);
+</code></pre></div><p><code>IN</code> 操作符与 <code>OR</code> 有相同的功能。</p>
+<h4 id="not">
+  <code>NOT</code>
+  <a class="anchor" href="#not">#</a>
+</h4>
+<p><code>NOT</code> 操作否定条件。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> age <span style="color:#66d9ef">not</span> <span style="color:#66d9ef">in</span> (<span style="color:#ae81ff">18</span>, <span style="color:#ae81ff">19</span>);
+</code></pre></div><h4 id="like">
+  <code>LIKE</code>
+  <a class="anchor" href="#like">#</a>
+</h4>
+<p>如果要使用通配符，需要使用 <code>LIKE</code> 操作符。</p>
+<p><strong>通配符可在搜索模式中任意位置使用，并且可以使用多个通配符</strong>。</p>
+<h5 id="heading">
+  <code>%</code>
+  <a class="anchor" href="#heading">#</a>
+</h5>
+<p><code>%</code> 表示任何字符出现任意次数。例如找出所有以词 <code>m</code> 开头的用户：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> name <span style="color:#66d9ef">like</span> <span style="color:#e6db74">&#39;m%&#39;</span>;
+</code></pre></div><p>使用两个通配符，表示匹配任何位置包含文本 <code>in</code> 的值：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> name <span style="color:#66d9ef">like</span> <span style="color:#e6db74">&#39;%in%&#39;</span>;
+</code></pre></div><h5 id="_">
+  <code>_</code>
+  <a class="anchor" href="#_">#</a>
+</h5>
+<p>下划线 <code>_</code> 的用途与 <code>%</code> 一样，但下划线只匹配单个字符而不是多个字符。</p>
+<h4 id="使用正则表达式">
+  使用正则表达式
+  <a class="anchor" href="#%e4%bd%bf%e7%94%a8%e6%ad%a3%e5%88%99%e8%a1%a8%e8%be%be%e5%bc%8f">#</a>
+</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> name REGEX <span style="color:#e6db74">&#39;ing&#39;</span>;
+</code></pre></div><p><code>REGEXP</code> 后跟的是<strong>正则表达式</strong>。</p>
+<p>正则表达式并没有什么优势，但是有些场景下可以考虑使用:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> weight REGEX <span style="color:#e6db74">&#39;.6&#39;</span>;
+</code></pre></div><p><code>.</code> 是正则表达式语言中一个特殊的字符。它表示匹配任意一个字符，因此，<code>56</code> 和 <code>66</code> 都匹配且返回。</p>
+<h5 id="or-匹配">
+  OR 匹配
+  <a class="anchor" href="#or-%e5%8c%b9%e9%85%8d">#</a>
+</h5>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> weight REGEX <span style="color:#e6db74">&#39;46|56&#39;</span>;
+</code></pre></div><p><code>|</code> 为正则表达式的 <code>OR</code> 操作符。</p>
+<h5 id="匹配几个字符之一">
+  匹配几个字符之一
+  <a class="anchor" href="#%e5%8c%b9%e9%85%8d%e5%87%a0%e4%b8%aa%e5%ad%97%e7%ac%a6%e4%b9%8b%e4%b8%80">#</a>
+</h5>
+<p>想匹配特定的字符可以指定一组用 <code>[</code> 和 <code>]</code> 括起来的字符来完成。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> name <span style="color:#66d9ef">from</span> users <span style="color:#66d9ef">where</span> weight REGEX <span style="color:#e6db74">&#39;[456]6&#39;</span>;
+</code></pre></div><p><code>[456]</code> 表示匹配 4，5，6。<code>[]</code> 是另一种形式的 <code>OR</code> 语句。可以使用一些正则的语法例如 <code>[^123]</code>，匹配除了 1，2，3 之外的字符，
+<code>[1-9]</code> 匹配 1 到 9 范围的字符。匹配特殊字符钱加 <code>\\</code> 比如 <code>.</code> 要用 <code>\\.</code> 来查找。</p>
+<h2 id="计算字段">
+  计算字段
+  <a class="anchor" href="#%e8%ae%a1%e7%ae%97%e5%ad%97%e6%ae%b5">#</a>
+</h2>
+<p>存储在数据库表中的数据一般不是应用程序所需要的格式。</p>
+<h3 id="拼接字段">
+  拼接字段
+  <a class="anchor" href="#%e6%8b%bc%e6%8e%a5%e5%ad%97%e6%ae%b5">#</a>
+</h3>
+<p><code>Concat()</code> 拼接串，即把多个串连接起来形成一个较长的串。<code>Concat()</code> 需要一个或多个指定的串，各个串之间用逗号分隔。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">mysql&gt; <span style="color:#66d9ef">select</span> Concat<span style="color:#f92672">(</span>c1, <span style="color:#e6db74">&#39;(&#39;</span>, c2, <span style="color:#e6db74">&#39;)&#39;</span><span style="color:#f92672">)</span> from record_format_demo;
++--------------------------+
+| Concat<span style="color:#f92672">(</span>c1, <span style="color:#e6db74">&#39;(&#39;</span>, c2, <span style="color:#e6db74">&#39;)&#39;</span><span style="color:#f92672">)</span> |
++--------------------------+
+| aaaa<span style="color:#f92672">(</span>bbb<span style="color:#f92672">)</span>                |
+| eeee<span style="color:#f92672">(</span>fff<span style="color:#f92672">)</span>                |
++--------------------------+
+<span style="color:#ae81ff">2</span> rows in set <span style="color:#f92672">(</span>0.01 sec<span style="color:#f92672">)</span>
+</code></pre></div><p><code>RTrim()</code> 函数可以删除数据右侧多余的空格，还有 <code>LTrim()</code> 和 <code>Trim()</code>，分别是删除左边空格和删除左右空格。</p>
+<h3 id="别名">
+  别名
+  <a class="anchor" href="#%e5%88%ab%e5%90%8d">#</a>
+</h3>
+<p>别名（alias）是一个字段或值的替换名。用 <code>AS</code> 关键字：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">mysql&gt; <span style="color:#66d9ef">select</span> Concat<span style="color:#f92672">(</span>c1, <span style="color:#e6db74">&#39;(&#39;</span>, c2, <span style="color:#e6db74">&#39;)&#39;</span><span style="color:#f92672">)</span> as c5 from record_format_demo;
++-----------+
+| c5        |
++-----------+
+| aaaa<span style="color:#f92672">(</span>bbb<span style="color:#f92672">)</span> |
+| eeee<span style="color:#f92672">(</span>fff<span style="color:#f92672">)</span> |
++-----------+
+<span style="color:#ae81ff">2</span> rows in set <span style="color:#f92672">(</span>0.01 sec<span style="color:#f92672">)</span>
+</code></pre></div><h3 id="算术计算">
+  算术计算
+  <a class="anchor" href="#%e7%ae%97%e6%9c%af%e8%ae%a1%e7%ae%97">#</a>
+</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> price, name, quantity <span style="color:#66d9ef">from</span> orders <span style="color:#66d9ef">where</span> order_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">2005</span>;
+</code></pre></div><p><code>price</code> 是物品的价格，<code>quantity</code> 是数量，如果想汇总物品总价;</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> price, name, quantity, quantity<span style="color:#f92672">*</span>price <span style="color:#66d9ef">as</span> total_price <span style="color:#66d9ef">from</span> orders <span style="color:#66d9ef">where</span> order_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">2005</span>;
+</code></pre></div><p><code>total_price</code> 就是总价。</p>
+<p><strong>MySQL 支持基本算术操作符 <code>+</code>，<code>-</code>，<code>*</code>，<code>/</code>。此外，圆括号可用来区分优先顺序</strong>。</p>
+<h2 id="数据处理函数">
+  数据处理函数
+  <a class="anchor" href="#%e6%95%b0%e6%8d%ae%e5%a4%84%e7%90%86%e5%87%bd%e6%95%b0">#</a>
+</h2>
+<p><code>Trim()</code> 就是一个数据处理函数。</p>
+<h3 id="文本函数">
+  文本函数
+  <a class="anchor" href="#%e6%96%87%e6%9c%ac%e5%87%bd%e6%95%b0">#</a>
+</h3>
+<ul>
+<li><code>Upper()</code> 函数将文本转换为大写，<code>Upper(name) as newName</code></li>
+<li><code>Left()</code>  返回串左边的字符</li>
+<li><code>Length()</code> 返回串的长度</li>
+<li><code>Locate()</code> 找出串的一个子串</li>
+<li><code>Lower()</code> 将串转换为小写</li>
+<li><code>LTrim()</code> 去掉串左边的空格</li>
+<li><code>Right()</code> 返回串右边的字符</li>
+<li><code>RTrim()</code> 去掉串右边的空格</li>
+<li><code>Soundex()</code> 返回串的 <code>SOUNDEX</code> 值</li>
+<li><code>SubString()</code> 返回子串的字符</li>
+</ul>
+<p><code>SOUNDEX</code> 是一个将任何文本串转换为描述其语音表示的字母数字模式的算法。</p>
+<h3 id="日期和时间处理函数">
+  日期和时间处理函数
+  <a class="anchor" href="#%e6%97%a5%e6%9c%9f%e5%92%8c%e6%97%b6%e9%97%b4%e5%a4%84%e7%90%86%e5%87%bd%e6%95%b0">#</a>
+</h3>
+<ul>
+<li><code>AddDate()</code> 增加一个日期（天、周等）</li>
+<li><code>AddTime()</code> 增加一个时间（时、分等）</li>
+<li><code>CurDate()</code> 返回当前日期</li>
+<li><code>CurTime()</code> 返回当前时间</li>
+<li><code>Date()</code> 返回日期时间的日期部分</li>
+<li><code>DateDiff()</code> 计算两个日期之差</li>
+<li><code>Date_Add()</code> 高度灵活的日期运算函数</li>
+<li><code>Date_Format()</code> 返回一个格式化的日期或时间串</li>
+<li><code>Day()</code> 返回一个日期的天数部分</li>
+<li><code>DayOfWeek()</code> 对于一个日期，返回对应的星期几</li>
+<li><code>Hour()</code> 返回一个时间的小时部分</li>
+<li><code>Minute()</code> 返回一个时间的分钟部分</li>
+<li><code>Month()</code> 返回一个日期的月份部分</li>
+<li><code>Now()</code> 返回当前日期和时间</li>
+<li><code>Second()</code> 返回一个时间的秒部分</li>
+<li><code>Time()</code> 返回一个日期时间的时间部分</li>
+<li><code>Year()</code> 返回一个日期的年份部分</li>
+</ul>
+<h3 id="数值函数">
+  数值函数
+  <a class="anchor" href="#%e6%95%b0%e5%80%bc%e5%87%bd%e6%95%b0">#</a>
+</h3>
+<ul>
+<li><code>Abs()</code> 返回一个数的绝对值</li>
+<li><code>Cos()</code> 返回一个角度的余弦</li>
+<li><code>Exp()</code> 返回一个数的指数值</li>
+<li><code>Mod()</code> 返回除操作的余数</li>
+<li><code>Pi()</code> 返回圆周率</li>
+<li><code>Rand()</code> 返回一个随机数</li>
+<li><code>Sin()</code> 返回一个角度的正弦</li>
+<li><code>Sqrt()</code> 返回一个数的平方根</li>
+<li><code>Tan()</code> 返回一个角度的正切</li>
+</ul>
+<h2 id="聚合函数">
+  聚合函数
+  <a class="anchor" href="#%e8%81%9a%e5%90%88%e5%87%bd%e6%95%b0">#</a>
+</h2>
+<h3 id="avg">
+  AVG
+  <a class="anchor" href="#avg">#</a>
+</h3>
+<p><code>AVG</code> 函数可用来返回所有列的平均值，也可以用来返回特定列或行的平均值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> <span style="color:#66d9ef">AVG</span>(price) <span style="color:#66d9ef">as</span> avg_price <span style="color:#66d9ef">from</span> orders;
+</code></pre></div><p>返回订单的平均价格。</p>
+<p><strong><code>AVG()</code> 函数忽略列值为<code>NULL</code> 的行</strong>。</p>
+<h3 id="count">
+  COUNT
+  <a class="anchor" href="#count">#</a>
+</h3>
+<p><code>COUNT(*)</code> 对表中行的数目进行计数。<code>COUNT(column)</code> <strong>对特定列中具有值的行进行计数，忽略 <code>NULL</code> 值</strong>。</p>
+<h3 id="max">
+  MAX
+  <a class="anchor" href="#max">#</a>
+</h3>
+<p>返回指定列中的最大值。忽略列值为 <code>NULL</code> 的行。例如 <code>select max(price) as max_price from products;</code> 返回 products 表中
+最贵的物品的价格。</p>
+<h3 id="min">
+  MIN
+  <a class="anchor" href="#min">#</a>
+</h3>
+<p>与 <code>MAX()</code> 功能相反。</p>
+<h3 id="sum">
+  SUM
+  <a class="anchor" href="#sum">#</a>
+</h3>
+<p><code>SUM()</code> 函数返回指定列值的和。忽略列值为 <code>NULL</code> 的行。例如 <code>select SUM(item_price*quantity) as total_price from products;</code></p>
+<h3 id="聚合不同值">
+  聚合不同值
+  <a class="anchor" href="#%e8%81%9a%e5%90%88%e4%b8%8d%e5%90%8c%e5%80%bc">#</a>
+</h3>
+<p>上面的几个函数都可以使用 <code>DISTINCT</code>，比如 <code>AVG(DISTINCT price) as avg_total_price</code></p>
+<p><strong><code>DISTINCT</code> 只能用于 <code>COUNT()</code>。<code>DISTINCT</code> 不能用于 <code>COUNT(*)</code></strong>。</p>
+<h2 id="分组">
+  分组
+  <a class="anchor" href="#%e5%88%86%e7%bb%84">#</a>
+</h2>
+<p><code>GROUP BY</code> 子句用来创建分组。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> vend_id, <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">as</span> prod_num <span style="color:#66d9ef">from</span> products <span style="color:#66d9ef">group</span> <span style="color:#66d9ef">by</span> vend_id;
+</code></pre></div><p>上面的语句按 <code>vend_id</code> 排序并分组数据。</p>
+<p>注意：</p>
+<ul>
+<li><code>GROUP BY</code> 句必须出现在 <strong><code>WHERE</code> 子句之后，<code>ORDER BY</code> 子句之前</strong>。</li>
+<li>如果分组列中具有 <code>NULL</code> 值，则 <code>NULL</code> 将作为一个分组返回。如果列中有多行 <code>NULL</code> 值，它们将分为一组。</li>
+<li><code>GROUP BY</code> 子句中列出的每个列都必须是检索列或有效的表达式（但不能是聚集函数）。如果在 <code>SELECT</code> 中使用表达式，则必须在 <code>GROUP BY</code>
+子句中指定相同的表达式。不能使用别名。</li>
+<li>除了聚集计算语句，<code>SELECT</code> 语句中的每个列都必须在 <code>GROUP BY</code> 子句中给出。</li>
+</ul>
+<h3 id="过滤分组">
+  过滤分组
+  <a class="anchor" href="#%e8%bf%87%e6%bb%a4%e5%88%86%e7%bb%84">#</a>
+</h3>
+<p><code>HAVING</code> 子句<strong>过滤分组</strong>。<code>HAVING</code> 非常类似于 <code>WHERE</code>（<code>WHERE</code> 过滤的是<strong>行</strong>）。它们的句法是相同的，只是关键字有差别。</p>
+<p>也可以这么理解：<strong><code>WHERE</code> 在数据分组前进行过滤，<code>HAVING</code> 在数据分组后进行过滤</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> vend_id, <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#66d9ef">as</span> prod_num <span style="color:#66d9ef">from</span> products <span style="color:#66d9ef">group</span> <span style="color:#66d9ef">by</span> vend_id <span style="color:#66d9ef">having</span> <span style="color:#66d9ef">COUNT</span>(<span style="color:#f92672">*</span>) <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">2</span>;
+</code></pre></div><p>它过滤 <code>COUNT(*) &gt;=2</code> 的那些分组。</p>
+<h3 id="分组和排序">
+  分组和排序
+  <a class="anchor" href="#%e5%88%86%e7%bb%84%e5%92%8c%e6%8e%92%e5%ba%8f">#</a>
+</h3>
+<p><code>GROUP BY</code> 和 <code>ORDER BY</code> 的差别：</p>
+<table>
+<thead>
+<tr>
+<th><code>order by</code></th>
+<th><code>group by</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>排序产生的输出</td>
+<td>分组行。但输出可能不是分组的顺序</td>
+</tr>
+<tr>
+<td>任意列都可以使用（甚至非选择的列也可以使用）</td>
+<td>只可能使用选择列或表达式列，而且<strong>必须使用每个选择列表达式</strong></td>
+</tr>
+<tr>
+<td>不一定需要</td>
+<td>如果与聚集函数一起使用列（或表达式），则必须使用</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>一般在使用 <code>GROUP BY</code> 子句时，应该也给出 <code>ORDER BY</code> 子句。这是保证数据正确排序的唯一方法。千万不要仅依赖 <code>GROUP BY</code> 排序数据。</p>
+</blockquote>
+<p>检索总计订单价格大于等于 50 的订单的订单号和总计订单价格：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> order_num, <span style="color:#66d9ef">SUM</span>(quantity<span style="color:#f92672">*</span>price) <span style="color:#66d9ef">as</span> order_total <span style="color:#66d9ef">from</span> orders <span style="color:#66d9ef">group</span> <span style="color:#66d9ef">by</span> order_num <span style="color:#66d9ef">having</span> <span style="color:#66d9ef">SUM</span>(quantity<span style="color:#f92672">*</span>price) <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">50</span>;
+</code></pre></div><p>按总计订单价格排序输出：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> order_num, <span style="color:#66d9ef">SUM</span>(quantity<span style="color:#f92672">*</span>price) <span style="color:#66d9ef">as</span> order_total <span style="color:#66d9ef">from</span> orders <span style="color:#66d9ef">group</span> <span style="color:#66d9ef">by</span> order_num <span style="color:#66d9ef">having</span> <span style="color:#66d9ef">SUM</span>(quantity<span style="color:#f92672">*</span>price) <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">50</span> <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> order_total;
+</code></pre></div><h2 id="select-子句顺序">
+  SELECT 子句顺序
+  <a class="anchor" href="#select-%e5%ad%90%e5%8f%a5%e9%a1%ba%e5%ba%8f">#</a>
+</h2>
+<table>
+<thead>
+<tr>
+<th>子句</th>
+<th>是否必须使用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SELECT</code></td>
+<td>是</td>
+</tr>
+<tr>
+<td><code>FROM</code></td>
+<td>仅在从表选择数据时使用</td>
+</tr>
+<tr>
+<td><code>WHERE</code></td>
+<td>否</td>
+</tr>
+<tr>
+<td><code>GROUP BY</code></td>
+<td>仅在按组计算聚集时使用</td>
+</tr>
+<tr>
+<td><code>HAVING</code></td>
+<td>否</td>
+</tr>
+<tr>
+<td><code>ORDER BY</code></td>
+<td>否</td>
+</tr>
+<tr>
+<td><code>LIMIT</code></td>
+<td>否</td>
+</tr>
+</tbody>
+</table>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/mysql/03_query.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#use-选择数据库"><code>USE</code> 选择数据库</a></li>
+    <li><a href="#show"><code>SHOW</code></a></li>
+    <li><a href="#select"><code>SELECT</code></a>
+      <ul>
+        <li><a href="#distinct"><code>DISTINCT</code></a></li>
+        <li><a href="#limit"><code>LIMIT</code></a></li>
+        <li><a href="#完全限定的表名和列名">完全限定的表名和列名</a></li>
+        <li><a href="#order-by"><code>ORDER BY</code></a></li>
+        <li><a href="#过滤数据">过滤数据</a></li>
+      </ul>
+    </li>
+    <li><a href="#计算字段">计算字段</a>
+      <ul>
+        <li><a href="#拼接字段">拼接字段</a></li>
+        <li><a href="#别名">别名</a></li>
+        <li><a href="#算术计算">算术计算</a></li>
+      </ul>
+    </li>
+    <li><a href="#数据处理函数">数据处理函数</a>
+      <ul>
+        <li><a href="#文本函数">文本函数</a></li>
+        <li><a href="#日期和时间处理函数">日期和时间处理函数</a></li>
+        <li><a href="#数值函数">数值函数</a></li>
+      </ul>
+    </li>
+    <li><a href="#聚合函数">聚合函数</a>
+      <ul>
+        <li><a href="#avg">AVG</a></li>
+        <li><a href="#count">COUNT</a></li>
+        <li><a href="#max">MAX</a></li>
+        <li><a href="#min">MIN</a></li>
+        <li><a href="#sum">SUM</a></li>
+        <li><a href="#聚合不同值">聚合不同值</a></li>
+      </ul>
+    </li>
+    <li><a href="#分组">分组</a>
+      <ul>
+        <li><a href="#过滤分组">过滤分组</a></li>
+        <li><a href="#分组和排序">分组和排序</a></li>
+      </ul>
+    </li>
+    <li><a href="#select-子句顺序">SELECT 子句顺序</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

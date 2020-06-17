@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="延时队列#RabbitMQ 和 Kafka 是常用的消息队列中间件，但是这种专业的消息队列中间件使用复杂。
+对于那些只有一组消费者的消息队列，使用 Redis 就可以轻松搞定。Redis 的消息队列没有 ACK 保证，如果追求消息的可靠性，还是使用专业 的消息队列。
+异步消息队列#使用 Redis 的 list(列表) 数据结构来实现异步消息队列，使用 rpush/lpush 操作入队列，使用 lpop/rpop 来出队列。
+&gt; rpush notify-queue apple banana pear (integer) 3 &gt; llen notify-queue (integer) 3 &gt; lpop notify-queue &#34;apple&#34; &gt; llen notify-queue (integer) 2 &gt; lpop notify-queue &#34;banana&#34; &gt; llen notify-queue (integer) 1 &gt; lpop notify-queue &#34;pear&#34; &gt; llen notify-queue (integer) 0 &gt; lpop notify-queue (nil) 上面是 rpush 和 lpop 结合使用的例子。还可以使用 lpush 和 rpop 结合使用，效果是一样的。这里不再赘述。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="延时队列" />
+<meta property="og:description" content="延时队列#RabbitMQ 和 Kafka 是常用的消息队列中间件，但是这种专业的消息队列中间件使用复杂。
+对于那些只有一组消费者的消息队列，使用 Redis 就可以轻松搞定。Redis 的消息队列没有 ACK 保证，如果追求消息的可靠性，还是使用专业 的消息队列。
+异步消息队列#使用 Redis 的 list(列表) 数据结构来实现异步消息队列，使用 rpush/lpush 操作入队列，使用 lpop/rpop 来出队列。
+&gt; rpush notify-queue apple banana pear (integer) 3 &gt; llen notify-queue (integer) 3 &gt; lpop notify-queue &#34;apple&#34; &gt; llen notify-queue (integer) 2 &gt; lpop notify-queue &#34;banana&#34; &gt; llen notify-queue (integer) 1 &gt; lpop notify-queue &#34;pear&#34; &gt; llen notify-queue (integer) 0 &gt; lpop notify-queue (nil) 上面是 rpush 和 lpop 结合使用的例子。还可以使用 lpush 和 rpop 结合使用，效果是一样的。这里不再赘述。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/14_queue/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>延时队列 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/"class=active>延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>延时队列</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#异步消息队列">异步消息队列</a></li>
+    <li><a href="#空队列处理">空队列处理</a></li>
+    <li><a href="#空闲连接自动断开">空闲连接自动断开</a></li>
+    <li><a href="#锁冲突处理">锁冲突处理</a></li>
+    <li><a href="#如何实现延时队列">如何实现延时队列</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="延时队列">
+  延时队列
+  <a class="anchor" href="#%e5%bb%b6%e6%97%b6%e9%98%9f%e5%88%97">#</a>
+</h1>
+<p>RabbitMQ 和 Kafka 是常用的消息队列中间件，但是这种专业的消息队列中间件使用复杂。</p>
+<p>对于那些只有一组消费者的消息队列，使用 Redis 就可以轻松搞定。Redis 的消息队列没有 ACK 保证，如果追求消息的可靠性，还是使用专业
+的消息队列。</p>
+<h2 id="异步消息队列">
+  异步消息队列
+  <a class="anchor" href="#%e5%bc%82%e6%ad%a5%e6%b6%88%e6%81%af%e9%98%9f%e5%88%97">#</a>
+</h2>
+<p>使用 Redis 的 list(列表) 数据结构来实现异步消息队列，使用 <code>rpush/lpush</code> 操作入队列，使用 <code>lpop/rpop</code> 来出队列。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">&gt; rpush notify-queue apple banana pear
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+&gt; llen notify-queue
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+&gt; lpop notify-queue
+<span style="color:#e6db74">&#34;apple&#34;</span>
+&gt; llen notify-queue
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+&gt; lpop notify-queue
+<span style="color:#e6db74">&#34;banana&#34;</span>
+&gt; llen notify-queue
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+&gt; lpop notify-queue
+<span style="color:#e6db74">&#34;pear&#34;</span>
+&gt; llen notify-queue
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+&gt; lpop notify-queue
+<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>
+</code></pre></div><p>上面是 <code>rpush</code> 和 <code>lpop</code> 结合使用的例子。还可以使用 <code>lpush</code> 和 <code>rpop</code> 结合使用，效果是一样的。这里不再赘述。</p>
+<h2 id="空队列处理">
+  空队列处理
+  <a class="anchor" href="#%e7%a9%ba%e9%98%9f%e5%88%97%e5%a4%84%e7%90%86">#</a>
+</h2>
+<p>客户端是通过队列的 pop 操作来获取消息，然后进行处理。可是如果队列空了，客户端就会陷入 pop 的死循环，不停地 pop，没有数据，
+接着再 pop，又没有数据。这就是浪费生命的空轮询。空轮询不但拉高了客户端的 CPU，redis 的 QPS 也会被拉高，如果这样空轮询的客户端
+有几十来个，Redis 的慢查询可能会显著增多。</p>
+<p>用 <code>blpop/brpop</code> 替代前面的 <code>lpop/rpop</code>，就可以解决。这两个指令的前缀字符 <code>b</code> 代表的是 <code>blocking</code>，也就是<strong>阻塞读</strong>。</p>
+<h2 id="空闲连接自动断开">
+  空闲连接自动断开
+  <a class="anchor" href="#%e7%a9%ba%e9%97%b2%e8%bf%9e%e6%8e%a5%e8%87%aa%e5%8a%a8%e6%96%ad%e5%bc%80">#</a>
+</h2>
+<p>使用阻塞读还有其他的问题要解决 —— <strong>空闲连接</strong>的问题。</p>
+<p>如果线程一直阻塞在那里，Redis 的客户端连接就成了闲置连接，闲置过久，服务器一般会主动断开连接，减少闲置资源占用。这个时
+候 <code>blpop/brpop</code> 会抛出异常。</p>
+<p>所以编写客户端消费者的时候要小心，注意捕获异常，还要重试。</p>
+<h2 id="锁冲突处理">
+  锁冲突处理
+  <a class="anchor" href="#%e9%94%81%e5%86%b2%e7%aa%81%e5%a4%84%e7%90%86">#</a>
+</h2>
+<p>对于分布式锁，如果加锁失败，一般有 3 种策略来处理：</p>
+<ol>
+<li>直接抛出异常，通知用户稍后重试</li>
+<li>sleep 一会再重试</li>
+<li>异步消息可以使用延时队列，将当前冲突的请求扔到另一个队列延后处理以避开冲突</li>
+</ol>
+<h2 id="如何实现延时队列">
+  如何实现延时队列
+  <a class="anchor" href="#%e5%a6%82%e4%bd%95%e5%ae%9e%e7%8e%b0%e5%bb%b6%e6%97%b6%e9%98%9f%e5%88%97">#</a>
+</h2>
+<p>延时队列可以通过 Redis 的 <code>zset</code> 来实现。我们将消息序列化成一个字符串作为 <code>zset</code> 的 <code>value</code>，这个消息的到期处理时间作为 <code>score</code>，然
+后用多个线程轮询 <code>zset</code> 获取到期的任务进行处理，多个线程是为了保障可用性，万一挂了一个线程还有其它线程可以继续处理。因为有多个线程，所以
+需要考虑并发争抢任务，确保任务不能被多次执行。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">delay</span>(msg):
+    msg<span style="color:#f92672">.</span>id <span style="color:#f92672">=</span> str(uuid<span style="color:#f92672">.</span>uuid4())  <span style="color:#75715e"># 保证 value 值唯一</span>
+    value <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>dumps(msg)
+    retry_ts <span style="color:#f92672">=</span> time<span style="color:#f92672">.</span>time() <span style="color:#f92672">+</span> <span style="color:#ae81ff">5</span>  <span style="color:#75715e"># 5 秒后重试</span>
+    redis<span style="color:#f92672">.</span>zadd(<span style="color:#e6db74">&#34;delay-queue&#34;</span>, retry_ts, value)
+
+
+<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">loop</span>():
+    <span style="color:#66d9ef">while</span> True:
+        <span style="color:#75715e"># 最多取 1 条</span>
+        values <span style="color:#f92672">=</span> redis<span style="color:#f92672">.</span>zrangebyscore(<span style="color:#e6db74">&#34;delay-queue&#34;</span>, <span style="color:#ae81ff">0</span>, time<span style="color:#f92672">.</span>time(), start<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>, num<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">not</span> values:
+            time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)  <span style="color:#75715e"># 延时队列空的，休息 1s</span>
+            <span style="color:#66d9ef">continue</span>
+        value <span style="color:#f92672">=</span> values[<span style="color:#ae81ff">0</span>]  <span style="color:#75715e"># 拿第一条，也只有一条</span>
+        success <span style="color:#f92672">=</span> redis<span style="color:#f92672">.</span>zrem(<span style="color:#e6db74">&#34;delay-queue&#34;</span>, value)  <span style="color:#75715e"># 从消息队列中移除该消息</span>
+        <span style="color:#66d9ef">if</span> success:  <span style="color:#75715e"># 因为有多进程并发的可能，最终只会有一个进程可以抢到消息</span>
+            msg <span style="color:#f92672">=</span> json<span style="color:#f92672">.</span>loads(value)
+            handle_msg(msg) <span style="color:#75715e"># 异常捕获，避免因为个别任务处理问题导致循环异常退出</span>
+</code></pre></div><p>Redis 的 <strong><code>zrem</code> 方法是多线程多进程争抢任务的关键，它的返回值决定了当前实例有没有抢到任务，因为 <code>loop</code> 方法可能会被多个线程、多个进
+程调用，同一个任务可能会被多个进程线程抢到，通过 <code>zrem</code> 来决定唯一的属主</strong>。</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/14_queue.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#异步消息队列">异步消息队列</a></li>
+    <li><a href="#空队列处理">空队列处理</a></li>
+    <li><a href="#空闲连接自动断开">空闲连接自动断开</a></li>
+    <li><a href="#锁冲突处理">锁冲突处理</a></li>
+    <li><a href="#如何实现延时队列">如何实现延时队列</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

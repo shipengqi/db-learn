@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="事务#事务的四个特性：ACID（Atomicity、Consistency、Isolation、Durability，即原子性、一致性、隔离性、持久性）。
+事务处理是一种机制，用来管理必须成批执行的 MySQL 操作，以保证数据库不包含不完整的操作结果。利用事务处理，可以保证一组操作不会中途停止， 它们或者作为整体执行，或者完全不执行（除非明确指示）。如果没有错误发生，整组语句提交给（写到）数据库表。如果发生错误，则进行回退（撤销） 以恢复数据库到某个已知且安全的状态。
+关于事务处理需要知道的几个术语：
+ 事务（transaction）指一组 SQL 语句； 回退（rollback）指撤销指定 SQL 语句的过程； 提交（commit）指将未存储的 SQL 语句结果写入数据库表； 保留点（savepoint）指事务处理中设置的临时占位符（place- holder），你可以对它发布回退（与回退整个事务处理不同）  语法#控制事务处理#管理事务处理的关键在于将 SQL 语句组分解为逻辑块，并明确规定数据何时应该回退，何时不应该回退。
+下面的语句来标识事务的开始：
+START TRANSACTION ROLLBACK#ROLLBACK 命令用来回退（撤销）MySQL 语句：
+select * from ordertotals; start transaction; delete from ordertotals; select * from ordertotals; rollback; select * from ordertotals; 先执行一条 SELECT 以显示该表不为空。然后开始一个事务处理，用一条 DELETE 语句删除 ordertotals 中的所有行。 另一条 SELECT 语句验证 ordertotals 确实为空。这时用一条 ROLLBACK 语句回退 START TRANSACTION 之后的所有语句，最后 一条 SELECT 语句显示该表不为空。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="事务" />
+<meta property="og:description" content="事务#事务的四个特性：ACID（Atomicity、Consistency、Isolation、Durability，即原子性、一致性、隔离性、持久性）。
+事务处理是一种机制，用来管理必须成批执行的 MySQL 操作，以保证数据库不包含不完整的操作结果。利用事务处理，可以保证一组操作不会中途停止， 它们或者作为整体执行，或者完全不执行（除非明确指示）。如果没有错误发生，整组语句提交给（写到）数据库表。如果发生错误，则进行回退（撤销） 以恢复数据库到某个已知且安全的状态。
+关于事务处理需要知道的几个术语：
+ 事务（transaction）指一组 SQL 语句； 回退（rollback）指撤销指定 SQL 语句的过程； 提交（commit）指将未存储的 SQL 语句结果写入数据库表； 保留点（savepoint）指事务处理中设置的临时占位符（place- holder），你可以对它发布回退（与回退整个事务处理不同）  语法#控制事务处理#管理事务处理的关键在于将 SQL 语句组分解为逻辑块，并明确规定数据何时应该回退，何时不应该回退。
+下面的语句来标识事务的开始：
+START TRANSACTION ROLLBACK#ROLLBACK 命令用来回退（撤销）MySQL 语句：
+select * from ordertotals; start transaction; delete from ordertotals; select * from ordertotals; rollback; select * from ordertotals; 先执行一条 SELECT 以显示该表不为空。然后开始一个事务处理，用一条 DELETE 语句删除 ordertotals 中的所有行。 另一条 SELECT 语句验证 ordertotals 确实为空。这时用一条 ROLLBACK 语句回退 START TRANSACTION 之后的所有语句，最后 一条 SELECT 语句显示该表不为空。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/mysql/transaction/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>事务 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>事务</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#语法">语法</a>
+      <ul>
+        <li><a href="#控制事务处理">控制事务处理</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="事务">
+  事务
+  <a class="anchor" href="#%e4%ba%8b%e5%8a%a1">#</a>
+</h1>
+<p>事务的四个特性：ACID（Atomicity、Consistency、Isolation、Durability，即原子性、一致性、隔离性、持久性）。</p>
+<p>事务处理是一种机制，用来管理必须成批执行的 MySQL 操作，以保证数据库不包含不完整的操作结果。利用事务处理，可以保证一组操作不会中途停止，
+它们或者作为整体执行，或者完全不执行（除非明确指示）。如果没有错误发生，整组语句提交给（写到）数据库表。如果发生错误，则进行回退（撤销）
+以恢复数据库到某个已知且安全的状态。</p>
+<p>关于事务处理需要知道的几个术语：</p>
+<ul>
+<li><strong>事务</strong>（transaction）指一组 SQL 语句；</li>
+<li><strong>回退</strong>（rollback）指撤销指定 SQL 语句的过程；</li>
+<li><strong>提交</strong>（commit）指将未存储的 SQL 语句结果写入数据库表；</li>
+<li><strong>保留点</strong>（savepoint）指事务处理中设置的临时占位符（<code>place- holder</code>），你可以对它发布回退（与回退整个事务处理不同）</li>
+</ul>
+<h2 id="语法">
+  语法
+  <a class="anchor" href="#%e8%af%ad%e6%b3%95">#</a>
+</h2>
+<h3 id="控制事务处理">
+  控制事务处理
+  <a class="anchor" href="#%e6%8e%a7%e5%88%b6%e4%ba%8b%e5%8a%a1%e5%a4%84%e7%90%86">#</a>
+</h3>
+<p>管理事务处理的关键在于将 SQL 语句组分解为逻辑块，并明确规定数据何时应该回退，何时不应该回退。</p>
+<p>下面的语句来标识事务的开始：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">START</span> <span style="color:#66d9ef">TRANSACTION</span>
+</code></pre></div><h4 id="rollback">
+  ROLLBACK
+  <a class="anchor" href="#rollback">#</a>
+</h4>
+<p><code>ROLLBACK</code> 命令用来回退（撤销）MySQL 语句：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> ordertotals;
+<span style="color:#66d9ef">start</span> <span style="color:#66d9ef">transaction</span>;
+<span style="color:#66d9ef">delete</span> <span style="color:#66d9ef">from</span> ordertotals;
+<span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> ordertotals;
+<span style="color:#66d9ef">rollback</span>;
+<span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> ordertotals;
+</code></pre></div><p>先执行一条 <code>SELECT</code> 以显示该表不为空。然后开始一个事务处理，用一条 <code>DELETE</code> 语句删除 <code>ordertotals</code> 中的所有行。
+另一条 <code>SELECT</code> 语句验证 <code>ordertotals</code> 确实为空。这时用一条 <code>ROLLBACK</code> 语句回退 <code>START TRANSACTION</code> 之后的所有语句，最后
+一条 <code>SELECT</code> 语句显示该表不为空。</p>
+<p><strong><code>ROLLBACK</code> 只能在一个事务处理内使用（在执行一条 <code>START TRANSACTION</code> 命令之后）</strong>。</p>
+<h5 id="哪些语句可以回退">
+  哪些语句可以回退？
+  <a class="anchor" href="#%e5%93%aa%e4%ba%9b%e8%af%ad%e5%8f%a5%e5%8f%af%e4%bb%a5%e5%9b%9e%e9%80%80">#</a>
+</h5>
+<p>事务处理用来管理 <code>INSERT</code>、<code>UPDATE</code> 和 <code>DELETE</code> 语句。不能回退 <code>SELECT</code> 语句。（这样做也没有什么意义）不能回退 <code>CREATE</code> 或 <code>DROP</code> 
+操作。事务处理块中可以使用这两条语句，但如果你执行回退，它们不会被撤销。</p>
+<h4 id="commit">
+  COMMIT
+  <a class="anchor" href="#commit">#</a>
+</h4>
+<p>一般的 MySQL 语句都是直接针对数据库表执行和编写的。这就是所谓的<strong>隐含提交</strong>（implicit commit），即提交（写或保存）操作是自动进行的。</p>
+<p><strong>在事务处理块中，提交不会隐含地进行</strong>。为进行明确的提交，使用 <code>COMMIT</code> 语句：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">start</span> <span style="color:#66d9ef">transaction</span>;
+<span style="color:#66d9ef">delete</span> <span style="color:#66d9ef">from</span> orderitems <span style="color:#66d9ef">where</span> order_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">20005</span>;
+<span style="color:#66d9ef">delete</span> <span style="color:#66d9ef">from</span> orders <span style="color:#66d9ef">where</span> order_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">20005</span>;
+<span style="color:#66d9ef">commit</span>;
+</code></pre></div><blockquote>
+<p>当 <code>COMMIT</code> 或 <code>ROLLBACK</code> 语句执行后，事务会自动关闭（将来的更改会隐含提交）。</p>
+</blockquote>
+<h4 id="保留点">
+  保留点
+  <a class="anchor" href="#%e4%bf%9d%e7%95%99%e7%82%b9">#</a>
+</h4>
+<p>简单的 <code>ROLLBACK</code> 和 <code>COMMIT</code> 语句就可以写入或撤销整个事务处理。复杂的事务处理可能需要部分提交或回退。</p>
+<p>为了支持回退部分事务处理，必须能在事务处理块中合适的位置放置占位符。这样，如果需要回退，可以回退到某个占位符。这些占位符称为<strong>保留点</strong>。</p>
+<p>创建占位符，可使用 <code>SAVEPOINT</code> 语句：<code>SAVEPOINT delete1;</code>。
+每个保留点都取标识它的唯一名字，以便在回退时，MySQL 知道要回退到何处。</p>
+<p>回退到本例给出的保留点，可执行：<code>ROLLBACK TO delete1;</code></p>
+<blockquote>
+<p>保留点在事务处理完成（执行一条 <code>ROLLBACK</code> 或 <code>COMMIT</code>）后自动释放。</p>
+</blockquote>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/mysql/transaction.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#语法">语法</a>
+      <ul>
+        <li><a href="#控制事务处理">控制事务处理</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

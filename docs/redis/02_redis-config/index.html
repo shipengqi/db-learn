@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 安装配置#Redis 安装，配置认证密码，配置 service 服务。
+安装##下载 wget http://download.redis.io/releases/redis-x.x.x.tar.gz #解压 tar -xzvf redis-x.x.x.tar.gz # 编译安装 cd redis-x.x.x make make install make install 会在 /usr/local/bin 目录下生成以下文件：
+ redis-server：Redis 服务器端启动程序 redis-cli：Redis 客户端操作工具。也可以用 telnet 根据其纯文本协议来操作 redis-benchmark：Redis 性能测试工具 redis-check-aof：数据修复工具 redis-check-dump：检查导出工具  如果出现以下错误：
+make[1]: Entering directory `/root/redis/src&#39; You need tcl 8.5 or newer in order to run the Redis test …… 这是因为没有安装 tcl 导致，yum 安装即可：
+yum install tcl 配置 Redis 复制配置文件到 /etc/ 目录：">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="Redis 安装配置" />
+<meta property="og:description" content="Redis 安装配置#Redis 安装，配置认证密码，配置 service 服务。
+安装##下载 wget http://download.redis.io/releases/redis-x.x.x.tar.gz #解压 tar -xzvf redis-x.x.x.tar.gz # 编译安装 cd redis-x.x.x make make install make install 会在 /usr/local/bin 目录下生成以下文件：
+ redis-server：Redis 服务器端启动程序 redis-cli：Redis 客户端操作工具。也可以用 telnet 根据其纯文本协议来操作 redis-benchmark：Redis 性能测试工具 redis-check-aof：数据修复工具 redis-check-dump：检查导出工具  如果出现以下错误：
+make[1]: Entering directory `/root/redis/src&#39; You need tcl 8.5 or newer in order to run the Redis test …… 这是因为没有安装 tcl 导致，yum 安装即可：
+yum install tcl 配置 Redis 复制配置文件到 /etc/ 目录：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/02_redis-config/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>Redis 安装配置 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/"class=active>安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 安装配置</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#安装">安装</a></li>
+    <li><a href="#配置密码认证登录">配置密码认证登录</a>
+      <ul>
+        <li><a href="#修改配置">修改配置</a></li>
+        <li><a href="#登录验证">登录验证</a></li>
+        <li><a href="#客户端配置密码">客户端配置密码</a></li>
+        <li><a href="#在集群中配置认证密码">在集群中配置认证密码</a></li>
+      </ul>
+    </li>
+    <li><a href="#redis-配置到系统服务systemd">Redis 配置到系统服务(systemd)</a>
+      <ul>
+        <li><a href="#创建-redisservice-文件">创建 redis.service 文件</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="redis-安装配置">
+  Redis 安装配置
+  <a class="anchor" href="#redis-%e5%ae%89%e8%a3%85%e9%85%8d%e7%bd%ae">#</a>
+</h1>
+<p>Redis 安装，配置认证密码，配置 service 服务。</p>
+<h2 id="安装">
+  安装
+  <a class="anchor" href="#%e5%ae%89%e8%a3%85">#</a>
+</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e">#下载</span>
+wget http://download.redis.io/releases/redis-x.x.x.tar.gz
+<span style="color:#75715e">#解压</span>
+tar -xzvf redis-x.x.x.tar.gz
+<span style="color:#75715e"># 编译安装</span>
+cd redis-x.x.x
+make
+make install
+</code></pre></div><p><code>make install</code> 会在 <code>/usr/local/bin</code> 目录下生成以下文件：</p>
+<ul>
+<li>redis-server：Redis 服务器端启动程序</li>
+<li>redis-cli：Redis 客户端操作工具。也可以用 telnet 根据其纯文本协议来操作</li>
+<li>redis-benchmark：Redis 性能测试工具</li>
+<li>redis-check-aof：数据修复工具</li>
+<li>redis-check-dump：检查导出工具</li>
+</ul>
+<p>如果出现以下错误：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">make<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>: Entering directory <span style="color:#e6db74">`</span>/root/redis/src<span style="color:#960050;background-color:#1e0010">&#39;</span>
+You need tcl 8.5 or newer in order to run the Redis test
+……
+</code></pre></div><p>这是因为没有安装 tcl 导致，yum 安装即可：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">yum install tcl
+</code></pre></div><p><strong>配置 Redis</strong>
+复制配置文件到 <code>/etc/</code> 目录：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cp redis.conf /etc/
+vim /etc/redis.conf
+
+<span style="color:#75715e">#找到下面的内容</span>
+<span style="color:#75715e">################################# GENERAL #####################################</span>
+
+<span style="color:#75715e"># By default Redis does not run as a daemon. Use &#39;yes&#39; if you need it.</span>
+<span style="color:#75715e"># Note that Redis will write a pid file in /var/run/redis.pid when daemonized.</span>
+<span style="color:#75715e"># NOT SUPPORTED ON WINDOWS daemonize no</span>
+
+<span style="color:#75715e">#修改daemonize配置项为yes，使Redis进程在后台运行</span>
+daemonize yes
+</code></pre></div><p><strong>启动 Redis</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cd /usr/local/bin
+./redis-server /etc/redis.conf
+
+<span style="color:#75715e">#检查是否启动成功：</span>
+ps -ef | grep redis
+</code></pre></div><p><strong>一些常用的 Redis 启动参数：</strong></p>
+<ul>
+<li>daemonize：是否以后台 daemon 方式运行</li>
+<li>pidfile：pid 文件位置</li>
+<li>port：监听的端口号</li>
+<li>timeout：请求超时时间</li>
+<li>loglevel：log 信息级别</li>
+<li>logfile：log 文件位置</li>
+<li>databases：开启数据库的数量，默认 16 个。</li>
+<li><code>save * *</code>：保存快照的频率，第一个 <code>*</code> 表示多长时间，第三个 <code>*</code> 表示执行多少次写操作。在一定时间内执行一定数量的写操作时，自动保存
+快照。可设置多个条件。</li>
+<li>rdbcompression：是否使用压缩</li>
+<li>dbfilename：数据快照文件名（只是文件名）</li>
+<li>dir：数据快照的保存目录（仅目录）</li>
+<li>appendonly：是否开启 appendonlylog，开启的话每次写操作会记一条 log，这会提高数据抗风险能力，但影响效率。</li>
+<li>appendfsync：appendonlylog 如何同步到磁盘。三个选项，分别是每次写都强制调用 <code>fsync</code>、每秒启用一次 <code>fsync</code>、不调用 <code>fsync</code> 等
+待系统自己同步</li>
+</ul>
+<h2 id="配置密码认证登录">
+  配置密码认证登录
+  <a class="anchor" href="#%e9%85%8d%e7%bd%ae%e5%af%86%e7%a0%81%e8%ae%a4%e8%af%81%e7%99%bb%e5%bd%95">#</a>
+</h2>
+<p>Redis 默认配置是不需要密码认证，需要手动配置启用 Redis 的认证密码，增加 Redis 的安全性。</p>
+<h3 id="修改配置">
+  修改配置
+  <a class="anchor" href="#%e4%bf%ae%e6%94%b9%e9%85%8d%e7%bd%ae">#</a>
+</h3>
+<p>linux 下 Redis 的默认配置文件默认在 <code>/etc/redis.conf</code>。windows 下则是安装目录下的 <code>redis.windows.conf</code> 文件。
+打开配置文件，找到下面的内容：</p>
+<pre><code class="language-conf" data-lang="conf">################################## SECURITY ###################################
+
+# Require clients to issue AUTH &lt;PASSWORD&gt; before processing any other
+# commands.  This might be useful in environments in which you do not trust
+# others with access to the host running redis-server.
+#
+# This should stay commented out for backward compatibility and because most
+# people do not need auth (e.g. they run their own servers).
+#
+# Warning: since Redis is pretty fast an outside user can try up to
+# 150k passwords per second against a good box. This means that you should
+# use a very strong password otherwise it will be very easy to break.
+#
+#requirepass foobared
+</code></pre><p>去掉前面的注释，并修改为你的认证密码：</p>
+<pre><code class="language-conf" data-lang="conf">requirepass {your password}
+</code></pre><p>修改后重启 Redis：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 如果已经配置为 service 服务</span>
+systemctl restart redis
+
+<span style="color:#75715e"># 或者</span>
+/usr/local/bin/redis-cli shutdown
+/usr/local/bin/redis-server /etc/redis.conf
+</code></pre></div><h3 id="登录验证">
+  登录验证
+  <a class="anchor" href="#%e7%99%bb%e5%bd%95%e9%aa%8c%e8%af%81">#</a>
+</h3>
+<p>重启后登录时需要使用 <code>-a</code> 参数输入密码，否则登录后没有任何操作权限。如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./redis-cli -h 127.0.0.1 -p <span style="color:#ae81ff">6379</span>
+127.0.0.1:6379&gt; set testkey
+<span style="color:#f92672">(</span>error<span style="color:#f92672">)</span> NOAUTH Authentication required.
+</code></pre></div><p>使用密码认证登录：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./redis-cli -h 127.0.0.1 -p <span style="color:#ae81ff">6379</span> -a myPassword
+127.0.0.1:6379&gt; set testkey hello
+OK
+</code></pre></div><p>或者在连接后进行验证：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./redis-cli -h 127.0.0.1 -p <span style="color:#ae81ff">6379</span>
+127.0.0.1:6379&gt; auth yourpassword
+OK
+127.0.0.1:6379&gt; set testkey hello
+OK
+</code></pre></div><h3 id="客户端配置密码">
+  客户端配置密码
+  <a class="anchor" href="#%e5%ae%a2%e6%88%b7%e7%ab%af%e9%85%8d%e7%bd%ae%e5%af%86%e7%a0%81">#</a>
+</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">127.0.0.1:6379&gt; config set requirepass yourpassword
+OK
+127.0.0.1:6379&gt; config get requirepass
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;requirepass&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;yourpassword&#34;</span>
+</code></pre></div><blockquote>
+<p>注意：使用客户端配置密码，重启 Redis 后仍然会使用 <code>redis.conf</code> 配置文件中的密码。</p>
+</blockquote>
+<h3 id="在集群中配置认证密码">
+  在集群中配置认证密码
+  <a class="anchor" href="#%e5%9c%a8%e9%9b%86%e7%be%a4%e4%b8%ad%e9%85%8d%e7%bd%ae%e8%ae%a4%e8%af%81%e5%af%86%e7%a0%81">#</a>
+</h3>
+<p>如果 Redis 使用了集群。除了在 <code>master</code> 中配置密码外，<code>slave</code> 中也需要配置。在 <code>slave</code> 的配置文件中找到如下行，去掉注释并修改
+为与 <code>master</code> 相同的密码：</p>
+<pre><code class="language-conf" data-lang="conf"># masterauth your-master-password
+</code></pre><h2 id="redis-配置到系统服务systemd">
+  Redis 配置到系统服务(systemd)
+  <a class="anchor" href="#redis-%e9%85%8d%e7%bd%ae%e5%88%b0%e7%b3%bb%e7%bb%9f%e6%9c%8d%e5%8a%a1systemd">#</a>
+</h2>
+<h3 id="创建-redisservice-文件">
+  创建 redis.service 文件
+  <a class="anchor" href="#%e5%88%9b%e5%bb%ba-redisservice-%e6%96%87%e4%bb%b6">#</a>
+</h3>
+<p>进入 <code>/usr/lib/systemd/system</code> 目录，创建 <code>redis.service</code> 文件：</p>
+<pre><code class="language-conf" data-lang="conf">[Unit]
+# 描述
+Description=Redis
+# 启动时机,开机启动最好在网络服务启动后即启动
+After=syslog.target network.target remote-fs.target nss-lookup.target
+
+# 表示服务信息
+[Service]
+Type=forking
+# 注意：需要和 redis.conf 配置文件中的信息一致
+PIDFile=/var/run/redis.pid
+# 启动服务的命令
+# redis-server 安装的路径和 redis.conf 配置文件的路径
+ExecStart=/usr/local/bin/redis-server /etc/redis.conf
+# 停止服务的命令
+ExecStop=/usr/local/bin/redis-cli shutdown
+Restart=always
+
+# 安装相关信息
+[Install]
+# 启动方式
+# multi-user.target 表明当系统以多用户方式（默认的运行级别）启动时，这个服务需要被自动运行。
+WantedBy=multi-user.target
+</code></pre><p><code>Type=forking</code>，forking 表示服务管理器是系统 init 的子进程，用于管理需要后台运行的服务。</p>
+<p>修改 <code>/etc/redis.conf</code>：</p>
+<pre><code class="language-conf" data-lang="conf">daemonize yes
+
+supervised systemd
+</code></pre><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 使配置生效</span>
+systemctl daemon-reload
+
+<span style="color:#75715e"># 设置开机启动</span>
+systemctl enable redis.service
+
+<span style="color:#75715e"># 启动</span>
+systemctl start redis.service
+
+<span style="color:#75715e"># 查看状态</span>
+systemctl status redis.service
+
+<span style="color:#75715e"># 重启</span>
+systemctl restart redis.service
+
+<span style="color:#75715e"># 停止</span>
+systemctl stop redis.service
+
+<span style="color:#75715e"># 关闭开机启动</span>
+systemctl disable redis.service
+</code></pre></div></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/02_redis-config.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#安装">安装</a></li>
+    <li><a href="#配置密码认证登录">配置密码认证登录</a>
+      <ul>
+        <li><a href="#修改配置">修改配置</a></li>
+        <li><a href="#登录验证">登录验证</a></li>
+        <li><a href="#客户端配置密码">客户端配置密码</a></li>
+        <li><a href="#在集群中配置认证密码">在集群中配置认证密码</a></li>
+      </ul>
+    </li>
+    <li><a href="#redis-配置到系统服务systemd">Redis 配置到系统服务(systemd)</a>
+      <ul>
+        <li><a href="#创建-redisservice-文件">创建 redis.service 文件</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

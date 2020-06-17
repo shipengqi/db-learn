@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MySQL 服务器的进程也被称为 MySQL 数据库实例，简称数据库实例。MySQL 服务器进程的默认名称为 mysqld， 而 MySQL 客户 端进程的默认名称为 mysql。
+基本概念#表#数据库可以理解是一个文件柜。此文件柜是一个存放数据的物理位置，不管数据是什么以及如何组织的。 在将资料放入文件柜时，并不是随便将它们扔进某个抽屉就完事了，而是在文件柜中创建文件，然后将相关的资料放入特定的文件中。 这种文件称为表。是一种结构化的文件，可用来存储某种特定类型的数据。
+列和数据类型#列是表中的一个字段。所有表都是由一个或多个列组成的。
+数据类型（datatype）所容许的数据的类型。每个表列都有相应的数据类型，它限制（或容许）该列中存储的数据。
+行#行是表中的一个记录。
+主键#主键是表中的一列（或一组列），其值能够唯一区分表中每个行。
+表中的任何列都可以作为主键，只要它满足以下条件：
+ 任意两行都不具有相同的主键值 每个行都必须具有一个主键值（主键列不允许NULL值）。  主键通常定义在表的一列上，但这并不是必需的。
+外键#外键为某个表中的一列，它包含另一个表的主键值，定义了两个表之间的关系。
+索引#索引是对数据库表中一列或多列的值进行排序的一种结构，使用索引可快速访问数据库表中的特定信息。
+索引的原理# 对要查询的字段建立索引其实就是把该字段按照一定的方式排序 建立的索引只对该字段有用，如果查询的字段改变，那么这个索引也就无效了，比如图书馆的书是按照书名的第一个字母排序的，那么你想要找作者叫张 三的书就不能用这个索引了  索引是优缺点#首先明白为什么索引会增加速度，DB 在执行一条 SQL 语句的时候，默认的方式是根据搜索条件进行全表扫描，遇到匹配条件的就加入搜索结果集合。 如果对某一字段增加索引，查询时就会先去索引列表中一次定位到特定值的行数，大大减少遍历匹配的行数，所以能明显增加查询的速度。不应该加索引 的场景：
+ 如果每次都需要取到所有表记录，无论如何都必须进行全表扫描了，那么是否加索引也没有意义了。 对非唯一的字段，例如“性别”这种大量重复值的字段，增加索引也没有什么意义。 对于记录比较少的表，增加索引不会带来速度的优化反而浪费了存储空间，因为索引是需要存储空间的，而且有个致命缺点是 对于 update/insert/delete 的每次执行，字段的索引都必须重新计算更新。  可伸缩性#可伸缩性（scale）能够适应不断增加的工作量而不失败。设计良好的数据库或应用程序称之为可伸缩性好（scale well）。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="入门" />
+<meta property="og:description" content="MySQL 服务器的进程也被称为 MySQL 数据库实例，简称数据库实例。MySQL 服务器进程的默认名称为 mysqld， 而 MySQL 客户 端进程的默认名称为 mysql。
+基本概念#表#数据库可以理解是一个文件柜。此文件柜是一个存放数据的物理位置，不管数据是什么以及如何组织的。 在将资料放入文件柜时，并不是随便将它们扔进某个抽屉就完事了，而是在文件柜中创建文件，然后将相关的资料放入特定的文件中。 这种文件称为表。是一种结构化的文件，可用来存储某种特定类型的数据。
+列和数据类型#列是表中的一个字段。所有表都是由一个或多个列组成的。
+数据类型（datatype）所容许的数据的类型。每个表列都有相应的数据类型，它限制（或容许）该列中存储的数据。
+行#行是表中的一个记录。
+主键#主键是表中的一列（或一组列），其值能够唯一区分表中每个行。
+表中的任何列都可以作为主键，只要它满足以下条件：
+ 任意两行都不具有相同的主键值 每个行都必须具有一个主键值（主键列不允许NULL值）。  主键通常定义在表的一列上，但这并不是必需的。
+外键#外键为某个表中的一列，它包含另一个表的主键值，定义了两个表之间的关系。
+索引#索引是对数据库表中一列或多列的值进行排序的一种结构，使用索引可快速访问数据库表中的特定信息。
+索引的原理# 对要查询的字段建立索引其实就是把该字段按照一定的方式排序 建立的索引只对该字段有用，如果查询的字段改变，那么这个索引也就无效了，比如图书馆的书是按照书名的第一个字母排序的，那么你想要找作者叫张 三的书就不能用这个索引了  索引是优缺点#首先明白为什么索引会增加速度，DB 在执行一条 SQL 语句的时候，默认的方式是根据搜索条件进行全表扫描，遇到匹配条件的就加入搜索结果集合。 如果对某一字段增加索引，查询时就会先去索引列表中一次定位到特定值的行数，大大减少遍历匹配的行数，所以能明显增加查询的速度。不应该加索引 的场景：
+ 如果每次都需要取到所有表记录，无论如何都必须进行全表扫描了，那么是否加索引也没有意义了。 对非唯一的字段，例如“性别”这种大量重复值的字段，增加索引也没有什么意义。 对于记录比较少的表，增加索引不会带来速度的优化反而浪费了存储空间，因为索引是需要存储空间的，而且有个致命缺点是 对于 update/insert/delete 的每次执行，字段的索引都必须重新计算更新。  可伸缩性#可伸缩性（scale）能够适应不断增加的工作量而不失败。设计良好的数据库或应用程序称之为可伸缩性好（scale well）。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/mysql/01_getting_started/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>入门 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/"class=active>入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>入门</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#基本概念">基本概念</a>
+      <ul>
+        <li><a href="#表">表</a></li>
+        <li><a href="#列和数据类型">列和数据类型</a></li>
+        <li><a href="#行">行</a></li>
+        <li><a href="#主键">主键</a></li>
+        <li><a href="#外键">外键</a></li>
+        <li><a href="#索引">索引</a></li>
+        <li><a href="#可伸缩性">可伸缩性</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><p>MySQL 服务器的进程也被称为 <strong>MySQL 数据库实例</strong>，简称<strong>数据库实例</strong>。MySQL 服务器进程的默认名称为 <code>mysqld</code>， 而 MySQL 客户
+端进程的默认名称为 <code>mysql</code>。</p>
+<h2 id="基本概念">
+  基本概念
+  <a class="anchor" href="#%e5%9f%ba%e6%9c%ac%e6%a6%82%e5%bf%b5">#</a>
+</h2>
+<h3 id="表">
+  表
+  <a class="anchor" href="#%e8%a1%a8">#</a>
+</h3>
+<p>数据库可以理解是一个文件柜。此文件柜是一个存放数据的物理位置，不管数据是什么以及如何组织的。
+在将资料放入文件柜时，并不是随便将它们扔进某个抽屉就完事了，而是在文件柜中创建文件，然后将相关的资料放入特定的文件中。
+这种文件称为<strong>表</strong>。是一种结构化的文件，可用来存储某种特定类型的数据。</p>
+<h3 id="列和数据类型">
+  列和数据类型
+  <a class="anchor" href="#%e5%88%97%e5%92%8c%e6%95%b0%e6%8d%ae%e7%b1%bb%e5%9e%8b">#</a>
+</h3>
+<p>列是表中的一个字段。所有表都是由一个或多个列组成的。</p>
+<p>数据类型（datatype）所容许的数据的类型。每个表列都有相应的数据类型，它限制（或容许）该列中存储的数据。</p>
+<h3 id="行">
+  行
+  <a class="anchor" href="#%e8%a1%8c">#</a>
+</h3>
+<p>行是表中的一个记录。</p>
+<h3 id="主键">
+  主键
+  <a class="anchor" href="#%e4%b8%bb%e9%94%ae">#</a>
+</h3>
+<p>主键是表中的一列（或一组列），其值能够唯一区分表中每个行。</p>
+<p>表中的任何列都可以作为主键，只要它满足以下条件：</p>
+<ul>
+<li><strong>任意两行都不具有相同的主键值</strong></li>
+<li><strong>每个行都必须具有一个主键值</strong>（主键列不允许<code>NULL</code>值）。</li>
+</ul>
+<p>主键通常定义在表的一列上，但这并不是必需的。</p>
+<h3 id="外键">
+  外键
+  <a class="anchor" href="#%e5%a4%96%e9%94%ae">#</a>
+</h3>
+<p>外键为某个表中的一列，它包含另一个表的主键值，定义了两个表之间的关系。</p>
+<h3 id="索引">
+  索引
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95">#</a>
+</h3>
+<p>索引是对数据库表中一列或多列的值进行排序的一种结构，使用索引可快速访问数据库表中的特定信息。</p>
+<h4 id="索引的原理">
+  索引的原理
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e7%9a%84%e5%8e%9f%e7%90%86">#</a>
+</h4>
+<ul>
+<li>对要查询的字段建立索引其实就是把该字段按照一定的方式排序</li>
+<li>建立的索引只对该字段有用，如果查询的字段改变，那么这个索引也就无效了，比如图书馆的书是按照书名的第一个字母排序的，那么你想要找作者叫张
+三的书就不能用这个索引了</li>
+</ul>
+<h4 id="索引是优缺点">
+  索引是优缺点
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e6%98%af%e4%bc%98%e7%bc%ba%e7%82%b9">#</a>
+</h4>
+<p>首先明白为什么索引会增加速度，DB 在执行一条 SQL 语句的时候，默认的方式是根据搜索条件进行全表扫描，遇到匹配条件的就加入搜索结果集合。
+如果对某一字段增加索引，查询时就会先去索引列表中一次定位到特定值的行数，大大减少遍历匹配的行数，所以能明显增加查询的速度。不应该加索引
+的场景：</p>
+<ul>
+<li>如果每次都需要取到所有表记录，无论如何都必须进行全表扫描了，那么是否加索引也没有意义了。</li>
+<li>对非唯一的字段，例如“性别”这种大量重复值的字段，增加索引也没有什么意义。</li>
+<li>对于记录比较少的表，增加索引不会带来速度的优化反而浪费了存储空间，因为索引是需要存储空间的，而且有个致命缺点是
+对于 <code>update/insert/delete</code> 的每次执行，字段的索引都必须重新计算更新。</li>
+</ul>
+<h3 id="可伸缩性">
+  可伸缩性
+  <a class="anchor" href="#%e5%8f%af%e4%bc%b8%e7%bc%a9%e6%80%a7">#</a>
+</h3>
+<p>可伸缩性（scale）能够适应不断增加的工作量而不失败。设计良好的数据库或应用程序称之为可伸缩性好（scale well）。</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/mysql/01_getting_started.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#基本概念">基本概念</a>
+      <ul>
+        <li><a href="#表">表</a></li>
+        <li><a href="#列和数据类型">列和数据类型</a></li>
+        <li><a href="#行">行</a></li>
+        <li><a href="#主键">主键</a></li>
+        <li><a href="#外键">外键</a></li>
+        <li><a href="#索引">索引</a></li>
+        <li><a href="#可伸缩性">可伸缩性</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

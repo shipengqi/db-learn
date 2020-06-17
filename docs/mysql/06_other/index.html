@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="视图#select cust_name from customers, orders, orderitems where customers.cust_id = orders.cust_id and orderitems.order_num = orders.order_num and pod_id = &#39;TNT2&#39;; 上面的语句，涉及到三个表，用来检索订购了某个特定产品的客户。任何需要这个数据的人都必须理解相关表的结构， 并且知道如何创建查询和对表进行联结。为了检索其他产品（或多个产品）的相同数据，必须修改最后的 WHERE 子句。
+假如可以把整个查询包装成一个名为 productcustomers 的虚拟表，则可以如下轻松地检索出相同的数据：
+select cust_name from productcustomers where pod_id = &#39;TNT2&#39;; 这就是视图的作用。productcustomers 是一个视图，作为视图，它不包含表中应该有的任何列或数据，它包含的是一个 SQL 查询（与上 面用以正确联结表的相同的查询）。
+为什么使用视图# 重用 SQL 语句。 简化复杂的 SQL 操作。在编写查询后，可以方便地重用它而不必知道它的基本查询细节。 使用表的组成部分而不是整个表。 保护数据。可以给用户授予表的特定部分的访问权限而不是整个表的访问权限。 更改数据格式和表示。视图可返回与底层表的表示和格式不同的数据。  视图创建之后，可以用与表基本相同的方式利用它们。可以对视图执行 SELECT 操作，过滤和排序数据，将视图联结到其他视图或表，甚至能添加 和更新数据。
+视图本身不包含数据，因此它们返回的数据是从其他表中检索出来的。在添加或更改这些表中的数据时，视图将返回改变过的数据。
+性能问题#因为视图不包含数据，所以每次使用视图时，都必须处理查询执行时所需的任一个检索。如果你用多个联结和过滤创建了复杂的视图或者嵌套了视图，可能 会发现性能下降得很厉害。因此，在部署使用了大量视图的应用前，应该进行测试。
+规则和限制# 与表一样，视图必须唯一命名（不能给视图取与别的视图或表相同的名字）。 对于可以创建的视图数目没有限制。 为了创建视图，必须具有足够的访问权限。这些限制通常由数据库管理人员授予。 视图可以嵌套，即可以利用从其他视图中检索数据的查询来构造一个视图。 ORDER BY 可以用在视图中，但如果从该视图检索数据 SELECT 中也含有 ORDER BY，那么该视图中的 ORDER BY 将被覆盖。 视图不能索引，也不能有关联的触发器或默认值。 视图可以和表一起使用。例如，编写一条联结表和视图的 SELECT 语句。  使用视图# CREATE VIEW 语句创建视图。 SHOW CREATE VIEW viewname 查看创建视图的语句。 DROP 删除视图，其语法为 DROP VIEW viewname。 更新视图时，可以先用 DROP 再用 CREATE，也可以直接用 CREATE OR REPLACE VIEW。如果要更新的视图不存在， 则第 2 条更新语句会创建一个视图；如果要更新的视图存在，则第2条更新语句会替换原有视图  用视图重新格式化检索出的数据#视图的另一常见用途是重新格式化检索出的数据。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="其他" />
+<meta property="og:description" content="视图#select cust_name from customers, orders, orderitems where customers.cust_id = orders.cust_id and orderitems.order_num = orders.order_num and pod_id = &#39;TNT2&#39;; 上面的语句，涉及到三个表，用来检索订购了某个特定产品的客户。任何需要这个数据的人都必须理解相关表的结构， 并且知道如何创建查询和对表进行联结。为了检索其他产品（或多个产品）的相同数据，必须修改最后的 WHERE 子句。
+假如可以把整个查询包装成一个名为 productcustomers 的虚拟表，则可以如下轻松地检索出相同的数据：
+select cust_name from productcustomers where pod_id = &#39;TNT2&#39;; 这就是视图的作用。productcustomers 是一个视图，作为视图，它不包含表中应该有的任何列或数据，它包含的是一个 SQL 查询（与上 面用以正确联结表的相同的查询）。
+为什么使用视图# 重用 SQL 语句。 简化复杂的 SQL 操作。在编写查询后，可以方便地重用它而不必知道它的基本查询细节。 使用表的组成部分而不是整个表。 保护数据。可以给用户授予表的特定部分的访问权限而不是整个表的访问权限。 更改数据格式和表示。视图可返回与底层表的表示和格式不同的数据。  视图创建之后，可以用与表基本相同的方式利用它们。可以对视图执行 SELECT 操作，过滤和排序数据，将视图联结到其他视图或表，甚至能添加 和更新数据。
+视图本身不包含数据，因此它们返回的数据是从其他表中检索出来的。在添加或更改这些表中的数据时，视图将返回改变过的数据。
+性能问题#因为视图不包含数据，所以每次使用视图时，都必须处理查询执行时所需的任一个检索。如果你用多个联结和过滤创建了复杂的视图或者嵌套了视图，可能 会发现性能下降得很厉害。因此，在部署使用了大量视图的应用前，应该进行测试。
+规则和限制# 与表一样，视图必须唯一命名（不能给视图取与别的视图或表相同的名字）。 对于可以创建的视图数目没有限制。 为了创建视图，必须具有足够的访问权限。这些限制通常由数据库管理人员授予。 视图可以嵌套，即可以利用从其他视图中检索数据的查询来构造一个视图。 ORDER BY 可以用在视图中，但如果从该视图检索数据 SELECT 中也含有 ORDER BY，那么该视图中的 ORDER BY 将被覆盖。 视图不能索引，也不能有关联的触发器或默认值。 视图可以和表一起使用。例如，编写一条联结表和视图的 SELECT 语句。  使用视图# CREATE VIEW 语句创建视图。 SHOW CREATE VIEW viewname 查看创建视图的语句。 DROP 删除视图，其语法为 DROP VIEW viewname。 更新视图时，可以先用 DROP 再用 CREATE，也可以直接用 CREATE OR REPLACE VIEW。如果要更新的视图不存在， 则第 2 条更新语句会创建一个视图；如果要更新的视图存在，则第2条更新语句会替换原有视图  用视图重新格式化检索出的数据#视图的另一常见用途是重新格式化检索出的数据。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/mysql/06_other/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>其他 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/"class=active>其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>其他</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#视图">视图</a>
+      <ul>
+        <li><a href="#为什么使用视图">为什么使用视图</a></li>
+        <li><a href="#性能问题">性能问题</a></li>
+        <li><a href="#规则和限制">规则和限制</a></li>
+        <li><a href="#使用视图">使用视图</a></li>
+      </ul>
+    </li>
+    <li><a href="#存储过程">存储过程</a>
+      <ul>
+        <li><a href="#为什么要使用存储过程">为什么要使用存储过程</a></li>
+        <li><a href="#使用">使用</a></li>
+      </ul>
+    </li>
+    <li><a href="#游标">游标</a>
+      <ul>
+        <li><a href="#使用游标">使用游标</a></li>
+      </ul>
+    </li>
+    <li><a href="#触发器">触发器</a>
+      <ul>
+        <li><a href="#创建-1">创建</a></li>
+        <li><a href="#删除-1">删除</a></li>
+      </ul>
+    </li>
+    <li><a href="#事务">事务</a>
+      <ul>
+        <li><a href="#控制事务处理">控制事务处理</a></li>
+      </ul>
+    </li>
+    <li><a href="#用户管理">用户管理</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h2 id="视图">
+  视图
+  <a class="anchor" href="#%e8%a7%86%e5%9b%be">#</a>
+</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> cust_name <span style="color:#66d9ef">from</span> customers, orders, orderitems
+<span style="color:#66d9ef">where</span> customers.cust_id <span style="color:#f92672">=</span> orders.cust_id
+<span style="color:#66d9ef">and</span> orderitems.order_num <span style="color:#f92672">=</span> orders.order_num
+<span style="color:#66d9ef">and</span> pod_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;TNT2&#39;</span>;
+</code></pre></div><p>上面的语句，涉及到三个表，用来检索订购了某个特定产品的客户。任何需要这个数据的人都必须理解相关表的结构，
+并且知道如何创建查询和对表进行联结。为了检索其他产品（或多个产品）的相同数据，必须修改最后的 <code>WHERE</code> 子句。</p>
+<p>假如可以把整个查询包装成一个名为 <code>productcustomers</code> 的虚拟表，则可以如下轻松地检索出相同的数据：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> cust_name <span style="color:#66d9ef">from</span> productcustomers <span style="color:#66d9ef">where</span> pod_id <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;TNT2&#39;</span>;
+</code></pre></div><p>这就是<strong>视图</strong>的作用。<code>productcustomers</code> 是一个视图，作为<strong>视图，它不包含表中应该有的任何列或数据，它包含的是一个 SQL 查询</strong>（与上
+面用以正确联结表的相同的查询）。</p>
+<h3 id="为什么使用视图">
+  为什么使用视图
+  <a class="anchor" href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e4%bd%bf%e7%94%a8%e8%a7%86%e5%9b%be">#</a>
+</h3>
+<ul>
+<li>重用 SQL 语句。</li>
+<li>简化复杂的 SQL 操作。在编写查询后，可以方便地重用它而不必知道它的基本查询细节。</li>
+<li>使用表的组成部分而不是整个表。</li>
+<li>保护数据。可以给用户授予表的特定部分的访问权限而不是整个表的访问权限。</li>
+<li>更改数据格式和表示。视图可返回与底层表的表示和格式不同的数据。</li>
+</ul>
+<p>视图创建之后，可以用与表基本相同的方式利用它们。可以对视图执行 <code>SELECT</code> 操作，过滤和排序数据，将视图联结到其他视图或表，甚至能添加
+和更新数据。</p>
+<p><strong>视图本身不包含数据，因此它们返回的数据是从其他表中检索出来的。在添加或更改这些表中的数据时，视图将返回改变过的数据</strong>。</p>
+<h3 id="性能问题">
+  性能问题
+  <a class="anchor" href="#%e6%80%a7%e8%83%bd%e9%97%ae%e9%a2%98">#</a>
+</h3>
+<p>因为视图不包含数据，所以每次使用视图时，都必须处理查询执行时所需的任一个检索。如果你用多个联结和过滤创建了复杂的视图或者嵌套了视图，可能
+会发现性能下降得很厉害。因此，在部署使用了大量视图的应用前，应该进行测试。</p>
+<h3 id="规则和限制">
+  规则和限制
+  <a class="anchor" href="#%e8%a7%84%e5%88%99%e5%92%8c%e9%99%90%e5%88%b6">#</a>
+</h3>
+<ul>
+<li>与表一样，视图必须唯一命名（不能给视图取与别的视图或表相同的名字）。</li>
+<li>对于可以创建的视图数目没有限制。</li>
+<li>为了创建视图，必须具有足够的访问权限。这些限制通常由数据库管理人员授予。</li>
+<li>视图可以嵌套，即可以利用从其他视图中检索数据的查询来构造一个视图。</li>
+<li><code>ORDER BY</code> 可以用在视图中，但如果从该视图检索数据 <code>SELECT</code> 中也含有 <code>ORDER BY</code>，那么该视图中的 <code>ORDER BY</code> 将被覆盖。</li>
+<li>视图不能索引，也不能有关联的触发器或默认值。</li>
+<li>视图可以和表一起使用。例如，编写一条联结表和视图的 <code>SELECT</code> 语句。</li>
+</ul>
+<h3 id="使用视图">
+  使用视图
+  <a class="anchor" href="#%e4%bd%bf%e7%94%a8%e8%a7%86%e5%9b%be">#</a>
+</h3>
+<ul>
+<li><code>CREATE VIEW</code> 语句创建视图。</li>
+<li><code>SHOW CREATE VIEW viewname</code> 查看创建视图的语句。</li>
+<li><code>DROP</code> 删除视图，其语法为 <code>DROP VIEW viewname</code>。</li>
+<li>更新视图时，可以先用 <code>DROP</code> 再用 <code>CREATE</code>，也可以直接用 <code>CREATE OR REPLACE VIEW</code>。如果要更新的视图不存在，
+则第 2 条更新语句会创建一个视图；如果要更新的视图存在，则第2条更新语句会替换原有视图</li>
+</ul>
+<h4 id="用视图重新格式化检索出的数据">
+  用视图重新格式化检索出的数据
+  <a class="anchor" href="#%e7%94%a8%e8%a7%86%e5%9b%be%e9%87%8d%e6%96%b0%e6%a0%bc%e5%bc%8f%e5%8c%96%e6%a3%80%e7%b4%a2%e5%87%ba%e7%9a%84%e6%95%b0%e6%8d%ae">#</a>
+</h4>
+<p>视图的另一常见用途是重新格式化检索出的数据。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> Concat(RTrim(vend_name)), <span style="color:#e6db74">&#39;(&#39;</span> , RTrim(vend_country), <span style="color:#e6db74">&#39;)&#39;</span>) <span style="color:#66d9ef">as</span> vend_title <span style="color:#66d9ef">from</span> vendors <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> vend_name;
+</code></pre></div><p>上面的语句，格式化了结果，如果要经常用，可以创建一个视图：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">view</span> vendorlocations <span style="color:#66d9ef">as</span>
+<span style="color:#66d9ef">select</span> Concat(RTrim(vend_name)), <span style="color:#e6db74">&#39;(&#39;</span> , RTrim(vend_country), <span style="color:#e6db74">&#39;)&#39;</span>) <span style="color:#66d9ef">as</span> vend_title <span style="color:#66d9ef">from</span> vendors <span style="color:#66d9ef">order</span> <span style="color:#66d9ef">by</span> vend_name;
+</code></pre></div><p>然后可以直接使用：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> vendorlocations;
+</code></pre></div><p>视图也可以用来过滤数据，或者计算字段。</p>
+<h4 id="更新视图">
+  更新视图
+  <a class="anchor" href="#%e6%9b%b4%e6%96%b0%e8%a7%86%e5%9b%be">#</a>
+</h4>
+<p>并非所有视图都是可更新的。基本上可以说，如果 MySQL 不能正确地确定被更新的基数据，则不允许更新（包括插入和删除）。
+意味着，如果视图定义中有以下操作，则不能进行视图的更新：</p>
+<ul>
+<li>分组（使用 <code>GROUP BY</code> 和<code>HAVING</code>）；</li>
+<li>联结；</li>
+<li>子查询；</li>
+<li>并；</li>
+<li>聚集函数（<code>Min()</code>、<code>Count()</code>、<code>Sum()</code> 等）；</li>
+<li><code>DISTINCT</code>；</li>
+<li>导出（计算）列。</li>
+</ul>
+<h2 id="存储过程">
+  存储过程
+  <a class="anchor" href="#%e5%ad%98%e5%82%a8%e8%bf%87%e7%a8%8b">#</a>
+</h2>
+<p>以下的情形。</p>
+<ul>
+<li>为了处理订单，需要核对以保证库存中有相应的物品。</li>
+<li>如果库存有物品，这些物品需要预定以便不将它们再卖给别的人，并且要减少可用的物品数量以反映正确的库存量。</li>
+<li>库存中没有的物品需要订购，这需要与供应商进行某种交互。</li>
+<li>关于哪些物品入库（并且可以立即发货）和哪些物品退订，需要通知相应的客户。</li>
+</ul>
+<p>执行这个处理需要针对许多表的多条 MySQL 语句。此外，需要执行的具体语句及其次序也不是固定的，它们可能会（和将）根据哪些物品在库存中哪
+些不在而变化。</p>
+<p>可以创建存储过程。<strong>存储过程简单来说，就是为以后的使用而保存的一条或多条 MySQL 语句的集合</strong>。</p>
+<h3 id="为什么要使用存储过程">
+  为什么要使用存储过程
+  <a class="anchor" href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e8%a6%81%e4%bd%bf%e7%94%a8%e5%ad%98%e5%82%a8%e8%bf%87%e7%a8%8b">#</a>
+</h3>
+<ul>
+<li>简化复杂的操作</li>
+<li>由于不要求反复建立一系列处理步骤，这保证了数据的完整性。所有开发人员和应用程序都使用同一（试验和测试）存储过程，则所使用的代码都是
+相同的。这一点的延伸就是防止错误。防止错误保证了数据的一致性。</li>
+<li>简化对变动的管理。如果表名、列名或业务逻辑（或别的内容）有变化，只需要更改存储过程的代码。使用它的人员甚至不需要知道这些变化。</li>
+<li>提高性能。存储过程比使用单独的 SQL 语句要快。</li>
+</ul>
+<p>总结就是，简单、安全、高性能。</p>
+<p><strong>缺陷</strong>：</p>
+<ul>
+<li>存储过程的编写比基本 SQL 语句复杂</li>
+<li>你可能没有创建存储过程的安全访问权限。</li>
+</ul>
+<h3 id="使用">
+  使用
+  <a class="anchor" href="#%e4%bd%bf%e7%94%a8">#</a>
+</h3>
+<p>MySQL 称存储过程的执行为调用，因此 MySQL 执行存储过程的语句为 <code>CALL</code>。<code>CALL</code> 接受存储过程的名字以及需要传递给它的任意参数。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">call</span> productpricing(<span style="color:#f92672">@</span>pricelow, <span style="color:#f92672">@</span>pricehigh, <span style="color:#f92672">@</span>priceacerage);
+</code></pre></div><p>执行名为 <code>productpricing</code> 的存储过程，它计算并返回产品的最低、最高和平均价格。</p>
+<p><strong>因为存储过程实际上是一种函数，所以存储过程名后需要有 <code>()</code> 符号（即使不传递参数也需要）</strong>。</p>
+<h4 id="创建">
+  创建
+  <a class="anchor" href="#%e5%88%9b%e5%bb%ba">#</a>
+</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">procedure</span> productpricing()
+<span style="color:#66d9ef">begin</span>
+<span style="color:#66d9ef">select</span> <span style="color:#66d9ef">Avg</span>(prod_price) <span style="color:#66d9ef">as</span> priceacerage <span style="color:#66d9ef">from</span> products;
+<span style="color:#66d9ef">end</span>;
+</code></pre></div><p>此存储过程名为 <code>productpricing</code>，用 <code>CREATE PROCEDURE productpricing()</code> 语句定义。如果存储过程接受参数，它们将在 <code>()</code> 中列举
+出来。此存储过程没有参数，但后跟的 <code>()</code> 仍然需要。<code>BEGIN</code> 和 <code>END</code> 语句用来限定存储过程体，过程体本身仅是一个简单的 <code>SELECT</code> 语句。</p>
+<h4 id="删除">
+  删除
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4">#</a>
+</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">drop</span> <span style="color:#66d9ef">procedure</span> productpricing;
+</code></pre></div><h4 id="使用参数">
+  使用参数
+  <a class="anchor" href="#%e4%bd%bf%e7%94%a8%e5%8f%82%e6%95%b0">#</a>
+</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">procedure</span> productpricing(
+  <span style="color:#66d9ef">out</span> pl DECIMAL(<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">2</span>),
+  <span style="color:#66d9ef">out</span> ph DECIMAL(<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">2</span>),
+  <span style="color:#66d9ef">out</span> pa DECIMAL(<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">2</span>)
+)
+<span style="color:#66d9ef">begin</span>
+  <span style="color:#66d9ef">select</span> <span style="color:#66d9ef">Min</span>(prod_price) <span style="color:#66d9ef">into</span> pl <span style="color:#66d9ef">from</span> products;
+  <span style="color:#66d9ef">select</span> <span style="color:#66d9ef">Max</span>(prod_price) <span style="color:#66d9ef">into</span> ph <span style="color:#66d9ef">from</span> products;
+  <span style="color:#66d9ef">select</span> <span style="color:#66d9ef">Avg</span>(prod_price) <span style="color:#66d9ef">into</span> pa <span style="color:#66d9ef">from</span> products;
+<span style="color:#66d9ef">end</span>;
+</code></pre></div><p>此存储过程接受 3 个参数：<code>pl</code> 存储产品最低价格，<code>ph</code> 存储产品最高价格，<code>pa</code> 存储产品平均价格。每个参数必须具有指定的类型，这里使用十
+进制值。关键字 <code>OUT</code> 指出相应的参数用来从存储过程传出一个值（返回给调用者）。</p>
+<p>MySQL 支持三种类型参数：</p>
+<ul>
+<li><code>IN</code> 传递给存储过程</li>
+<li><code>OUT</code> 从存储过程传出</li>
+<li><code>INOUT</code> 对存储过程传入和传出</li>
+</ul>
+<p>存储过程的代码位于 <code>BEGIN</code> 和 <code>END</code> 语句内，它们是一系列 <code>SELECT</code> 语句，用来检索值，然后保存到相应的变量（通过指定 <code>INTO</code> 关键字）。</p>
+<p>调用此修改过的存储过程，必须指定 3 个变量名，如下所示：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">call</span> productpricing(<span style="color:#f92672">@</span>pricelow, <span style="color:#f92672">@</span>pricehigh, <span style="color:#f92672">@</span>priceacerage);
+</code></pre></div><p>此存储过程要求 3 个参数，因此必须正好传递 3 个参数。存储过程将保存结果到这 3 个变量。</p>
+<blockquote>
+<p><strong>所有 MySQL 变量都必须以 <code>@</code> 开始</strong>。</p>
+</blockquote>
+<p>调用这条语句并不显示任何数据。为了显示检索出的产品平均价格，可使用下面的语句：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> <span style="color:#f92672">@</span>priceacerage;
+
+<span style="color:#66d9ef">select</span> <span style="color:#f92672">@</span>pricelow, <span style="color:#f92672">@</span>pricehigh, <span style="color:#f92672">@</span>priceacerage;
+</code></pre></div><h5 id="使用-in-和-out">
+  使用 IN 和 OUT
+  <a class="anchor" href="#%e4%bd%bf%e7%94%a8-in-%e5%92%8c-out">#</a>
+</h5>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">procedure</span> ordertotal(
+  <span style="color:#66d9ef">in</span> onumber int,
+  <span style="color:#66d9ef">inout</span> ototal DECIMAL(<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">2</span>)
+)
+<span style="color:#66d9ef">begin</span>
+  <span style="color:#66d9ef">select</span> <span style="color:#66d9ef">Sum</span>(item_price<span style="color:#f92672">*</span>quantity) <span style="color:#66d9ef">from</span> orderitems <span style="color:#66d9ef">where</span> order_num <span style="color:#f92672">=</span> onumber <span style="color:#66d9ef">into</span> otital;
+<span style="color:#66d9ef">end</span>;
+</code></pre></div><p><code>onumber</code> 定义为 <code>IN</code>，因为需要传订单号给存储过程。<code>ototal</code> 定义为 <code>OUT</code>，因为要从存储过程返回合计。<code>SELECT</code> 语句使用这两个参
+数，<code>WHERE</code> 子句使用 <code>onumber</code> 选择正确的行，<code>INTO</code> 使用 <code>ototal</code> 存储计算出来的合计。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">call</span> ordertotal(<span style="color:#ae81ff">2005</span>, <span style="color:#f92672">@</span>total);
+</code></pre></div><p>必须给 <code>ordertotal</code> 传递两个参数；第一个参数为订单号，第二个参数为包含计算出来的合计的变量名。</p>
+<p>显示此合计：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> <span style="color:#f92672">@</span>total;
+</code></pre></div><h4 id="智能存储过程">
+  智能存储过程
+  <a class="anchor" href="#%e6%99%ba%e8%83%bd%e5%ad%98%e5%82%a8%e8%bf%87%e7%a8%8b">#</a>
+</h4>
+<p>存储过程只有在包含业务规则和智能处理时，才真正显现出来他的作用。</p>
+<p>例如，需要获得一份订单合计，但需要对合计增加营业税，不过只针对某些顾客。</p>
+<ul>
+<li>获得合计（与以前一样）</li>
+<li>把营业税有条件地添加到合计</li>
+<li>返回合计（带或不带税）</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#75715e">-- Name: ordertotal
+</span><span style="color:#75715e">-- Parameters: onumber = order number
+</span><span style="color:#75715e">--             taxable = 0 if not taxable, 1 if taxable
+</span><span style="color:#75715e">--             ototal  = order total variable
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">procedure</span> odertotal(
+  <span style="color:#66d9ef">in</span> onumber int,
+  <span style="color:#66d9ef">in</span> taxable boolean,
+  <span style="color:#66d9ef">out</span> ototal decimal(<span style="color:#ae81ff">8</span>, <span style="color:#ae81ff">2</span>)
+) <span style="color:#66d9ef">comment</span> <span style="color:#e6db74">&#39;Obtain order total, optionally adding tax&#39;</span>
+<span style="color:#66d9ef">begin</span>
+<span style="color:#75715e">-- Declare variable for total
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">declare</span> total decimal(<span style="color:#ae81ff">8</span>, <span style="color:#ae81ff">2</span>);
+<span style="color:#75715e">-- Declare tax percentage
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">declare</span> taxrate int <span style="color:#66d9ef">default</span> <span style="color:#ae81ff">6</span>;
+<span style="color:#75715e">-- Get the order total
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> <span style="color:#66d9ef">sum</span>(item_price<span style="color:#f92672">*</span>quantity) <span style="color:#66d9ef">from</span> orderitems <span style="color:#66d9ef">where</span> order_num <span style="color:#f92672">=</span> onumber <span style="color:#66d9ef">into</span> total;
+<span style="color:#75715e">-- Is this taxable?
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">IF</span> taxable <span style="color:#66d9ef">THEN</span>
+   <span style="color:#75715e">-- Yes, so add taxrate to the total
+</span><span style="color:#75715e"></span>   <span style="color:#66d9ef">select</span> total<span style="color:#f92672">+</span>(total<span style="color:#f92672">/</span><span style="color:#ae81ff">100</span><span style="color:#f92672">*</span>taxrate) <span style="color:#66d9ef">into</span> total;
+<span style="color:#66d9ef">END</span> <span style="color:#66d9ef">IF</span>;
+<span style="color:#75715e">-- And finally, save to out variable
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">select</span> total <span style="color:#66d9ef">into</span> ototal;
+<span style="color:#66d9ef">end</span>;
+</code></pre></div><p><code>--</code> 表示注释。参数 <code>taxable</code>，它是一个布尔值，表示是否增加税。
+<code>DECLARE</code> 语句定义了两个局部变量。<code>DECLARE</code> 要求指定变量名和数据类型，它也支持可选的默认值（这里的 <code>taxrate</code> 的默认被设置为 <code>6%</code>）</p>
+<p><code>IF</code> 语句检查 <code>taxable</code> 是否为真，如果为真，则用另一 <code>SELECT</code> 语句增加营业税到局部变量 <code>total</code>。
+最后，用另一 <code>SELECT</code> 语句将 <code>total</code> 保存到 <code>ototal</code>。</p>
+<h4 id="检查存储过程">
+  检查存储过程
+  <a class="anchor" href="#%e6%a3%80%e6%9f%a5%e5%ad%98%e5%82%a8%e8%bf%87%e7%a8%8b">#</a>
+</h4>
+<p><code>SHOW CREATE PROCEDURE name</code> 和 <code>SHOW PROCEDURE STATUS name</code>。</p>
+<h2 id="游标">
+  游标
+  <a class="anchor" href="#%e6%b8%b8%e6%a0%87">#</a>
+</h2>
+<p>MySQL 检索操作返回一组称为结果集的行。这组返回的行都是与 SQL 语句相匹配的行（零行或多行）。</p>
+<p>有时，需要在检索出来的行中前进或后退一行或多行。这就是使用游标的原因。<strong>游标</strong>（cursor）是一个存储在 MySQL 服务器上的数据库查询，
+它<strong>不是一条 SELECT 语句，而是被该语句检索出来的结果集</strong>。在存储了游标之后，应用程序可以根据需要滚动或浏览其中的数据。</p>
+<blockquote>
+<p>MySQL 游标只能用于存储过程（和函数）。</p>
+</blockquote>
+<h3 id="使用游标">
+  使用游标
+  <a class="anchor" href="#%e4%bd%bf%e7%94%a8%e6%b8%b8%e6%a0%87">#</a>
+</h3>
+<ul>
+<li>在能够使用游标前，必须声明（定义）它。这个过程实际上没有检索数据，它只是定义要使用的 <code>SELECT</code> 语句。</li>
+<li>一旦声明后，必须打开游标以供使用。这个过程用前面定义的 <code>SELECT</code> 语句把数据实际检索出来。</li>
+<li>对于填有数据的游标，根据需要取出（检索）各行。</li>
+<li>在结束游标使用时，必须关闭游标。</li>
+</ul>
+<h4 id="创建游标">
+  创建游标
+  <a class="anchor" href="#%e5%88%9b%e5%bb%ba%e6%b8%b8%e6%a0%87">#</a>
+</h4>
+<p><code>DECLARE</code> 语句创建游标。<code>DECLARE</code> 命名游标，并定义相应的 <code>SELECT</code> 语句，根据需要带 <code>WHERE</code> 和其他子句。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">procedure</span> processorders()
+<span style="color:#66d9ef">begin</span>
+  <span style="color:#66d9ef">declare</span> ordernumbers <span style="color:#66d9ef">cursor</span>
+  <span style="color:#66d9ef">for</span>
+  <span style="color:#66d9ef">select</span> order_num <span style="color:#66d9ef">from</span> orders;
+<span style="color:#66d9ef">end</span>;
+</code></pre></div><p>存储过程处理完成后，游标就消失。</p>
+<h4 id="打开关闭">
+  打开关闭
+  <a class="anchor" href="#%e6%89%93%e5%bc%80%e5%85%b3%e9%97%ad">#</a>
+</h4>
+<p>打开使用：<code>OPEN ordernumbers;</code>
+关闭使用：<code>CLOSE ordernumbers;</code></p>
+<blockquote>
+<p>使用声明过的游标不需要再次声明，用 <code>OPEN</code> 语句打开它就可以了。
+如果你不明确关闭游标，MySQL 将会在到达 <code>END</code> 语句时自动关闭它。</p>
+</blockquote>
+<h4 id="使用游标数据">
+  使用游标数据
+  <a class="anchor" href="#%e4%bd%bf%e7%94%a8%e6%b8%b8%e6%a0%87%e6%95%b0%e6%8d%ae">#</a>
+</h4>
+<p>在一个游标被打开后，可以使用 <code>FETCH</code> 语句分别访问它的每一行。<code>FETCH</code> 指定检索什么数据（所需的列），检索出来的数据存储在什么地方。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">procedure</span> processorders()
+<span style="color:#66d9ef">begin</span>
+  <span style="color:#75715e">-- Declare local variables
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">declare</span> o int;
+
+  <span style="color:#75715e">-- Delare the cursor
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">declare</span> ordernumbers <span style="color:#66d9ef">cursor</span>
+  <span style="color:#66d9ef">for</span>
+  <span style="color:#66d9ef">select</span> order_num <span style="color:#66d9ef">from</span> orders;
+
+  <span style="color:#75715e">-- open the cursor
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">open</span> ordernumbers;
+
+  <span style="color:#75715e">-- get order number
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">fetch</span> ordernumbers <span style="color:#66d9ef">into</span> o;
+
+  <span style="color:#75715e">-- close the cursor
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">close</span> ordernumbers;
+<span style="color:#66d9ef">end</span>;
+</code></pre></div><h2 id="触发器">
+  触发器
+  <a class="anchor" href="#%e8%a7%a6%e5%8f%91%e5%99%a8">#</a>
+</h2>
+<p>如果你想要某条语句（或某些语句）在事件发生时自动执行，怎么办呢？使用<strong>触发器</strong>。</p>
+<p>触发器是 MySQL 响应以下任意语句而自动执行的一条 MySQL 语句（或位于 <code>BEGIN</code> 和 <code>END</code> 语句之间的一组语句）：</p>
+<ul>
+<li><code>DELETE</code></li>
+<li><code>INSERT</code></li>
+<li><code>UPDATE</code></li>
+</ul>
+<p>创建触发器时，需要给出 4 条信息：</p>
+<ul>
+<li>唯一的触发器名；</li>
+<li>触发器关联的表；</li>
+<li>触发器应该响应的活动（<code>DELETE</code>、<code>INSERT</code> 或 <code>UPDATE</code>）；</li>
+<li>触发器何时执行（处理之前或之后）</li>
+</ul>
+<h3 id="创建-1">
+  创建
+  <a class="anchor" href="#%e5%88%9b%e5%bb%ba-1">#</a>
+</h3>
+<p>用 <code>CREATE TRIGGER</code> 语句创建。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">create</span> <span style="color:#66d9ef">trigger</span> newproduct <span style="color:#66d9ef">after</span> <span style="color:#66d9ef">insert</span> <span style="color:#66d9ef">on</span> products <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">each</span> <span style="color:#66d9ef">row</span> <span style="color:#66d9ef">select</span> <span style="color:#e6db74">&#39;Procduct added&#39;</span>;
+</code></pre></div><p>创建名为 <code>newproduct</code> 的新触发器。触发器可在一个操作发生之前或之后执行，这里给出了 <code>AFTER INSERT</code>，所以此触发器将在 <code>INSERT</code> 语句成
+功执行后执行。这个触发器还指定 <code>FOR EACH ROW</code>，因此代码对每个插入行执行。在这个例子中，文本 <code>Product added</code> 将对每个插入的行显示一次。
+使用 <code>INSERT</code> 语句添加一行或多行到 <code>products</code> 中，你将看到对每个成功的插入，显示 <code>Product added</code> 消息。</p>
+<blockquote>
+<p><strong>每个表每个事件每次只允许一个触发器。因此，每个表最多支持 6 个触发器（每条 <code>INSERT</code>、<code>UPDATE</code> 和 <code>DELETE</code> 的之前和之后）</strong>。
+如果 <code>BEFORE</code> 触发器失败，则 MySQL 将不执行请求的操作。此外，如果 <code>BEFORE</code> 触发器或语句本身失败，MySQL 将不执行 <code>AFTER</code> 触发
+器（如果有的话）。
+MySQL 触发器中不支持 <code>CALL</code> 语句。也就是不能从触发器内调用存储过程。</p>
+</blockquote>
+<h3 id="删除-1">
+  删除
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4-1">#</a>
+</h3>
+<p>删除触发器使用：<code>DROP TRIGGER newproduct;</code>。为了<strong>修改一个触发器，必须先删除它，然后再重新创建</strong>。</p>
+<h2 id="事务">
+  事务
+  <a class="anchor" href="#%e4%ba%8b%e5%8a%a1">#</a>
+</h2>
+<p>事务处理是一种机制，用来管理必须成批执行的 MySQL 操作，以保证数据库不包含不完整的操作结果。利用事务处理，可以保证一组操作不会中途停止，
+它们或者作为整体执行，或者完全不执行（除非明确指示）。如果没有错误发生，整组语句提交给（写到）数据库表。如果发生错误，则进行回退（撤销）
+以恢复数据库到某个已知且安全的状态。</p>
+<p>关于事务处理需要知道的几个术语：</p>
+<ul>
+<li><strong>事务</strong>（transaction）指一组 SQL 语句；</li>
+<li><strong>回退</strong>（rollback）指撤销指定 SQL 语句的过程；</li>
+<li><strong>提交</strong>（commit）指将未存储的 SQL 语句结果写入数据库表；</li>
+<li><strong>保留点</strong>（savepoint）指事务处理中设置的临时占位符（<code>place- holder</code>），你可以对它发布回退（与回退整个事务处理不同）</li>
+</ul>
+<h3 id="控制事务处理">
+  控制事务处理
+  <a class="anchor" href="#%e6%8e%a7%e5%88%b6%e4%ba%8b%e5%8a%a1%e5%a4%84%e7%90%86">#</a>
+</h3>
+<p>管理事务处理的关键在于将 SQL 语句组分解为逻辑块，并明确规定数据何时应该回退，何时不应该回退。</p>
+<p>下面的语句来标识事务的开始：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">START</span> <span style="color:#66d9ef">TRANSACTION</span>
+</code></pre></div><h4 id="rollback">
+  ROLLBACK
+  <a class="anchor" href="#rollback">#</a>
+</h4>
+<p><code>ROLLBACK</code> 命令用来回退（撤销）MySQL 语句：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> ordertotals;
+<span style="color:#66d9ef">start</span> <span style="color:#66d9ef">transaction</span>;
+<span style="color:#66d9ef">delete</span> <span style="color:#66d9ef">from</span> ordertotals;
+<span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> ordertotals;
+<span style="color:#66d9ef">rollback</span>;
+<span style="color:#66d9ef">select</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">from</span> ordertotals;
+</code></pre></div><p>先执行一条 <code>SELECT</code> 以显示该表不为空。然后开始一个事务处理，用一条 <code>DELETE</code> 语句删除 <code>ordertotals</code> 中的所有行。
+另一条 <code>SELECT</code> 语句验证 <code>ordertotals</code> 确实为空。这时用一条 <code>ROLLBACK</code> 语句回退 <code>START TRANSACTION</code> 之后的所有语句，最后
+一条 <code>SELECT</code> 语句显示该表不为空。</p>
+<p><strong><code>ROLLBACK</code> 只能在一个事务处理内使用（在执行一条 <code>START TRANSACTION</code> 命令之后）</strong>。</p>
+<h5 id="哪些语句可以回退">
+  哪些语句可以回退
+  <a class="anchor" href="#%e5%93%aa%e4%ba%9b%e8%af%ad%e5%8f%a5%e5%8f%af%e4%bb%a5%e5%9b%9e%e9%80%80">#</a>
+</h5>
+<p>事务处理用来管理 <code>INSERT</code>、<code>UPDATE</code> 和 <code>DELETE</code> 语句。不能回退 <code>SELECT</code> 语句。（这样做也没有什么意义）不能回退 <code>CREATE</code> 或 <code>DROP</code>
+操作。事务处理块中可以使用这两条语句，但如果你执行回退，它们不会被撤销。</p>
+<h4 id="commit">
+  COMMIT
+  <a class="anchor" href="#commit">#</a>
+</h4>
+<p>一般的 MySQL 语句都是直接针对数据库表执行和编写的。这就是所谓的<strong>隐含提交</strong>（implicit commit），即提交（写或保存）操作是自动进行的。</p>
+<p><strong>在事务处理块中，提交不会隐含地进行</strong>。为进行明确的提交，使用 <code>COMMIT</code> 语句：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">start</span> <span style="color:#66d9ef">transaction</span>;
+<span style="color:#66d9ef">delete</span> <span style="color:#66d9ef">from</span> orderitems <span style="color:#66d9ef">where</span> order_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">20005</span>;
+<span style="color:#66d9ef">delete</span> <span style="color:#66d9ef">from</span> orders <span style="color:#66d9ef">where</span> order_num <span style="color:#f92672">=</span> <span style="color:#ae81ff">20005</span>;
+<span style="color:#66d9ef">commit</span>;
+</code></pre></div><blockquote>
+<p>当 <code>COMMIT</code> 或 <code>ROLLBACK</code> 语句执行后，事务会自动关闭（将来的更改会隐含提交）。</p>
+</blockquote>
+<h4 id="保留点">
+  保留点
+  <a class="anchor" href="#%e4%bf%9d%e7%95%99%e7%82%b9">#</a>
+</h4>
+<p>简单的 <code>ROLLBACK</code> 和 <code>COMMIT</code> 语句就可以写入或撤销整个事务处理。复杂的事务处理可能需要部分提交或回退。</p>
+<p>为了支持回退部分事务处理，必须能在事务处理块中合适的位置放置占位符。这样，如果需要回退，可以回退到某个占位符。这些占位符称为<strong>保留点</strong>。</p>
+<p>创建占位符，可使用 <code>SAVEPOINT</code> 语句：<code>SAVEPOINT delete1;</code>。
+每个保留点都取标识它的唯一名字，以便在回退时，MySQL 知道要回退到何处。</p>
+<p>回退到本例给出的保留点，可执行：<code>ROLLBACK TO delete1;</code></p>
+<blockquote>
+<p>保留点在事务处理完成（执行一条 <code>ROLLBACK</code> 或 <code>COMMIT</code>）后自动释放。</p>
+</blockquote>
+<h2 id="用户管理">
+  用户管理
+  <a class="anchor" href="#%e7%94%a8%e6%88%b7%e7%ae%a1%e7%90%86">#</a>
+</h2>
+<p><strong>在现实世界的日常工作中，决不能使用 <code>root</code></strong>。应该创建一系列的账号，有的用于管理，有的供用户使用，有的供开发人员使用，等等。</p>
+<p>MySQL 用户账号和信息存储在名为 <code>mysql</code> 的库中。一般不需要直接访问 <code>mysql</code> 数据库和表，但有时需要直接访问。需要直接访问它
+的时机之一是在需要获得所有用户账号列表时。</p>
+<p><code>mysql</code> 库有一个名为 <code>user</code> 的表，它包含所有用户账号。<code>user</code> 表有一个名为 <code>user</code> 的列，它存储用户登录名。</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/mysql/06_other.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#视图">视图</a>
+      <ul>
+        <li><a href="#为什么使用视图">为什么使用视图</a></li>
+        <li><a href="#性能问题">性能问题</a></li>
+        <li><a href="#规则和限制">规则和限制</a></li>
+        <li><a href="#使用视图">使用视图</a></li>
+      </ul>
+    </li>
+    <li><a href="#存储过程">存储过程</a>
+      <ul>
+        <li><a href="#为什么要使用存储过程">为什么要使用存储过程</a></li>
+        <li><a href="#使用">使用</a></li>
+      </ul>
+    </li>
+    <li><a href="#游标">游标</a>
+      <ul>
+        <li><a href="#使用游标">使用游标</a></li>
+      </ul>
+    </li>
+    <li><a href="#触发器">触发器</a>
+      <ul>
+        <li><a href="#创建-1">创建</a></li>
+        <li><a href="#删除-1">删除</a></li>
+      </ul>
+    </li>
+    <li><a href="#事务">事务</a>
+      <ul>
+        <li><a href="#控制事务处理">控制事务处理</a></li>
+      </ul>
+    </li>
+    <li><a href="#用户管理">用户管理</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

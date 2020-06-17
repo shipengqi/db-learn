@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="位图#位图不是特殊的数据结构，它的内容其实就是普通的字符串，也就是 byte 数组。 在日常开发中，可能会有一些 bool 型数据需要存取，如果使用普通的 key/value 方式存储，会浪费很多存储空间,比如签到记录，签 了是 true，没签是 false，记录 365 天。如果每个用户存储 365 条记录，当用户量很庞大的时候，需要的存储空间是惊人的。
+对于这种操作，Redis 提供了位操作，这样每天的签到记录只占据一个位，用 1 表示已签到，0 表示没签，那么 365 天就是 365 个 bit，46 个字节 就可以完全容纳下，大大节约了存储空间。
+SETBIT#Redis 的位数组是自动扩展，如果设置了某个偏移位置超出了现有的内容范围，就会自动将位数组进行零扩充。
+SETBIT key offset value 设置指定偏移量上的 bit 的值。value 的值是 0 或 1。当 key 不存在时，自动生成一个新的 key。 offset 参数的取值范围为大于等于 0，小于 2^32(bit 映射限制在 512 MB 以内)。
+redis&gt; SETBIT testbit 100 1 (integer) 0 redis&gt; GETBIT testbit 100 (integer) 1 redis&gt; GETBIT testbit 101 (integer) 0 # bit 默认被初始化为 0 GETBIT#获取指定偏移量上的位 bit 的值。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="位图" />
+<meta property="og:description" content="位图#位图不是特殊的数据结构，它的内容其实就是普通的字符串，也就是 byte 数组。 在日常开发中，可能会有一些 bool 型数据需要存取，如果使用普通的 key/value 方式存储，会浪费很多存储空间,比如签到记录，签 了是 true，没签是 false，记录 365 天。如果每个用户存储 365 条记录，当用户量很庞大的时候，需要的存储空间是惊人的。
+对于这种操作，Redis 提供了位操作，这样每天的签到记录只占据一个位，用 1 表示已签到，0 表示没签，那么 365 天就是 365 个 bit，46 个字节 就可以完全容纳下，大大节约了存储空间。
+SETBIT#Redis 的位数组是自动扩展，如果设置了某个偏移位置超出了现有的内容范围，就会自动将位数组进行零扩充。
+SETBIT key offset value 设置指定偏移量上的 bit 的值。value 的值是 0 或 1。当 key 不存在时，自动生成一个新的 key。 offset 参数的取值范围为大于等于 0，小于 2^32(bit 映射限制在 512 MB 以内)。
+redis&gt; SETBIT testbit 100 1 (integer) 0 redis&gt; GETBIT testbit 100 (integer) 1 redis&gt; GETBIT testbit 101 (integer) 0 # bit 默认被初始化为 0 GETBIT#获取指定偏移量上的位 bit 的值。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/12_bitmap/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>位图 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/"class=active>位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>位图</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#setbit">SETBIT</a></li>
+        <li><a href="#getbit">GETBIT</a></li>
+        <li><a href="#bitpos">BITPOS</a></li>
+        <li><a href="#bitop">BITOP</a></li>
+        <li><a href="#bitcount">BITCOUNT</a></li>
+        <li><a href="#bitfield">BITFIELD</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="位图">
+  位图
+  <a class="anchor" href="#%e4%bd%8d%e5%9b%be">#</a>
+</h1>
+<p>位图不是特殊的数据结构，它的内容其实就是普通的字符串，也就是 <code>byte</code> 数组。
+在日常开发中，可能会有一些 <code>bool</code> 型数据需要存取，如果使用普通的 <code>key/value</code> 方式存储，会浪费很多存储空间,比如签到记录，签
+了是 <code>true</code>，没签是 <code>false</code>，记录 365 天。如果每个用户存储 365 条记录，当用户量很庞大的时候，需要的存储空间是惊人的。</p>
+<p>对于这种操作，Redis 提供了位操作，这样每天的签到记录只占据一个位，用 1 表示已签到，0 表示没签，那么 365 天就是 365 个 bit，46 个字节
+就可以完全容纳下，大大节约了存储空间。</p>
+<h3 id="setbit">
+  SETBIT
+  <a class="anchor" href="#setbit">#</a>
+</h3>
+<p>Redis 的位数组是自动扩展，如果设置了某个偏移位置超出了现有的内容范围，就会自动将位数组进行零扩充。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SETBIT key offset value
+</code></pre></div><p>设置指定偏移量上的 bit 的值。<code>value</code> 的值是 <code>0</code> 或 <code>1</code>。当 <code>key</code> 不存在时，自动生成一个新的 key。
+<code>offset</code> 参数的取值范围为大于等于 <code>0</code>，小于 <code>2^32</code>(bit 映射限制在 512 MB 以内)。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SETBIT testbit <span style="color:#ae81ff">100</span> <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; GETBIT testbit <span style="color:#ae81ff">100</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; GETBIT testbit <span style="color:#ae81ff">101</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># bit 默认被初始化为 0</span>
+</code></pre></div><h3 id="getbit">
+  GETBIT
+  <a class="anchor" href="#getbit">#</a>
+</h3>
+<p>获取指定偏移量上的位 bit 的值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">GETBIT key offset
+</code></pre></div><p>如果 <code>offset</code> 比字符串值的长度大，或者 <code>key</code> 不存在时，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; EXISTS testbit2
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; GETBIT testbit2 <span style="color:#ae81ff">100</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis&gt; SETBIT testbit2 <span style="color:#ae81ff">100</span> <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; GETBIT bit <span style="color:#ae81ff">100</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><h3 id="bitpos">
+  BITPOS
+  <a class="anchor" href="#bitpos">#</a>
+</h3>
+<p>获取 key 里面第一个被设置为 <code>1</code> 或者 <code>0</code> 的 <code>bit</code> 位。
+<code>BITPOS</code> 可以用来做查找，例如，查找用户从哪一天开始第一次签到。如果指定了范围参数 <code>start</code>, <code>end</code>，就可以统计在某个时间范围内
+用户签到了多少天，用户自某天以后的哪天开始签到。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">BITPOS key value start end
+</code></pre></div><p><code>value</code> 是 <code>0</code> 或者 <code>1</code>。如果我们在空字符串或者 <code>0</code> 字节的字符串里面查找 <code>bit</code> 为 <code>1</code> 的内容，那么结果将返回 <code>-1</code>。
+<code>start</code> 和 <code>end</code> 也可以包含负值，负值将从字符串的末尾开始计算，<code>-1</code> 是字符串的最后一个字节，<code>-2</code> 是倒数第二个，等等。
+<code>start</code> 和 <code>end</code> 参数是字节索引，也就是说指定的位范围必须是 8 的倍数，而不能任意指定。
+不存在的 <code>key</code> 将会被当做空字符串来处理。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SET testbit3 hello
+OK
+redis&gt; BITPOS testbit3 <span style="color:#ae81ff">1</span> <span style="color:#75715e"># 第一个 1 位</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; BITPOS testbit3 <span style="color:#ae81ff">0</span> <span style="color:#75715e"># 第一个 0 位</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; SET mykey <span style="color:#e6db74">&#34;\xff\xf0\x00&#34;</span>
+OK
+redis&gt; BITPOS mykey <span style="color:#ae81ff">0</span> <span style="color:#75715e"># 查找字符串里面bit值为0的位置</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">12</span>
+redis&gt; SET mykey <span style="color:#e6db74">&#34;\x00\xff\xf0&#34;</span>
+OK
+redis&gt; BITPOS mykey <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">0</span> <span style="color:#75715e"># 查找字符串里面bit值为1从第0个字节开始的位置</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">8</span>
+redis&gt; BITPOS mykey <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">2</span> <span style="color:#75715e"># 查找字符串里面bit值为1从第2个字节(12)开始的位置</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">16</span>
+redis&gt; set mykey <span style="color:#e6db74">&#34;\x00\x00\x00&#34;</span>
+OK
+redis&gt; BITPOS mykey <span style="color:#ae81ff">1</span> <span style="color:#75715e"># 查找字符串里面bit值为1的位置</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> -1
+</code></pre></div><h3 id="bitop">
+  BITOP
+  <a class="anchor" href="#bitop">#</a>
+</h3>
+<p>对一个或多个保存二进制位的字符串 <code>key</code> 进行位元操作，并将结果保存到 <code>destkey</code> 上。处理不同长度的字符串时，较短的那个字符串所缺少的部分
+会被看作 <code>0</code>，空的 <code>key</code> 也被看作是包含 <code>0</code> 的字符串序列。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">BITOP operation destkey key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span>
+</code></pre></div><p><code>operation</code>有四种操作可选：</p>
+<ul>
+<li><code>AND</code>，对一个或多个 <code>key</code> 值求逻辑并。</li>
+<li><code>OR</code>，对一个或多个 <code>key</code> 值求逻辑或。</li>
+<li><code>XOR</code>，对一个或多个 <code>key</code> 值求逻辑异或。</li>
+<li><code>NOT</code>，对给定 <code>key</code> 值求逻辑非，<strong>注意 <code>NOT</code> 操作，只可以接收一个 <code>key</code> 作为输入，其他三个操作一个或多个</strong>。</li>
+</ul>
+<p><code>BITOP</code> 的复杂度为 <code>O(N)</code>，当处理大型矩阵(matrix)或者进行大数据量的统计时，最好将任务指派到 <code>slave</code> 进行，避免阻塞主节点。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SETBIT testbit1 <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>        <span style="color:#75715e"># testbit1 = 1001</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; SETBIT testbit1 <span style="color:#ae81ff">3</span> <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; SETBIT testbit2 <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>        <span style="color:#75715e"># testbit2 = 1101</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; SETBIT testbit2 <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; SETBIT testbit2 <span style="color:#ae81ff">3</span> <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; BITOP AND andresult testbit1 testbit2
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; GETBIT andresult <span style="color:#ae81ff">0</span>      <span style="color:#75715e"># andresult = 1001</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; GETBIT andresult <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; GETBIT andresult <span style="color:#ae81ff">2</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; GETBIT andresult <span style="color:#ae81ff">3</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><h3 id="bitcount">
+  BITCOUNT
+  <a class="anchor" href="#bitcount">#</a>
+</h3>
+<p>可以用来做高位统计，例如，统计用户一共签到了多少天。
+计算指定 key 中，比特位被设置为 <code>1</code> 的数量。指定可选参数 <code>start</code> 和 <code>end</code> 时只统计指定位上的字符，否则统计全部。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">BITPOS key value start end
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; BITCOUNT testbit4
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis&gt; SETBIT testbit4 <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>          <span style="color:#75715e"># 0001</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis&gt; BITCOUNT testbit4
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; SETBIT testbit4 <span style="color:#ae81ff">3</span> <span style="color:#ae81ff">1</span>          <span style="color:#75715e"># 1001</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis&gt; BITCOUNT testbit4
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+</code></pre></div><h3 id="bitfield">
+  BITFIELD
+  <a class="anchor" href="#bitfield">#</a>
+</h3>
+<p><code>SETBIT</code> 和 <code>GETBIT</code> 都只能操作一个 <code>bit</code>，如果要操作多个 <code>bit</code> 就使用 <code>BITFIELD</code>。</p>
+<p><code>BITFIELD</code> 有四个子指令：</p>
+<ul>
+<li><code>GET type offset</code>，返回指定的位域</li>
+<li><code>SET type offset value</code>，设置指定位域的值并返回它的原值</li>
+<li><code>INCRBY type offset increment</code>，自增或自减（如果 increment 为负数）指定位域的值并返回它的新值</li>
+<li><code>OVERFLOW [WRAP|SAT|FAIL]</code>，溢出策略子指令，通过设置溢出行为来改变调用 INCRBY 指令的后序操作</li>
+</ul>
+<p><code>GET</code>，<code>SET</code>，<code>INCRBY</code> 最多只能处理 64 个连续的位，超过 64 位，就得使用多个子指令，<code>BITFIELD</code> 可以一次执行多个子指令。</p>
+<h4 id="get-子指令">
+  <code>GET</code> 子指令
+  <a class="anchor" href="#get-%e5%ad%90%e6%8c%87%e4%bb%a4">#</a>
+</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; set w hello
+OK
+redis&gt; BITFIELD w get u4 <span style="color:#ae81ff">0</span>  <span style="color:#75715e"># 从第一个位开始取 4 个位，结果是无符号数 (u)</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">6</span>
+redis&gt; BITFIELD w get u3 <span style="color:#ae81ff">2</span>  <span style="color:#75715e"># 从第三个位开始取 3 个位，结果是无符号数 (u)</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">5</span>
+redis&gt; BITFIELD w get i4 <span style="color:#ae81ff">0</span>  <span style="color:#75715e"># 从第一个位开始取 4 个位，结果是有符号数 (i)</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">6</span>
+redis&gt; BITFIELD w get i3 <span style="color:#ae81ff">2</span>  <span style="color:#75715e"># 从第三个位开始取 3 个位，结果是有符号数 (i)</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> -3
+
+<span style="color:#75715e"># 执行多个子命令</span>
+redis&gt; BITFIELD w get u4 <span style="color:#ae81ff">0</span> get u3 <span style="color:#ae81ff">2</span> get i4 <span style="color:#ae81ff">0</span> get i3 <span style="color:#ae81ff">2</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">6</span>
+2<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">5</span>
+3<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">6</span>
+4<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> -3
+</code></pre></div><p>有符号数最多可以获取 64 位，无符号数只能获取 63 位 (Redis 中的 <code>integer</code> 是有符号数，最大 64 位，不能传递 64 位无符号值)。如果超
+出位数限制， Redis 就会告诉你参数错误。</p>
+<h4 id="set-子指令">
+  SET 子指令
+  <a class="anchor" href="#set-%e5%ad%90%e6%8c%87%e4%bb%a4">#</a>
+</h4>
+<p><code>SET</code> 子指令将第二个字符 <code>e</code> 改成 <code>a</code>，<code>a</code> 的 <code>ASCII</code> 码是 <code>97</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; BITFIELD w set u8 <span style="color:#ae81ff">8</span> <span style="color:#ae81ff">97</span>  <span style="color:#75715e"># 从第 8 个位开始，将接下来的 8 个位用无符号数 97 替换</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">101</span>
+redis&gt; get w
+<span style="color:#e6db74">&#34;hallo&#34;</span>
+</code></pre></div><h4 id="incrby-子指令">
+  INCRBY 子指令
+  <a class="anchor" href="#incrby-%e5%ad%90%e6%8c%87%e4%bb%a4">#</a>
+</h4>
+<p>它用来对指定范围的位进行自增操作。既然提到自增，就有可能出现溢出。如果增加了正数，会出现上溢，如果增加的是负数，就会出现下溢出。
+Redis 默认的处理是折返。如果出现了溢出，就将溢出的符号位丢掉。如果是 8 位无符号数 255，加 1 后就会溢出，会全部变零。如果是 8 位有符
+号数 127，加 1 后就会溢出变成 <code>-128</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; set w hello
+OK
+redis&gt; bitfield w incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>  <span style="color:#75715e"># 从第三个位开始，对接下来的 4 位无符号数 +1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">11</span>
+redis&gt; bitfield w incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">12</span>
+redis&gt; bitfield w incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">13</span>
+redis&gt; bitfield w incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">14</span>
+redis&gt; bitfield w incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">15</span>
+redis&gt; bitfield w incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>  <span style="color:#75715e"># 溢出折返</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+</code></pre></div><h5 id="overflow-子指令">
+  OVERFLOW 子指令
+  <a class="anchor" href="#overflow-%e5%ad%90%e6%8c%87%e4%bb%a4">#</a>
+</h5>
+<p>用户可以使用 <code>OVERFLOW</code> 来选择溢出行为，默认是折返 (wrap)。</p>
+<ul>
+<li><code>WRAP</code> 回环/折返 算法，默认是 <code>WRAP</code>，适用于有符号和无符号整型两种类型。对于无符号整型，回环计数将对整型最大值进行取模
+操作（C 语言的标准行为）。对于有符号整型，上溢从最负的负数开始取数，下溢则从最大的正数开始取数，例如，如果 i8 整型的值设为 127，自
+加 1 后的值变为 <code>-128</code>。</li>
+<li><code>SAT</code> 饱和截断算法，下溢之后设为最小的整型值，上溢之后设为最大的整数值。例如，i8 整型的值从 120 开始加 10 后，结果是 127，继续增
+加，结果还是保持为 127。下溢也是同理，但量结果值将会保持在最负的负数值。</li>
+<li><code>FAIL</code> 失败算法，这种模式下，在检测到上溢或下溢时，不做任何操作。相应的返回值会设为 NULL，并返回给调用者。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; set w hello
+OK
+redis&gt; bitfield w overflow sat incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">11</span>
+redis&gt; bitfield w overflow sat incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">12</span>
+redis&gt; bitfield w overflow sat incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">13</span>
+redis&gt; bitfield w overflow sat incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">14</span>
+redis&gt; bitfield w overflow sat incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">15</span>
+redis&gt; bitfield w overflow sat incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>  <span style="color:#75715e"># 保持最大值</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">15</span>
+
+redis&gt; set w hello
+OK
+redis&gt; bitfield w overflow fail incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">11</span>
+redis&gt; bitfield w overflow fail incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">12</span>
+redis&gt; bitfield w overflow fail incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">13</span>
+redis&gt; bitfield w overflow fail incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">14</span>
+redis&gt; bitfield w overflow fail incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">15</span>
+redis&gt; bitfield w overflow fail incrby u4 <span style="color:#ae81ff">2</span> <span style="color:#ae81ff">1</span>  <span style="color:#75715e"># 不执行</span>
+1<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>
+</code></pre></div></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/12_bitmap.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#setbit">SETBIT</a></li>
+        <li><a href="#getbit">GETBIT</a></li>
+        <li><a href="#bitpos">BITPOS</a></li>
+        <li><a href="#bitop">BITOP</a></li>
+        <li><a href="#bitcount">BITCOUNT</a></li>
+        <li><a href="#bitfield">BITFIELD</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

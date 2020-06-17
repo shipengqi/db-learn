@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 数据类型 List#Redis 列表(Lists)是简单的字符串列表，并根据插入顺序进行排序。一个 Redis 列表中最多可存储 232-1(40亿)个元素。
+Redis 的列表和 Java 的 LinkedList 类似，注意它是链表而不是数组。这意味着 List 的插入和删除操作非常快，但是索引定位很慢。 当列表移除了最后一个元素之后，该 key 会被自动被删除，内存被回收。
+Redis 的列表结构常用来做异步队列使用。将需要延后处理的任务结构体序列化成字符串塞进列表，另一个线程从这个列表中读取数据进行处理。
+存取#LPUSH#将一个或多个值 value 插入到列表 key 的头部。
+LPUSH key value [value ...] 如果有多个 value，那么从左到右依次插入列表。如果 key 不存在，首先会创建一个空列表再执行 LPUSH 操作。 命令执行成功，返回列表的长度。如果 key 存在，但不是 List 类型，会返回一个错误。
+# 加入单个元素 redis&gt; LPUSH languages python (integer) 1 # 加入重复元素 redis&gt; LPUSH languages python (integer) 2 redis&gt; LRANGE languages 0 -1 # 列表允许重复元素 1) &#34;python&#34; 2) &#34;python&#34; # 加入多个元素 redis&gt; LPUSH mylist a b c (integer) 3 redis&gt; LRANGE mylist 0 -1 1) &#34;c&#34; 2) &#34;b&#34; 3) &#34;a&#34; LPUSHX#LPUSHX 和 LPUSH 相同，不同的是，LPUSHX 一次只能插入一个 value，而且只有当 key 存在且是 List 类型时，才会将值 value 插入到列表 key 的头部。如果 key 不存在，则不执行操作。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="Redis 数据类型 List" />
+<meta property="og:description" content="Redis 数据类型 List#Redis 列表(Lists)是简单的字符串列表，并根据插入顺序进行排序。一个 Redis 列表中最多可存储 232-1(40亿)个元素。
+Redis 的列表和 Java 的 LinkedList 类似，注意它是链表而不是数组。这意味着 List 的插入和删除操作非常快，但是索引定位很慢。 当列表移除了最后一个元素之后，该 key 会被自动被删除，内存被回收。
+Redis 的列表结构常用来做异步队列使用。将需要延后处理的任务结构体序列化成字符串塞进列表，另一个线程从这个列表中读取数据进行处理。
+存取#LPUSH#将一个或多个值 value 插入到列表 key 的头部。
+LPUSH key value [value ...] 如果有多个 value，那么从左到右依次插入列表。如果 key 不存在，首先会创建一个空列表再执行 LPUSH 操作。 命令执行成功，返回列表的长度。如果 key 存在，但不是 List 类型，会返回一个错误。
+# 加入单个元素 redis&gt; LPUSH languages python (integer) 1 # 加入重复元素 redis&gt; LPUSH languages python (integer) 2 redis&gt; LRANGE languages 0 -1 # 列表允许重复元素 1) &#34;python&#34; 2) &#34;python&#34; # 加入多个元素 redis&gt; LPUSH mylist a b c (integer) 3 redis&gt; LRANGE mylist 0 -1 1) &#34;c&#34; 2) &#34;b&#34; 3) &#34;a&#34; LPUSHX#LPUSHX 和 LPUSH 相同，不同的是，LPUSHX 一次只能插入一个 value，而且只有当 key 存在且是 List 类型时，才会将值 value 插入到列表 key 的头部。如果 key 不存在，则不执行操作。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/07_redis-list/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>Redis 数据类型 List | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/"class=active>数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 数据类型 List</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#存取">存取</a>
+      <ul>
+        <li><a href="#lpush">LPUSH</a></li>
+        <li><a href="#lpushx">LPUSHX</a></li>
+        <li><a href="#rpush">RPUSH</a></li>
+        <li><a href="#rpushx">RPUSHX</a></li>
+        <li><a href="#linsert">LINSERT</a></li>
+        <li><a href="#lpop">LPOP</a></li>
+        <li><a href="#blpop">BLPOP</a></li>
+        <li><a href="#rpop">RPOP</a></li>
+        <li><a href="#brpop">BRPOP</a></li>
+        <li><a href="#lindex">LINDEX</a></li>
+        <li><a href="#lrange">LRANGE</a></li>
+      </ul>
+    </li>
+    <li><a href="#修改列表元素">修改列表元素</a>
+      <ul>
+        <li><a href="#lset">LSET</a></li>
+        <li><a href="#rpoplpush">RPOPLPUSH</a></li>
+        <li><a href="#brpoplpush">BRPOPLPUSH</a></li>
+      </ul>
+    </li>
+    <li><a href="#其他">其他</a>
+      <ul>
+        <li><a href="#llen">LLEN</a></li>
+        <li><a href="#lrem">LREM</a></li>
+        <li><a href="#ltrim">LTRIM</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="redis-数据类型-list">
+  Redis 数据类型 List
+  <a class="anchor" href="#redis-%e6%95%b0%e6%8d%ae%e7%b1%bb%e5%9e%8b-list">#</a>
+</h1>
+<p>Redis 列表(Lists)是简单的字符串列表，并根据插入顺序进行排序。一个 Redis 列表中最多可存储 <code>232-1</code>(40亿)个元素。</p>
+<p>Redis 的列表和 <code>Java</code> 的 <code>LinkedList</code> 类似，注意它是链表而不是数组。这意味着 <code>List</code> 的插入和删除操作非常快，但是索引定位很慢。
+当列表移除了最后一个元素之后，该 <code>key</code> 会被自动被删除，内存被回收。</p>
+<p>Redis 的列表结构常用来做异步队列使用。将需要延后处理的任务结构体序列化成字符串塞进列表，另一个线程从这个列表中读取数据进行处理。</p>
+<h2 id="存取">
+  存取
+  <a class="anchor" href="#%e5%ad%98%e5%8f%96">#</a>
+</h2>
+<h3 id="lpush">
+  LPUSH
+  <a class="anchor" href="#lpush">#</a>
+</h3>
+<p>将一个或多个值 <code>value</code> 插入到列表 <code>key</code> 的头部。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">LPUSH key value <span style="color:#f92672">[</span>value ...<span style="color:#f92672">]</span>
+</code></pre></div><p>如果有多个 <code>value</code>，那么从左到右依次插入列表。如果 <code>key</code> 不存在，首先会创建一个空列表再执行 <code>LPUSH</code> 操作。
+命令执行成功，返回列表的长度。如果 <code>key</code> 存在，但不是 <code>List</code> 类型，会返回一个错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 加入单个元素</span>
+redis&gt; LPUSH languages python
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+<span style="color:#75715e"># 加入重复元素</span>
+redis&gt; LPUSH languages python
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+redis&gt; LRANGE languages <span style="color:#ae81ff">0</span> -1     <span style="color:#75715e"># 列表允许重复元素</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;python&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;python&#34;</span>
+
+<span style="color:#75715e"># 加入多个元素</span>
+redis&gt; LPUSH mylist a b c
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+redis&gt; LRANGE mylist <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;b&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;a&#34;</span>
+</code></pre></div><h3 id="lpushx">
+  LPUSHX
+  <a class="anchor" href="#lpushx">#</a>
+</h3>
+<p><code>LPUSHX</code> 和 <code>LPUSH</code> 相同，不同的是，<code>LPUSHX</code> 一次只能插入一个 <code>value</code>，而且只有当 <code>key</code> 存在且是 <code>List</code> 类型时，才会将值 <code>value</code>
+插入到列表 <code>key</code> 的头部。如果 <code>key</code> 不存在，则不执行操作。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">LPUSHX key value
+</code></pre></div><p>命令执行成功，返回列表的长度。如果 <code>key</code> 存在，但不是 <code>List</code> 类型，会返回一个错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 对空列表执行 LPUSHX</span>
+redis&gt; LLEN greet
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; LPUSHX greet <span style="color:#e6db74">&#34;hello&#34;</span>    <span style="color:#75715e"># LPUSHX 失败，因为列表为空</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e"># 对非空列表执行 LPUSHX</span>
+redis&gt; LPUSH greet <span style="color:#e6db74">&#34;hello&#34;</span> <span style="color:#75715e"># 这次 LPUSHX 执行成功</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; LPUSHX greet <span style="color:#e6db74">&#34;good morning&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+redis&gt; LRANGE greet <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;good morning&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hello&#34;</span>
+
+<span style="color:#75715e"># 非列表类型，返回错误</span>
+redis&gt; set key value
+OK
+redis&gt; lpush key xxx
+<span style="color:#f92672">(</span>error<span style="color:#f92672">)</span> WRONGTYPE Operation against a key holding the wrong kind of value
+</code></pre></div><h3 id="rpush">
+  RPUSH
+  <a class="anchor" href="#rpush">#</a>
+</h3>
+<p><code>RPUSH</code> 是将一个或多个值 <code>value</code> 插入到列表 <code>key</code> 的尾部。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">RPUSH key value <span style="color:#f92672">[</span>value ...<span style="color:#f92672">]</span>
+</code></pre></div><p>如果 <code>key</code> 不存在，会首先创建一个空列表，再执行 <code>RPUSH</code>。返回执行 <code>RPUSH</code> 后列表的长度。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 添加单个元素</span>
+redis&gt; RPUSH languages c
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+<span style="color:#75715e"># 添加重复元素</span>
+redis&gt; RPUSH languages c
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+redis&gt; LRANGE languages <span style="color:#ae81ff">0</span> -1 <span style="color:#75715e"># 列表允许重复元素</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+
+<span style="color:#75715e"># 添加多个元素</span>
+redis&gt; RPUSH mylist a b c
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+redis&gt; LRANGE mylist <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;a&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;b&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+</code></pre></div><h3 id="rpushx">
+  RPUSHX
+  <a class="anchor" href="#rpushx">#</a>
+</h3>
+<p><code>RPUSHX</code> 和 <code>RPUSH</code> 相同，不同的是，<code>RPUSHX</code> 一次只能插入一个 <code>value</code>，而且只有当 <code>key</code> 存在且是 <code>List</code> 类型时，才会将值 <code>value</code>
+插入到列表 <code>key</code> 的尾部。如果 <code>key</code> 不存在，则不执行操作。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">RPUSHX key value
+</code></pre></div><p>返回执行 <code>RPUSH</code> 后列表的长度。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># key不存在</span>
+redis&gt; LLEN greet
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+<span style="color:#75715e"># 对不存在的 key 进行 RPUSHX，PUSH 失败。</span>
+redis&gt; RPUSHX greet <span style="color:#e6db74">&#34;hello&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e"># key 存在且是一个非空列表</span>
+<span style="color:#75715e"># 先用 RPUSH 插入一个元素</span>
+redis&gt; RPUSH greet <span style="color:#e6db74">&#34;hi&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+ <span style="color:#75715e"># greet 是一个列表类型，RPUSHX 操作成功</span>
+redis&gt; RPUSHX greet <span style="color:#e6db74">&#34;hello&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+redis&gt; LRANGE greet <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hi&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hello&#34;</span>
+</code></pre></div><h3 id="linsert">
+  LINSERT
+  <a class="anchor" href="#linsert">#</a>
+</h3>
+<p>将 <code>value</code> 插入 <code>key</code> 中指定 <code>pivot</code> 元素的前面或后面。如果 <code>pivot</code> 或 <code>key</code> 不存在则不执行任何操作。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">LINSERT key BEFORE|AFTER pivot value
+</code></pre></div><p>操作成功，返回插入之后，列表的长度。<code>pivot</code> 不存在，返回 <code>-1</code>。如果 <code>key</code> 不存在或为空，则返回 <code>0</code>，如果 <code>key</code> 不是一个列表类型，
+则返回一个错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; RPUSH mylist <span style="color:#e6db74">&#34;Hello&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; RPUSH mylist <span style="color:#e6db74">&#34;World&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+redis&gt; LINSERT mylist BEFORE <span style="color:#e6db74">&#34;World&#34;</span> <span style="color:#e6db74">&#34;There&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+redis&gt; LRANGE mylist <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Hello&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;There&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;World&#34;</span>
+
+<span style="color:#75715e"># 对一个非空列表插入，查找一个不存在的 pivot</span>
+redis&gt; LINSERT mylist BEFORE <span style="color:#e6db74">&#34;go&#34;</span> <span style="color:#e6db74">&#34;let&#39;s&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> -1                  <span style="color:#75715e"># 失败</span>
+
+<span style="color:#75715e"># 对一个空列表执行 LINSERT 命令</span>
+redis&gt; EXISTS fake_list
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; LINSERT fake_list BEFORE <span style="color:#e6db74">&#34;nono&#34;</span> <span style="color:#e6db74">&#34;gogogog&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>                                      <span style="color:#75715e"># 失败</span>
+</code></pre></div><h3 id="lpop">
+  LPOP
+  <a class="anchor" href="#lpop">#</a>
+</h3>
+<p>返回 <code>key</code> 列表中的头元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">LINSERT key BEFORE|AFTER pivot value
+</code></pre></div><p>如果 <code>key</code> 不存在，则返回 <code>nil</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; LLEN course
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; RPUSH course algorithm001
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; RPUSH course c++101
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+redis&gt; LPOP course  <span style="color:#75715e"># 移除头元素</span>
+<span style="color:#e6db74">&#34;algorithm001&#34;</span>
+</code></pre></div><h3 id="blpop">
+  BLPOP
+  <a class="anchor" href="#blpop">#</a>
+</h3>
+<p><code>BLPOP</code> 是 <code>LPOP</code> 类似，但是 <code>BLPOP</code> 在列表为空时，当前连接会被 <code>BLPOP</code> 阻塞，直到超时或有另一个客户端 PUSH 了可弹出的元素为止。
+当指定多个 <code>key</code> 参数时，会按 <code>key</code> 的先后顺序依次检查各个列表，并弹出第一个非空列表的头元素。<code>timeout</code> 参数表示阻塞的时长，单位
+为秒，<strong>注意如果 <code>timeout</code> 为 <code>0</code>，表示可以无限期延长阻塞。</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">BLPOP key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span> timeout
+</code></pre></div><p>如果列表为空，返回一个 <code>nil</code>。 否则，返回一个含有两个元素的列表，第一个元素是被弹出元素所属的 <code>key</code>，第二个元素是被弹出元素的值。</p>
+<h4 id="blpop-命令的非阻塞行为">
+  BLPOP 命令的非阻塞行为
+  <a class="anchor" href="#blpop-%e5%91%bd%e4%bb%a4%e7%9a%84%e9%9d%9e%e9%98%bb%e5%a1%9e%e8%a1%8c%e4%b8%ba">#</a>
+</h4>
+<p>例如，现在有 <code>job</code>、<code>command</code> 和 <code>request</code> 三个列表，<code>job</code> 不存在，而 <code>command</code> 和 <code>request</code> 都是非空列表：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"> <span style="color:#75715e"># 确保key都被删除</span>
+redis&gt; DEL job command request
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e"># 为command列表增加一个值</span>
+redis&gt; LPUSH command <span style="color:#e6db74">&#34;update system...&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+<span style="color:#75715e"># 为request列表增加一个值</span>
+redis&gt; LPUSH request <span style="color:#e6db74">&#34;visit page&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+<span style="color:#75715e"># job 列表为空，被跳过，紧接着 command 列表的第一个元素被弹出。</span>
+redis&gt; BLPOP job command request <span style="color:#ae81ff">0</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;command&#34;</span>                     <span style="color:#75715e"># 弹出元素所属列表的key</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;update system...&#34;</span>            <span style="color:#75715e"># 弹出元素的值</span>
+</code></pre></div><h4 id="blpop-命令的阻塞行为">
+  BLPOP 命令的阻塞行为
+  <a class="anchor" href="#blpop-%e5%91%bd%e4%bb%a4%e7%9a%84%e9%98%bb%e5%a1%9e%e8%a1%8c%e4%b8%ba">#</a>
+</h4>
+<p>当指定的所有 <code>key</code> 都不存在或包含空列表，<code>BLPOP</code> 命令将阻塞连接，直到等待超时，或有可弹出元素为止。</p>
+<h3 id="rpop">
+  RPOP
+  <a class="anchor" href="#rpop">#</a>
+</h3>
+<p>移除并返回 <code>key</code> 列表的尾元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">RPOP key
+</code></pre></div><p>当 <code>key</code> 不存在时，返回 <code>nil</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">edis&gt; RPUSH mylist <span style="color:#e6db74">&#34;one&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; RPUSH mylist <span style="color:#e6db74">&#34;two&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; RPUSH mylist <span style="color:#e6db74">&#34;three&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+
+redis&gt; RPOP mylist           <span style="color:#75715e"># 返回被弹出的元素</span>
+<span style="color:#e6db74">&#34;three&#34;</span>
+
+redis&gt; LRANGE mylist <span style="color:#ae81ff">0</span> -1    <span style="color:#75715e"># 列表剩下的元素</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;one&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;two&#34;</span>
+</code></pre></div><h3 id="brpop">
+  BRPOP
+  <a class="anchor" href="#brpop">#</a>
+</h3>
+<p><code>BRPOP</code> 和 <code>BLPOP</code> 基本相同，不同点在于一个弹出头部元素，一个是尾部元素，而且会阻塞操作。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">BRPOP key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span> timeout
+</code></pre></div><p>注意 <code>BRPOP</code> 弹出的元素，一样会被移除。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; LLEN course
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis&gt; RPUSH course algorithm001
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; RPUSH course c++101
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; BRPOP course <span style="color:#ae81ff">30</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;course&#34;</span>             <span style="color:#75715e"># 弹出元素的 key</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c++101&#34;</span>             <span style="color:#75715e"># 弹出元素的值</span>
+</code></pre></div><h3 id="lindex">
+  LINDEX
+  <a class="anchor" href="#lindex">#</a>
+</h3>
+<p>返回列表 <code>key</code> 中下标为 <code>index</code> 的元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">LINDEX key index
+</code></pre></div><p><code>index</code> 可以是负数，比如：<code>-1</code> 表时倒数第一个元素，<code>-2</code> 表时倒数第二个元素，以次类推。
+如果 <code>index</code> 不在列表有效范围内，返回一个 <code>nil</code>。如果 <code>key</code> 不是列表类型，返回一个错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; LPUSH mylist <span style="color:#e6db74">&#34;World&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; LPUSH mylist <span style="color:#e6db74">&#34;Hello&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+redis&gt; LINDEX mylist <span style="color:#ae81ff">0</span>
+<span style="color:#e6db74">&#34;Hello&#34;</span>
+redis&gt; LINDEX mylist -1
+<span style="color:#e6db74">&#34;World&#34;</span>
+<span style="color:#75715e"># index不在 mylist 的区间范围内</span>
+redis&gt; LINDEX mylist <span style="color:#ae81ff">3</span>
+<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>
+</code></pre></div><h3 id="lrange">
+  LRANGE
+  <a class="anchor" href="#lrange">#</a>
+</h3>
+<p>返回列表 <code>key</code> 中指定区间内的元素。以偏移量 <code>start</code> 和 <code>stop</code> 指定的区间内的元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">LRANGE key start stop
+</code></pre></div><p><code>start</code> 和 <code>stop</code> 索引位的元素都包含在取值范围内，比如执行 <code>LRANGE list 0 10</code>，结果是一个包含 <code>11</code> 个元素的列表。
+<code>start</code> 和 <code>stop</code> 超出范围的下标值不会引起错误。
+如果 <code>start</code> 大于最大下标值 <code>end</code> 则会返回一个空列表。如果 <code>stop</code> 大于最大下标值 <code>end</code>，会自动设置 <code>stop</code> 的值设置为 <code>end</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; RPUSH fp-language lisp
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; LRANGE fp-language <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">0</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;lisp&#34;</span>
+
+redis&gt; RPUSH fp-language scheme
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; LRANGE fp-language <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;lisp&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;scheme&#34;</span>
+</code></pre></div><h2 id="修改列表元素">
+  修改列表元素
+  <a class="anchor" href="#%e4%bf%ae%e6%94%b9%e5%88%97%e8%a1%a8%e5%85%83%e7%b4%a0">#</a>
+</h2>
+<h3 id="lset">
+  LSET
+  <a class="anchor" href="#lset">#</a>
+</h3>
+<p>设置列表 <code>key</code> 中下标为 <code>index</code> 的元素值为 <code>value</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">LSET key index value
+</code></pre></div><p>如果 <code>index</code> 超出范围，或对一个空列表进行设置时，会返回错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 对空列表进行 LSET</span>
+redis&gt; EXISTS list
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; LSET list <span style="color:#ae81ff">0</span> item
+<span style="color:#f92672">(</span>error<span style="color:#f92672">)</span> ERR no such key
+
+<span style="color:#75715e"># 对非空列表进行 LSET</span>
+redis&gt; LPUSH job <span style="color:#e6db74">&#34;cook food&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; LRANGE job <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">0</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;cook food&#34;</span>
+redis&gt; LSET job <span style="color:#ae81ff">0</span> <span style="color:#e6db74">&#34;play game&#34;</span>
+OK
+redis&gt; LRANGE job  <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">0</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;play game&#34;</span>
+
+<span style="color:#75715e"># index 超出范围</span>
+redis&gt; LLEN list
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; LSET list <span style="color:#ae81ff">3</span> <span style="color:#e6db74">&#39;out of range&#39;</span>
+<span style="color:#f92672">(</span>error<span style="color:#f92672">)</span> ERR index out of range
+</code></pre></div><h3 id="rpoplpush">
+  RPOPLPUSH
+  <a class="anchor" href="#rpoplpush">#</a>
+</h3>
+<p><code>RPOPLPUSH</code> 是 <code>RPOP</code> 和 <code>LPUSH</code> 两个操作的合并，会执行两个原子操作：</p>
+<ul>
+<li>将列表 <code>source</code> 的尾元素弹出，并返回给客户端。</li>
+<li>将 <code>source</code> 弹出的元素，作为 <code>destination</code> 列表的头元素插入。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">RPOPLPUSH source destination
+</code></pre></div><p>如果 <code>source</code> 不存在，返回 <code>nil</code>。如果 <code>source</code> 和 <code>destination</code> 是同一个列表，就会把尾元素移动至开头，这叫做<strong>列表
+的旋转</strong>(rotation)操作。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># source 和 destination 不同</span>
+redis&gt; LRANGE alpha <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;a&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;b&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d&#34;</span>
+redis&gt; RPOPLPUSH alpha reciver
+<span style="color:#e6db74">&#34;d&#34;</span>
+redis&gt; LRANGE alpha <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;a&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;b&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+redis&gt; LRANGE reciver <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d&#34;</span>
+<span style="color:#75715e"># 再执行一次，表明 RPOP 和 LPUSH 的位置正确</span>
+redis&gt; RPOPLPUSH alpha reciver
+<span style="color:#e6db74">&#34;c&#34;</span>
+redis&gt; LRANGE alpha <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;a&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;b&#34;</span>
+redis&gt; LRANGE reciver <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d&#34;</span>
+
+
+<span style="color:#75715e"># source 和 destination 相同</span>
+redis&gt; LRANGE number <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;1&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;4&#34;</span>
+redis&gt; RPOPLPUSH number number
+<span style="color:#e6db74">&#34;4&#34;</span>
+<span style="color:#75715e"># 4 被旋转到了表头</span>
+redis&gt; LRANGE number <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;4&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;1&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3&#34;</span>
+redis&gt; RPOPLPUSH number number
+<span style="color:#e6db74">&#34;3&#34;</span>
+redis&gt; LRANGE number <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;4&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;1&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2&#34;</span>
+</code></pre></div><h3 id="brpoplpush">
+  BRPOPLPUSH
+  <a class="anchor" href="#brpoplpush">#</a>
+</h3>
+<p><code>BRPOPLPUSH</code> 和 <code>RPOPLPUSH</code> 基本相同，<code>BRPOPLPUSH</code> 是阻塞版本，当指定的源列表 <code>source</code> 不为空时，其表现和 <code>RPOPLPUSH</code> 一样。
+当 <code>source</code> 为空时，连接将被 <code>BRPOP</code> 命令阻塞，直到等待超时或有可弹出元素为止。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">BRPOPLPUSH source destination timeout
+</code></pre></div><p>如果指定时间内没有任何元素弹出，返回一个 <code>nil</code>。 否则，返回一个含有两个元素的列表，其中：第一个元素是被弹出元素所属的 <code>key</code>，第二
+个元素是被弹出元素的值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 非空列表</span>
+redis&gt; BRPOPLPUSH msg reciver <span style="color:#ae81ff">500</span>
+<span style="color:#e6db74">&#34;hello moto&#34;</span>                        <span style="color:#75715e"># 弹出元素的值</span>
+<span style="color:#f92672">(</span>4.31s<span style="color:#f92672">)</span>                             <span style="color:#75715e"># 等待时长</span>
+redis&gt; LLEN reciver
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; LRANGE reciver <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">0</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hello moto&#34;</span>
+
+
+<span style="color:#75715e"># 空列表</span>
+redis&gt; BRPOPLPUSH msg reciver <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>
+<span style="color:#f92672">(</span>2.24s<span style="color:#f92672">)</span>
+</code></pre></div><h2 id="其他">
+  其他
+  <a class="anchor" href="#%e5%85%b6%e4%bb%96">#</a>
+</h2>
+<h3 id="llen">
+  LLEN
+  <a class="anchor" href="#llen">#</a>
+</h3>
+<p>返回列表 <code>key</code> 的长度。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">LLEN key
+</code></pre></div><p>如果 <code>key</code> 不存在，返回 <code>0</code>。如果 <code>key</code> 不是列表类型，返回一个错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 空列表</span>
+redis&gt; LLEN job
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e"># 非空列表</span>
+redis&gt; LPUSH job <span style="color:#e6db74">&#34;cook food&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; LPUSH job <span style="color:#e6db74">&#34;have lunch&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; LLEN job
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+</code></pre></div><h3 id="lrem">
+  LREM
+  <a class="anchor" href="#lrem">#</a>
+</h3>
+<p>移除元素，指定移除数量 <code>count</code>，移除列表 <code>key</code> 中与 <code>value</code> 相等的元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">LREM key count value
+</code></pre></div><p><code>count</code>的值可以有下面三种情况：</p>
+<ul>
+<li><code>count &gt; 0</code>，从表头开始向表尾搜索，移除与 <code>value</code> 相等的元素，数量为 <code>count</code>。</li>
+<li><code>count &lt; 0</code>，从表尾开始向表头搜索，移除与 <code>value</code> 相等的元素，数量为 <code>count</code>的 绝对值。</li>
+<li><code>count = 0</code>，移除表中所有与 <code>value</code> 相等的值。</li>
+</ul>
+<p>如果 <code>key</code> 不存在，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 先创建一个表，内容排列是</span>
+<span style="color:#75715e"># morning hello morning helllo morning</span>
+
+redis&gt; LPUSH greet <span style="color:#e6db74">&#34;morning&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; LPUSH greet <span style="color:#e6db74">&#34;hello&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+redis&gt; LPUSH greet <span style="color:#e6db74">&#34;morning&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+redis&gt; LPUSH greet <span style="color:#e6db74">&#34;hello&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">4</span>
+redis&gt; LPUSH greet <span style="color:#e6db74">&#34;morning&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">5</span>
+
+redis&gt; LRANGE greet <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">4</span>         <span style="color:#75715e"># 查看所有元素</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;morning&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hello&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;morning&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hello&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;morning&#34;</span>
+
+redis&gt; LREM greet <span style="color:#ae81ff">2</span> morning     <span style="color:#75715e"># 移除从表头到表尾，最先发现的两个 morning</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>                     <span style="color:#75715e"># 两个元素被移除</span>
+
+redis&gt; LLEN greet               <span style="color:#75715e"># 还剩 3 个元素</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+
+redis&gt; LRANGE greet <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">2</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hello&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hello&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;morning&#34;</span>
+
+redis&gt; LREM greet -1 morning    <span style="color:#75715e"># 移除从表尾到表头，第一个 morning</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; LLEN greet               <span style="color:#75715e"># 剩下两个元素</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; LRANGE greet <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hello&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hello&#34;</span>
+
+redis&gt; LREM greet <span style="color:#ae81ff">0</span> hello      <span style="color:#75715e"># 移除表中所有 hello</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>                    <span style="color:#75715e"># 两个 hello 被移除</span>
+
+redis&gt; LLEN greet
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+</code></pre></div><h3 id="ltrim">
+  LTRIM
+  <a class="anchor" href="#ltrim">#</a>
+</h3>
+<p>对列表 <code>key</code> 进行修剪，通过 <code>start</code> 和 <code>stop</code> 指定区间，保留指定区间内的元素，其余的元素删除。
+比如，执行 <code>LTRIM list 0 10</code>，表示保留列表 <code>list</code> 的前 <code>11</code> 个元素，其余元素删除。
+<code>start</code> 和 <code>stop</code> 可以是负数，如，<code>-1</code> 表示列表的最后一个元素， <code>-2</code> 表示列表的倒数第二个元素，以此类推。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">LTRIM key start stop
+</code></pre></div><p>操作成功返回 <code>OK</code>，失败会返回错误信息。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 1. start 和 stop 都在列表的索引范围之内</span>
+
+<span style="color:#75715e"># alpha 是一个包含 5 个字符串的列表</span>
+redis&gt; LRANGE alpha <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;h&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;e&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;l&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;l&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;o&#34;</span>
+
+<span style="color:#75715e"># 删除 alpha 列表索引为 0 的元素</span>
+redis&gt; LTRIM alpha <span style="color:#ae81ff">1</span> -1
+OK
+<span style="color:#75715e"># &#34;h&#34; 已被删除</span>
+redis&gt; LRANGE alpha <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;e&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;l&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;l&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;o&#34;</span>
+
+<span style="color:#75715e"># 2. stop 大于最大下标值</span>
+<span style="color:#75715e"># 保留 alpha 列表索引 1 至索引 10086 上的元素</span>
+redis&gt; LTRIM alpha <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">10086</span>
+OK
+<span style="color:#75715e"># 只有索引 0 上的元素 &#34;e&#34; 被删除了，其他元素还在</span>
+redis&gt; LRANGE alpha <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;l&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;l&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;o&#34;</span>
+
+<span style="color:#75715e"># 3. start 和 stop 都大于列表的最大下标，并且 start &lt; stop</span>
+redis&gt; LTRIM alpha <span style="color:#ae81ff">10086</span> <span style="color:#ae81ff">123321</span>
+OK
+
+redis&gt; LRANGE alpha <span style="color:#ae81ff">0</span> -1        <span style="color:#75715e"># 列表被清空</span>
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+
+
+<span style="color:#75715e"># 4. start 和 stop 都大于列表的最大下标，并且 start &gt; stop</span>
+<span style="color:#75715e"># 重新建立一个新列表</span>
+redis&gt; RPUSH new-alpha <span style="color:#e6db74">&#34;h&#34;</span> <span style="color:#e6db74">&#34;e&#34;</span> <span style="color:#e6db74">&#34;l&#34;</span> <span style="color:#e6db74">&#34;l&#34;</span> <span style="color:#e6db74">&#34;o&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">5</span>
+
+redis&gt; LRANGE new-alpha <span style="color:#ae81ff">0</span> -1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;h&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;e&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;l&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;l&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;o&#34;</span>
+<span style="color:#75715e"># 执行 LTRIM</span>
+redis&gt; LTRIM new-alpha <span style="color:#ae81ff">123321</span> <span style="color:#ae81ff">10086</span>
+OK
+<span style="color:#75715e"># 同样被清空</span>
+redis&gt; LRANGE new-alpha <span style="color:#ae81ff">0</span> -1
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+</code></pre></div></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/07_redis-list.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#存取">存取</a>
+      <ul>
+        <li><a href="#lpush">LPUSH</a></li>
+        <li><a href="#lpushx">LPUSHX</a></li>
+        <li><a href="#rpush">RPUSH</a></li>
+        <li><a href="#rpushx">RPUSHX</a></li>
+        <li><a href="#linsert">LINSERT</a></li>
+        <li><a href="#lpop">LPOP</a></li>
+        <li><a href="#blpop">BLPOP</a></li>
+        <li><a href="#rpop">RPOP</a></li>
+        <li><a href="#brpop">BRPOP</a></li>
+        <li><a href="#lindex">LINDEX</a></li>
+        <li><a href="#lrange">LRANGE</a></li>
+      </ul>
+    </li>
+    <li><a href="#修改列表元素">修改列表元素</a>
+      <ul>
+        <li><a href="#lset">LSET</a></li>
+        <li><a href="#rpoplpush">RPOPLPUSH</a></li>
+        <li><a href="#brpoplpush">BRPOPLPUSH</a></li>
+      </ul>
+    </li>
+    <li><a href="#其他">其他</a>
+      <ul>
+        <li><a href="#llen">LLEN</a></li>
+        <li><a href="#lrem">LREM</a></li>
+        <li><a href="#ltrim">LTRIM</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

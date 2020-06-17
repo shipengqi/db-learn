@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="集群#Sentinel#可以将 Redis Sentinel 集群看成是一个 ZooKeeper 集群，它是集群高可用的心脏，它一般是由 3～5 个节点组成，这样挂了个别节点集群还可 以正常运转。
+它负责持续监控主从节点的健康，当主节点挂掉时，自动选择一个最优的从节点切换为主节点。客户端来连接集群时，会首先连接 sentinel，通 过 sentinel 来查询主节点的地址，然后再去连接主节点进行数据交互。当主节点发生故障时，客户端会重新向 sentinel 要地址，sentinel 会将 最新的主节点地址告诉客户端。
+从这张图中我们能看到主节点挂掉了，原先的主从复制也断开了，客户端和损坏的主节点也断开了。从节点被提升为新的主节点，其它从节点开始和新的 主节点建立复制关系。客户端通过新的主节点继续进行交互
+Sentinel 会持续监控已经挂掉了主节点，待它恢复后原先挂掉的主节点现在变成了从节点，从新的主节点那里建立复制关系。
+消息丢失#Redis 主从采用异步复制，意味着当主节点挂掉时，从节点可能没有收到全部的同步消息，这部分未同步的消息就丢失了。如果主从延迟特别大，那么 丢失的数据就可能会特别多。Sentinel 无法保证消息完全不丢失，但是也尽可能保证消息少丢失。它有两个选项可以限制主从延迟过大。
+min-slaves-to-write 1 # 表示主节点必须至少有一个从节点在进行正常复制，否则就停止对外写服务min-slaves-max-lag 10 # 单位是秒，表示如果 10s 没有收到从节点的反馈，就意味着从节点同步异常Cluster#RedisCluster 是 Redis 提供的分布式数据库方案，集群通过分片来进行数据共享，并提供复制和故障转移功能。RedisCluster 是去中心化的， 如下图，该集群有三个 Redis 节点组成，每个节点负责整个集群的一部分数据，每个节点负责的数据多少可能不一样。这三个节点相互连接组成 一个对等的集群，它们之间通过一种特殊的二进制协议相互交互集群信息。
+槽#Redis 通过分片的方式来保存数据：集群的整个数据库被分为 16384 个槽（slot），集群中的每个节点可以处理 0 个或最多 16384 个槽。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="集群" />
+<meta property="og:description" content="集群#Sentinel#可以将 Redis Sentinel 集群看成是一个 ZooKeeper 集群，它是集群高可用的心脏，它一般是由 3～5 个节点组成，这样挂了个别节点集群还可 以正常运转。
+它负责持续监控主从节点的健康，当主节点挂掉时，自动选择一个最优的从节点切换为主节点。客户端来连接集群时，会首先连接 sentinel，通 过 sentinel 来查询主节点的地址，然后再去连接主节点进行数据交互。当主节点发生故障时，客户端会重新向 sentinel 要地址，sentinel 会将 最新的主节点地址告诉客户端。
+从这张图中我们能看到主节点挂掉了，原先的主从复制也断开了，客户端和损坏的主节点也断开了。从节点被提升为新的主节点，其它从节点开始和新的 主节点建立复制关系。客户端通过新的主节点继续进行交互
+Sentinel 会持续监控已经挂掉了主节点，待它恢复后原先挂掉的主节点现在变成了从节点，从新的主节点那里建立复制关系。
+消息丢失#Redis 主从采用异步复制，意味着当主节点挂掉时，从节点可能没有收到全部的同步消息，这部分未同步的消息就丢失了。如果主从延迟特别大，那么 丢失的数据就可能会特别多。Sentinel 无法保证消息完全不丢失，但是也尽可能保证消息少丢失。它有两个选项可以限制主从延迟过大。
+min-slaves-to-write 1 # 表示主节点必须至少有一个从节点在进行正常复制，否则就停止对外写服务min-slaves-max-lag 10 # 单位是秒，表示如果 10s 没有收到从节点的反馈，就意味着从节点同步异常Cluster#RedisCluster 是 Redis 提供的分布式数据库方案，集群通过分片来进行数据共享，并提供复制和故障转移功能。RedisCluster 是去中心化的， 如下图，该集群有三个 Redis 节点组成，每个节点负责整个集群的一部分数据，每个节点负责的数据多少可能不一样。这三个节点相互连接组成 一个对等的集群，它们之间通过一种特殊的二进制协议相互交互集群信息。
+槽#Redis 通过分片的方式来保存数据：集群的整个数据库被分为 16384 个槽（slot），集群中的每个节点可以处理 0 个或最多 16384 个槽。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/23_cluster/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>集群 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/"class=active>集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>集群</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#sentinel">Sentinel</a>
+      <ul>
+        <li><a href="#消息丢失">消息丢失</a></li>
+      </ul>
+    </li>
+    <li><a href="#cluster">Cluster</a>
+      <ul>
+        <li><a href="#槽">槽</a></li>
+        <li><a href="#槽位定位算法">槽位定位算法</a></li>
+        <li><a href="#跳转">跳转</a></li>
+        <li><a href="#在集群中执行命令">在集群中执行命令</a></li>
+        <li><a href="#迁移">迁移</a></li>
+        <li><a href="#容错">容错</a></li>
+        <li><a href="#网络抖动">网络抖动</a></li>
+        <li><a href="#槽位迁移感知">槽位迁移感知</a></li>
+        <li><a href="#集群变更感知">集群变更感知</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="集群">
+  集群
+  <a class="anchor" href="#%e9%9b%86%e7%be%a4">#</a>
+</h1>
+<h2 id="sentinel">
+  Sentinel
+  <a class="anchor" href="#sentinel">#</a>
+</h2>
+<p>可以将 Redis Sentinel 集群看成是一个 ZooKeeper 集群，它是集群高可用的心脏，它一般是由 <code>3～5</code> 个节点组成，这样挂了个别节点集群还可
+以正常运转。</p>
+<p>
+  <img src="../../../images/sentinel.jpg" alt="" /></p>
+<p>它负责持续监控主从节点的健康，当主节点挂掉时，自动选择一个最优的从节点切换为主节点。客户端来连接集群时，会首先连接 sentinel，通
+过 sentinel 来查询主节点的地址，然后再去连接主节点进行数据交互。当主节点发生故障时，客户端会重新向 sentinel 要地址，sentinel 会将
+最新的主节点地址告诉客户端。</p>
+<p>
+  <img src="../../../images/sentinel2.jpg" alt="" /></p>
+<p>从这张图中我们能看到主节点挂掉了，原先的主从复制也断开了，客户端和损坏的主节点也断开了。从节点被提升为新的主节点，其它从节点开始和新的
+主节点建立复制关系。客户端通过新的主节点继续进行交互</p>
+<p>Sentinel 会持续监控已经挂掉了主节点，待它恢复后原先挂掉的主节点现在变成了从节点，从新的主节点那里建立复制关系。</p>
+<h3 id="消息丢失">
+  消息丢失
+  <a class="anchor" href="#%e6%b6%88%e6%81%af%e4%b8%a2%e5%a4%b1">#</a>
+</h3>
+<p>Redis 主从采用异步复制，意味着当主节点挂掉时，从节点可能没有收到全部的同步消息，这部分未同步的消息就丢失了。如果主从延迟特别大，那么
+丢失的数据就可能会特别多。Sentinel 无法保证消息完全不丢失，但是也尽可能保证消息少丢失。它有两个选项可以限制主从延迟过大。</p>
+<pre><code>min-slaves-to-write 1  # 表示主节点必须至少有一个从节点在进行正常复制，否则就停止对外写服务
+min-slaves-max-lag 10 # 单位是秒，表示如果 10s 没有收到从节点的反馈，就意味着从节点同步异常
+</code></pre><h2 id="cluster">
+  Cluster
+  <a class="anchor" href="#cluster">#</a>
+</h2>
+<p>RedisCluster 是 Redis 提供的分布式数据库方案，集群通过分片来进行数据共享，并提供复制和故障转移功能。RedisCluster 是去中心化的，
+如下图，该集群有三个 Redis 节点组成，每个节点负责整个集群的一部分数据，每个节点负责的数据多少可能不一样。这三个节点相互连接组成
+一个对等的集群，它们之间通过一种特殊的二进制协议相互交互集群信息。</p>
+<p>
+  <img src="../../../images/redis-cluster.jpg" alt="" /></p>
+<h3 id="槽">
+  槽
+  <a class="anchor" href="#%e6%a7%bd">#</a>
+</h3>
+<p>Redis 通过分片的方式来保存数据：<strong>集群的整个数据库被分为 16384 个槽（slot）</strong>，集群中的每个节点可以处理 0 个或最多 16384 个槽。</p>
+<p>16384 个槽都有节点在处理时，集群处于上线状态，相反的，如果有任何一个槽没有得到处理，那么集群处于下线状态。</p>
+<p>槽位的信息存储于每个节点中，当 Redis Cluster 的客户端来连接集群时，它也会得到一份集群的槽位配置信息。这样当客户端要查找某个 <code>key</code> 时，
+可以直接定位到目标节点。</p>
+<p>客户端为了可以直接定位某个具体的 key 所在的节点，它就需要缓存槽位相关信息，这样才可以准确快速地定位到相应的节点。同时因
+为槽位的信息可能会存在客户端与服务器不一致的情况，还需要纠正机制来实现槽位信息的校验调整。</p>
+<p>RedisCluster 的每个节点会将集群的配置信息持久化到配置文件中，所以必须确保配置文件是可写的，而且尽量不要依靠人工修改配置文件。</p>
+<h3 id="槽位定位算法">
+  槽位定位算法
+  <a class="anchor" href="#%e6%a7%bd%e4%bd%8d%e5%ae%9a%e4%bd%8d%e7%ae%97%e6%b3%95">#</a>
+</h3>
+<p>Cluster 默认会对 key 值使用 crc16 算法进行 hash 得到一个整数值，然后用这个整数值对 16384 进行取模来得到具体槽位。</p>
+<p>Cluster 还允许用户强制某个 key 挂在特定槽位上，通过在 key 字符串里面嵌入 tag 标记，这就可以强制 key 所挂在的槽位等于 tag 所在的槽位。</p>
+<h3 id="跳转">
+  跳转
+  <a class="anchor" href="#%e8%b7%b3%e8%bd%ac">#</a>
+</h3>
+<p>当客户端向一个错误的节点发出了指令，该节点会发现指令的 key 所在的槽位并不归自己管理，这时它会向客户端发送一个特殊的跳转指令携带目
+标操作的节点地址，告诉客户端去连这个节点去获取数据。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">GET x
+-MOVED <span style="color:#ae81ff">3999</span> 127.0.0.1:6381
+</code></pre></div><p>MOVED 指令的第一个参数 3999 是 key 对应的槽位编号，后面是目标节点地址。MOVED 指令前面有一个减号，表示该指令是一个错误消息。</p>
+<p>客户端收到 MOVED 指令后，要立即纠正本地的槽位映射表。后续所有 key 将使用新的槽位映射表。</p>
+<h3 id="在集群中执行命令">
+  在集群中执行命令
+  <a class="anchor" href="#%e5%9c%a8%e9%9b%86%e7%be%a4%e4%b8%ad%e6%89%a7%e8%a1%8c%e5%91%bd%e4%bb%a4">#</a>
+</h3>
+<p>在对数据库的 16384 个槽都进行了指派之后，集群进入上线状态，客户端可以向集群发送指令了。</p>
+<p>当客户端向节点发送与数据库键有关的命令时，接受命令的节点会计算出这个 key 属于哪个槽，并检查这个槽是否指派给了自己：</p>
+<ul>
+<li>如果 key 所在的槽在当前节点，那么节点直接执行命令。</li>
+<li>如果 key 所在的槽没有指派给当前节点，那么节点会向客户端返回一个 <code>MOVED</code> 错诶，指引客户端转向正确的节点，再次发送之前想要执行的指令。</li>
+</ul>
+<p>客户端收到 <code>MOVED</code> 指令后，要立即纠正本地的槽位映射表。后续所有 key 将使用新的槽位映射表。</p>
+<h3 id="迁移">
+  迁移
+  <a class="anchor" href="#%e8%bf%81%e7%a7%bb">#</a>
+</h3>
+<p>Redis Cluster 提供了工具 <code>redis-trib</code> 可以让运维人员手动调整槽位的分配情况，它使用 Ruby 语言进行开发，通过组合各种原
+生的 Redis Cluster 指令来实现。</p>
+<p>
+  <img src="../../../images/redis-cluster-migrate.jpg" alt="" /></p>
+<p>Redis 迁移的单位是槽，Redis 一个槽一个槽进行迁移，当一个槽正在迁移时，这个槽就处于中间过渡状态。这个槽在原节点的状态为 <code>migrating</code>，
+在目标节点的状态为 <code>importing</code>，表示数据正在从源流向目标。</p>
+<p>迁移过程：</p>
+<ol>
+<li>迁移工具 <code>redis-trib</code> 首先会在源和目标节点设置好中间过渡状态，</li>
+<li>一次性获取源节点槽位的所有 key 列表( <code>keysinslot</code> 指令，可以部分获取)，再挨个 key 进行迁移。</li>
+<li>每个 key 的迁移过程是以源节点作为目标节点的「客户端」，源节点对当前的 key 执行 <code>dump</code> 指令得到序列化内容，</li>
+<li>通过「客户端」向目标节点发送指令 <code>restore</code> 携带序列化的内容作为参数，目标节点再进行反序列化就可以将内容恢复到目标节点的内存中，</li>
+<li>返回「客户端」OK，原节点「客户端」收到后再把当前节点的 key 删除掉就完成了单个 key 迁移的整个过程。</li>
+</ol>
+<p><strong>迁移过程是同步的，在目标节点执行 <code>restore</code> 指令到原节点删除 key 之间，原节点的主线程会处于阻塞状态，直到 key 被成功删除</strong>。</p>
+<p>如果迁移过程中突然出现网络故障，整个 slot 的迁移只进行了一半。这时两个节点依旧处于中间过渡状态。待下次迁移工具重新连上时，会提示用户继
+续进行迁移。</p>
+<p>在迁移过程中，客户端访问的流程会有很大的变化：</p>
+<ul>
+<li>新旧两个节点对应的槽位都存在部分 key 数据。客户端先尝试访问旧节点，如果对应的数据还在旧节点里面，那么旧节点正常处理。</li>
+<li>如果对应的数据不在旧节点里面，那么有两种可能，要么该数据在新节点里，要么根本就不存在。旧节点不知道是哪种情况，所以它会向客
+户端返回一个 <code>-ASK targetNodeAddr</code> 的重定向指令。客户端收到这个重定向指令后，先去目标节点执行一个不带任何参
+数的 <code>asking</code>指令，然后在目标节点再重新执行原先的操作指令。</li>
+</ul>
+<h4 id="为什么需要执行一个不带参数的-asking-指令呢">
+  为什么需要执行一个不带参数的 asking 指令呢？
+  <a class="anchor" href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e9%9c%80%e8%a6%81%e6%89%a7%e8%a1%8c%e4%b8%80%e4%b8%aa%e4%b8%8d%e5%b8%a6%e5%8f%82%e6%95%b0%e7%9a%84-asking-%e6%8c%87%e4%bb%a4%e5%91%a2">#</a>
+</h4>
+<p>因为在迁移没有完成之前，按理说这个槽位还是不归新节点管理的，如果这个时候向目标节点发送该槽位的指令，节点是不认的，它会向客户端返回一
+个 <code>-MOVED</code> 重定向指令告诉它去源节点去执行。如此就会形成<strong>重定向循环</strong>。<code>asking</code> 指令的目标就是打开目标节点的选项，告诉它下一条指
+令不能不理，而要当成自己的槽位来处理。</p>
+<h3 id="容错">
+  容错
+  <a class="anchor" href="#%e5%ae%b9%e9%94%99">#</a>
+</h3>
+<p>Redis Cluster 可以为每个主节点设置若干个从节点，单主节点故障时，集群会自动将其中某个从节点提升为主节点。如果某个主节点没有从节点，那么
+当它发生故障时，集群将完全处于不可用状态。不过 Redis 也提供了一个参数 <code>cluster-require-full-coverage</code> 可以允许部分节点故障，其它节
+点还可以继续提供对外访问。</p>
+<h3 id="网络抖动">
+  网络抖动
+  <a class="anchor" href="#%e7%bd%91%e7%bb%9c%e6%8a%96%e5%8a%a8">#</a>
+</h3>
+<p>真实世界的机房网络往往并不是风平浪静的，它们经常会发生各种各样的小问题。比如网络抖动就是非常常见的一种现象，突然之间部分连接变得不可
+访问，然后很快又恢复正常。</p>
+<p>为解决这种问题，Redis Cluster 提供了一种<strong>选项 <code>cluster-node-timeout</code>，表示当某个节点持续 <code>timeout</code> 的时间失联时，才
+可以认定该节点出现故障，需要进行主从切换。如果没有这个选项，网络抖动会导致主从频繁切换</strong> (数据的重新复制)。</p>
+<h3 id="槽位迁移感知">
+  槽位迁移感知
+  <a class="anchor" href="#%e6%a7%bd%e4%bd%8d%e8%bf%81%e7%a7%bb%e6%84%9f%e7%9f%a5">#</a>
+</h3>
+<p>如果 Cluster 中某个槽位正在迁移或者已经迁移完了，client 如何能感知到槽位的变化呢？客户端保存了槽位和节点的映射关系表，它需要即时得
+到更新，才可以正常地将某条指令发到正确的节点中。</p>
+<p>前面提到 Cluster 有两个特殊的指令，一个是 <code>moved</code>，一个是 <code>asking</code>：</p>
+<ul>
+<li><code>moved</code> 是用来纠正槽位的。如果我们将指令发送到了错误的节点，该节点发现对应的指令槽位不归自己管理，就会将目标节点的地址随同 <code>moved</code> 指
+令回复给客户端通知客户端去目标节点去访问。这个时候客户端就会刷新自己的槽位关系表，然后重试指令，后续所有打在该槽位的指令都会转到目标节点。</li>
+<li><code>asking</code> 指令是用来临时纠正槽位的。如果当前槽位正处于迁移中，指令会先被发送到槽位所在的旧节点，如果旧节点存在数据，那就直接返回
+果了，如果不存在，那么它可能真的不存在也可能在迁移目标节点上。所以旧节点会通知客户端去新节点尝试一下拿数据，看看新节点有没有。这时候就
+会给客户端返回一个 <code>asking error</code> 携带上目标节点的地址。客户端收到这个 <code>asking error</code> 后，就会去目标节点去尝试。客户端不会刷新槽位
+映射关系表，因为它只是临时纠正该指令的槽位信息，不影响后续指令。</li>
+</ul>
+<h4 id="重试多次">
+  重试多次
+  <a class="anchor" href="#%e9%87%8d%e8%af%95%e5%a4%9a%e6%ac%a1">#</a>
+</h4>
+<p><code>moved</code> 和 <code>asking</code> 指令都是重试指令，客户端会因为这两个指令多重试一次。读者有没有想过会不会存在一种情况，客户端有可能重试 2 次呢？这种
+情况是存在的，比如一条指令被发送到错误的节点，这个节点会先给你一个 <code>moved</code> 错误告知你去另外一个节点重试。所以客户端就去另外一个节点重
+试了，结果刚好这个时候运维人员要对这个槽位进行迁移操作，于是给客户端回复了一个 <code>asking</code> 指令告知客户端去目标节点去重试指令。所以这里
+客户端重试了 2 次。</p>
+<p>在某些特殊情况下，客户端甚至会重试多次，所以客户端的源码里在执行指令时都会有一个循环，然后会设置一个最大重试次数。当重试次数超过这个
+值时，客户端会直接向业务层抛出异常。</p>
+<h3 id="集群变更感知">
+  集群变更感知
+  <a class="anchor" href="#%e9%9b%86%e7%be%a4%e5%8f%98%e6%9b%b4%e6%84%9f%e7%9f%a5">#</a>
+</h3>
+<p>当服务器节点变更时，客户端应该即时得到通知以实时刷新自己的节点关系表。那客户端是如何得到通知的呢？这里要分 2 种情况：</p>
+<ol>
+<li>目标节点挂掉了，客户端会抛出一个 <code>ConnectionError</code>，紧接着会随机挑一个节点来重试，这时被重试的节点会通过 <code>moved error</code> 告知目
+标槽位被分配到的新的节点地址。</li>
+<li>运维手动修改了集群信息，将 <code>master</code> 切换到其它节点，并将旧的 <code>master</code> 移除集群。这时打在旧节点上的指令会收到一个 <code>ClusterDown</code> 
+的错误，告知当前节点所在集群不可用 。这时客户端就会关闭所有的连接，清空槽位映射关系表，然后向上层抛错。待下一条指令过来时，就会重新尝
+试初始化节点信息。</li>
+</ol>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/23_cluster.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#sentinel">Sentinel</a>
+      <ul>
+        <li><a href="#消息丢失">消息丢失</a></li>
+      </ul>
+    </li>
+    <li><a href="#cluster">Cluster</a>
+      <ul>
+        <li><a href="#槽">槽</a></li>
+        <li><a href="#槽位定位算法">槽位定位算法</a></li>
+        <li><a href="#跳转">跳转</a></li>
+        <li><a href="#在集群中执行命令">在集群中执行命令</a></li>
+        <li><a href="#迁移">迁移</a></li>
+        <li><a href="#容错">容错</a></li>
+        <li><a href="#网络抖动">网络抖动</a></li>
+        <li><a href="#槽位迁移感知">槽位迁移感知</a></li>
+        <li><a href="#集群变更感知">集群变更感知</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

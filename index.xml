@@ -1,0 +1,809 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Database learning on Database Learning</title>
+    <link>http://shipengqi.github.io/db-learn/</link>
+    <description>Recent content in Database learning on Database Learning</description>
+    <generator>Hugo -- gohugo.io</generator>
+    
+	<atom:link href="http://shipengqi.github.io/db-learn/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/access-method/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/access-method/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/data-directory/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/data-directory/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>B&#43; 树索引</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/12_b-tree/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/12_b-tree/</guid>
+      <description>B+ 树索引#没有索引的查找#没有索引的时候是怎么查找记录的？比如：
+SELECT [列名列表] FROM 表名 WHERE 列名 = xxx; 在一个页中的查找#如果表中的记录比较少，所有的记录都可以被存放到一个页中，在查找记录的时候可以根据搜索条件的不同分为两种情况：
+  以主键为搜索条件 在页目录中使用二分法快速定位到对应的槽，然后再遍历该槽对应分组中的记录即可快速找到指定的记录。
+  以其他列作为搜索条件 对非主键列，数据页中并没有对非主键列建立所谓的页目录，所以无法通过二分法快速定位相应的槽。这种情况下只能从最小记录开始 依次遍历单链表中的每条记录，然后对比每条记录是不是符合搜索条件。很显然，这种查找的效率是非常低的。
+  在很多页中查找#大部分情况下表中存放的记录都是非常多的，需要好多的数据页来存储这些记录。在很多页中查找记录的话可以分为两个步骤：
+ 定位到记录所在的页。 从所在的页内中查找相应的记录。  由于并不能快速的定位到记录所在的页，所以只能从第一个页沿着双向链表一直往下找，每一个页中再使用上面一个页中的查找方法。非常 低效。
+索引#先建一个表：
+mysql&amp;gt; CREATE TABLE index_demo( -&amp;gt; c1 INT, -&amp;gt; c2 INT, -&amp;gt; c3 CHAR(1), -&amp;gt; PRIMARY KEY(c1) -&amp;gt; ) ROW_FORMAT = Compact; Query OK, 0 rows affected (0.</description>
+    </item>
+    
+    <item>
+      <title>GeoHash</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/18_geohash/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/18_geohash/</guid>
+      <description>GeoHash#Redis 在 3.2 版本以后增加了地理位置 GEO 模块，可以实现类似外卖 APP 附近的餐馆的功能。
+地图元素的位置数据使用二维的经纬度表示，经度范围 (-180, 180]，纬度范围 (-90, 90]，纬度正负以赤道为界，北正南负，经度正负以 本初子午线 (英国格林尼治天文台) 为界，东正西负。
+当两个元素的距离不是很远时，可以直接使用勾股定理就能算得元素之间的距离。平时使用的附近的人的功能，元素距离都不是很大，勾股 定理算距离足矣。不过需要注意的是，经纬度坐标的密度不一样 (地球是一个椭圆)，勾股定律计算平方差时之后再求和时，需要按一定的系数比加权 求和。
+给定一个元素的坐标，然后计算这个坐标附近的其它元素，按照距离进行排序，如何做？
+如果现在元素的经纬度坐标使用关系数据库 (元素 id, 经度 x, 纬度 y) 存储，如何计算？
+不可能通过遍历来计算所有的元素和目标元素的距离然后再进行排序，这个计算量太大了。一般的方法都是通过矩形区域来限定元素的数量，然后对 区域内的元素进行全量距离计算再排序。这样可以明显减少计算量。如何划分矩形区域呢？可以指定一个半径 r，使用一条 SQL 就可以圈出来。当 用户对筛出来的结果不满意，那就扩大半径继续筛选。
+select id from positions where x0-r &amp;lt; x &amp;lt; x0+r and y0-r &amp;lt; y &amp;lt; y0+r 可以在经纬度坐标加上双向复合索引 (x, y)，这样可以最大优化查询性能。
+但是数据库查询性能毕竟有限，如果查询请求非常多，在高并发场合，这并不是一个好的方案。
+GeoHash 算法#业界比较通用的地理位置距离排序算法是 GeoHash 算法。GeoHash 算法将二维的经纬度数据映射到一维的整数，这样所有的元素都将在挂载到一 条线上，距离靠近的二维坐标映射到一维后的点之间距离也会很接近。当我们想要计算附近的人时，首先将目标位置映射到这条线上，然后在这 个一维的线上获取附近的点就行了。
+映射算法#将整个地球看成一个二维平面，然后划分成了一系列正方形的方格，就好比围棋棋盘。所有的地图元素坐标都将放置于唯一的方格中。方格越小，坐标 越精确。然后对这些方格进行整数编码，越是靠近的方格编码越是接近。如何编码？一个最简单的方案就是切蛋糕法。设想一个正方形的蛋糕摆在 你面前，二刀下去均分分成四块小正方形，这四个小正方形可以分别标记为 00,01,10,11 四个二进制整数。然后对每一个小正方形继续用二刀法切割 一下，这时每个小小正方形就可以使用 4bit 的二进制整数予以表示。然后继续切下去，正方形就会越来越小，二进制整数也会越来越长，精确度就会 越来越高。</description>
+    </item>
+    
+    <item>
+      <title>HyperLogLog</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/15_hyperloglog/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/15_hyperloglog/</guid>
+      <description>HyperLogLog#如果你负责开发维护一个大型的网站，有一天老板找产品经理要网站每个网页每天的 UV 数据，然后让你来开发这个统计模块，如何实现？
+如果统计 PV 那非常好办，给每个网页一个独立的 Redis 计数器就可以了，这个计数器的 key 后缀加上当天的日期。这样来一个请求，incrby 一 次，最终就可以统计出所有的 PV 数据。
+但是 UV 不一样，它要去重，同一个用户一天之内的多次访问请求只能计数一次。这就要求每一个网页请求都需要带上用户的 ID，无论是登陆用户还是 未登陆用户都需要一个唯一 ID 来标识。
+你也许已经想到了一个简单的方案，那就是为每一个页面一个独立的 set 集合来存储所有当天访问过此页面的用户 ID。当一个请求过来时，我们使 用 sadd 将用户 ID 塞进去就可以了。通过 scard 可以取出这个集合的大小，这个数字就是这个页面的 UV 数据。没错，这是一个非常简单的方案。
+但是，如果你的页面访问量非常大，比如一个爆款页面几千万的 UV，你需要一个很大的 set 集合来统计，这就非常浪费空间。如果这样的页面 很多，那所需要的存储空间是惊人的。
+Redis 提供了 HyperLogLog 数据结构就是用来解决这种统计问题的。HyperLogLog 提供不精确的去重计数方案，虽然不精确但是也不是非 常不精确，标准误差是 0.81%，这样的精确度已经可以满足上面的 UV 统计需求了。
+HyperLogLog 这个数据结构需要占据 12k 的存储空间，Redis 对 HyperLogLog 的存储进行了优化，在计数比较小时，它的存储空间采用稀 疏矩阵存储，空间占用很小，仅仅在计数慢慢变大，稀疏矩阵占用空间渐渐超过了阈值时才会一次性转变成稠密矩阵，才会占用 12k 的空间。
+使用#HyperLogLog 提供了两个指令 pfadd 和 pfcount，根据字面意义很好理解，一个是增加计数，一个是获取计数。
+127.0.0.1:6379&amp;gt; pfadd codehole user1 (integer) 1 127.</description>
+    </item>
+    
+    <item>
+      <title>INFO 指令</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/24_info/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/24_info/</guid>
+      <description>INFO 指令#Info 指令，可以清晰地知道 Redis 内部一系列运行参数。
+Info 指令显示的信息非常繁多，分为 9 大块，每个块都有非常多的参数，这 9 个块分别是:
+ Server 服务器运行的环境参数 Clients 客户端相关信息 Memory 服务器运行内存统计数据 Persistence 持久化信息 Stats 通用统计数据 Replication 主从复制相关信息 CPU CPU 使用情况 Cluster 集群信息 KeySpace 键值对统计数量信息  Info 可以一次性获取所有的信息，也可以按块取信息。
+# 获取所有信息 &amp;gt; info # 获取内存相关信息 &amp;gt; info memory # 获取复制相关信息 &amp;gt; info replication </description>
+    </item>
+    
+    <item>
+      <title>InnoDB 数据页结构</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/11_innodb-page-structure/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/11_innodb-page-structure/</guid>
+      <description>InnoDB 数据页结构#InnoDB 管理存储空间的基本单位是页，一个页的大小一般是 16KB。InnoDB 设计了多种不同类型的页，比如存放表空间头部信息的页， 存放 Insert Buffer 信息的页等等。我们聚焦的是那些存放我们表中记录的那种类型的页，官方称这种存放记录的页为索引（INDEX）页。我们 暂叫做数据页吧。
+数据页结构#一个 InnoDB 数据页的存储空间大致被划分成了 7 个部分：
+   名称 中文名 占用空间 简单描述     File Header 文件头部 38 字节 页的一些通用信息   Page Header 页面头部 56 字节 数据页专有的一些信息   Infimum + Supremum 最小记录和最大记录 26 字节 两个虚拟的行记录   User Records 用户记录 不确定 实际存储的行记录内容   Free Space 空闲空间 不确定 页中尚未使用的空间   Page Directory 页面目录 不确定 页中的某些记录的相对位置   File Trailer 文件尾部 8 字节 校验页是否完整    记录在页中的存储#我们自己存储的记录会按照我们指定的行格式存储到 User Records 部分。但是在一开始生成页的时候，其实并没有 User Records 这个部分，每当插入 一条记录，都会从 Free Space 部分，也就是尚未使用的存储空间中申请一个记录大小的空间划分到 User Records 部分，当 Free Space 部分的 空间全部被 User Records 部分替代掉之后，也就意味着这个页使用完了，如果还有新的记录插入的话，就需要去申请新的页了。</description>
+    </item>
+    
+    <item>
+      <title>InnoDB 记录存储结构</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/10_innodb-record-store-structure/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/10_innodb-record-store-structure/</guid>
+      <description>InnoDB 记录存储结构#MySQL 服务端负责对表中数据的读取和写入工作的部分是存储引擎，MySQL 服务端支持不同类型的存储引擎。真实数据在不同存储引擎中存放的格式一般是 不同的，甚至有 Memory 存储引擎都不用磁盘来存储数据。
+InnoDB 页简介#InnoDB 是一个将表中的数据存储到磁盘上的存储引擎。而读写磁盘的速度非常慢，所以 InnoDB 采取的方式是：**将数据划分为若干个页，以页作为磁盘和内存 之间交互的基本单位，
+InnoDB 中页的大小一般为 16 KB。也就是在一般情况下，一次最少从磁盘中读取 16KB 的内容到内存中，一次最少把内存中的 16KB 内容刷新到磁盘中。
+InnoDB 行格式#我们平时是以记录为单位来向表中插入数据的，这些记录在磁盘上的存放方式被称为 行格式 或者 记录格式。InnoDB 存储引擎目前有 4 种不同类型的行格式， 分别是 Compact、Redundant、Dynamic 和 Compressed 行格式。
+指定行格式的语法#创建或修改表的语句中指定行格式：
+CREATE TABLE 表名 (列的信息) ROW_FORMAT=行格式名称 ALTER TABLE 表名 ROW_FORMAT=行格式名称 比如在 test 数据库里创建一个演示用的表 record_format_demo，可以这样指定它的行格式：
+mysql&amp;gt; USE test; Database changed mysql&amp;gt; CREATE TABLE record_format_demo ( -&amp;gt; c1 VARCHAR(10), -&amp;gt; c2 VARCHAR(10) NOT NULL, -&amp;gt; c3 CHAR(10), -&amp;gt; c4 VARCHAR(10) -&amp;gt; ) CHARSET=ascii ROW_FORMAT=COMPACT; Query OK, 0 rows affected (0.</description>
+    </item>
+    
+    <item>
+      <title>join 原理</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/join/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/join/</guid>
+      <description>join 原理#</description>
+    </item>
+    
+    <item>
+      <title>MongoDB 介绍</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mongo/01_overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mongo/01_overview/</guid>
+      <description>MongoDB 有各种语言的 官方驱动。
+MongoDB 相比 RDBMS 的优势# 模式较少：MongoDB 是一种文档数据库，一个集合可以包含各种不同的文档。每个文档的字段数、内容以及文档大小都可以各不相同。 采用单个对象的模式，清晰简洁。 没有复杂的连接功能。 深度查询功能。MongoDB 支持对文档执行动态查询，使用的是一种不逊色于 SQL 语言的基于文档的查询语言。 具有调优功能。 易于扩展。MongoDB 非常易于扩展。 不需要从应用对象到数据库对象的转换/映射。 使用内部存储存储（窗口化）工作集，能够更快地访问数据。  为何选择使用 MongoDB# 面向文档的存储：以 JSON 格式的文档保存数据。 任何属性都可以建立索引。 复制以及高可扩展性。 自动分片。 丰富的查询功能。 快速的即时更新。  适用场景#无模式 (Flexible Schema)#面向文档数据库经常吹嘘的一个好处就是，它不需要一个固定的模式。这使得他们比传统的数据库表要灵活得多。无模式是酷，可是大多数情况下你的数据结构还 是应当好好设计的。
+写操作#MongoDB 可以胜任的一个特殊角色是在日志领域。有两点使得 MongoDB 的写操作非常快。
+ 发送了写操作命令之后立刻返回，而无须等到操作完成。 可以控制数据持久性的写行为。  受限集合#MongoDB 还提供了 受限集合(capped collection)。可以通 过 db.createCollection 命令来创建一个受限集合并标记它的限制:
+//limit our capped collection to 1 megabyte db.</description>
+    </item>
+    
+    <item>
+      <title>MySQL 基础架构</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/07_architecture/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/07_architecture/</guid>
+      <description>MySQL 基础架构#一条 SQL 查询语句在 MySQL 内的执行过程，是怎样的？
+上图是 MySQL 的基本架构示意图。可以看出，MySQL 大致可以分为两部分：Server 层和存储引擎层。
+Server 层包括连接器、查询缓存、分析器、优化器、执行器等，涵盖 MySQL 的大多数核心服务功能，以及所有的内置函数（如日期、时间、数学和加密函数等），所 有跨存储引擎的功能都在这一层实现，比如存储过程、触发器、视图等。
+存储引擎层负责数据的存储和提取。支持 InnoDB、MyISAM、Memory 等多个存储引擎。不同的存储引擎共用一个 Server 层。存储引擎向 Server 层提供统一 的调用接口（存储引擎 API），包含了几十个底层函数，像&amp;quot;读取索引第一条内容&amp;rdquo;、&amp;ldquo;读取索引下一条内容&amp;rdquo;、&amp;ldquo;插入记录&amp;quot;等等。
+从 MySQL 5.5.5 版本开始， InnoDB 成为了默认存储引擎。
+接下来看一条 SQL 查询语句的执行过程，如 select * from T where ID=10;。
+连接管理#第一步就是与服务端建立连接。连接器负责跟客户端建立连接、获取权限、维持和管理连接。
+客户端可以采用 TCP/IP、命名管道或共享内存、Unix 域套接字这几种方式之一来与服务端建立连接。
+连接命令：
+mysql -h$ip -P$port -u$user -p  注意，使用 -p 后面尽量不要跟着密码。-p 和密码值之间不能有空白字符（其他参数名之间可以有空白字符）。 如果服务端和客户端安装在同一台机器上，-h 参数可以省略。
+ 建立 TCP 连接后，连接器会进行身份认证，并获取权限。之后，这个连接里面的权限判断逻辑，都将依赖于此时读到的权限。意味着，一个用户成功建立 连接后，即使用管理员账号对这个用户的权限做了修改，也不会影响已经存在连接的权限。只有再新建的连接才会使用新的权限设置。
+每当有一个客户端进程连接到服务器进程时，服务器进程都会创建一个线程来专门处理与这个客户端的交互，当该客户端退出时会与服务器断开连接，服务器并不会 立即把与该客户端交互的线程销毁掉，而是把它缓存起来，在另一个新的客户端再进行连接时，把这个缓存的线程分配给该新客户端。这样就起到了不频繁创建和销 毁线程的效果。</description>
+    </item>
+    
+    <item>
+      <title>MySQL 复杂查询语句</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/04_advanced_query/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/04_advanced_query/</guid>
+      <description>子查询#SQL 还允许创建子查询（subquery），即嵌套在其他查询中的查询。
+利用子查询过滤#订单存储在两个表中。对于包含订单号、客户 ID、订单日期的每个订单，orders 表存储一行。各订单的物品存储在相关的 orderitems 表中。 orders 表不存储客户信息。它只存储客户的 ID。实际的客户信息存储在 customers 表中。
+假如需要列出订购物品 TNT2 的所有客户，需要下面几步：
+ 检索包含物品 TNT2 的所有订单的编号。 检索具有前一步骤列出的订单编号的所有客户的 ID。 检索前一步骤返回的所有客户ID的客户信息。  # 检索包含物品 TNT2 的所有订单的编号 mysql&amp;gt; select order_num from orderitems where pod_id= &amp;#39;TNT2&amp;#39;; +-------------+ | order_num | +-------------+ | 2005 | | 2007 | +-------------+ # 查询具有订单 20005 和 20007 的客户 ID mysql&amp;gt; select cust_id from orders where order_num in (2005,2007); +-------------+ | cust_id | +-------------+ | 1001 | | 1004 | +-------------+ 把第一个查询（返回订单号的那一个）变为子查询组合两个查询:</description>
+    </item>
+    
+    <item>
+      <title>MySQL 安装</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/02_install/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/02_install/</guid>
+      <description>MySQL 的大部分安装包都包含了服务器程序和客户端程序
+ 注意，在 Linux 下使用 RPM 安装，有时需要分别安装服务器 RPM 包和客户端 RPM 包。
+ MySQL 的安装目录#Linux 下的安装目录一般为 /usr/local/mysql/。Windows 一般为 C:\Program Files\MySQL\MySQL Server x.x （记住你自己的安装目录）。
+bin目录#打开 /usr/local/mysql/bin，执行 tree：
+.├── mysql├── mysql.server -&amp;gt; ../support-files/mysql.server├── mysqladmin├── mysqlbinlog├── mysqlcheck├── mysqld # mysql 的服务端程序├── mysqld_multi # 运行多个 MySQL 服务器进程├── mysqld_safe├── mysqldump├── mysqlimport├── mysqlpump... (省略其他文件)0 directories, 40 files这个目录一般需要配置到环境变量的 PATH 中，Linux 中各个路径以 : 分隔。也可以选择不配：</description>
+    </item>
+    
+    <item>
+      <title>MySQL 简单查询</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/03_query/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/03_query/</guid>
+      <description>注意每条语句后面都要以;结尾。SQL语句是不区分大小写的。
+USE 选择数据库#SHOW# SHOW DATABASES;，查看数据库列表。 SHOW TABLES;，查看数据库中的表。 SHOW COLUMNS，显示某个表中的列，比如 SHOW COLUMNS FROM users。也可以使用 DESCRIBE users，效果 和 SHOW COLUMNS FROM users 是一样的。 SHOW STATUS，用于显示广泛的服务器状态信息。 SHOW CREATE DATABASE 和 SHOW CREATE TABLE，分别用来显示创建特定数据库或表的语句。 SHOW GRANTS，用来显示授予用户（所有用户或特定用户）的安全权限。 SHOW ERRORS 和 SHOW WARNINGS，用来显示服务器错误或警告消息。 HELP SHOW; 查看 SHOW 的用法  SELECT#为了使用 SELECT 所搜表数据，必须至少给出两条信息——想选择什么，以及从什么地方选择。比如select name from users;，会找 出 users 表中的所有 name 列。
+检索多个列：
+select name, age, phone from users; 检索所有列，使用星号 * 通配符：</description>
+    </item>
+    
+    <item>
+      <title>Redis Key 操作</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/08_redis-key/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/08_redis-key/</guid>
+      <description>Redis Key 操作#在日常开发中，查找某个，或某些铁定前缀的 key，修改他们的值，删除 key，都是很常用的操作。 Redis 如何从海量的 key 中找出满足特 定前缀的key列表？
+Redis 的 keys 指令。
+Redis 允许的最大 Key 长度是 512MB（对 Value 的长度限制也是 512MB），但是尽量不要使用过长的 key，不仅会消耗更多的 内存，还会导致查找的效率降低。key 也不应该过于短，开发中应该使用统一的规范来设计 key，可读性好，也易于维护。比 如 user:&amp;lt;user id&amp;gt;:followers。
+查找删除#KEYS#按指定的正则匹配模式 pattern 查找 key。
+KEYS pattern  KEYS * 匹配数据库中所有的 key KEYS h?llo 匹配 hello、hallo、hxllo 等 KEYS h*llo 匹配 hllo、heeeeello等 KEYS h[ae]llo 匹配 hello、hallo，但不匹配 hillo  KEYS 指令非常简单，但是有两个缺点：
+ 没有 offset、limit 参数，会返回所有匹配到的 key。 执行 KEYS 会遍历所有的 key，如果 Redis 存储了海量的 key，由于 Redis 是单线程，KEYS 指令就会阻塞其他指令，直 到 KEYS 执行完毕。  所以在数据量很大的情况下，不建议使用 KEYS，会造成 Redis 服务卡顿，导致其他的指令延时甚至超时报错。 Redis 提供了 SCAN 指令来解决这个问题。</description>
+    </item>
+    
+    <item>
+      <title>Redis 入门</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/01_getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/01_getting-started/</guid>
+      <description>Redis 入门#Redis 中文官网的介绍：
+Redis（Remote Dictionary Service）是目前互联网技术领域使用最为广泛的存储中间件，它是一个开源（BSD 许可）的，内存中的数据结构存储系 统，它可以用作数据库、缓存和消息中间件。它支持多种类型的数据结构，如 字符串（strings）， 散列（hashes）， 列表（lists）， 集合（sets）， 有序集合（sorted sets） 与范围查询，bitmaps， hyperloglogs 和 地理空间（geospatial） 索引半径查询。 Redis 内置了 复制（replication），LUA 脚本（Lua scripting），LRU 驱动事件（LRU eviction），事务（transactions） 和不同级别的 磁 盘持久化（persistence），并通过 Redis 哨兵（Sentinel）和自动 分区（Cluster）提供高可用性（high availability）。
+数据类型#Redis 一共支持 5 种数据类型：
+ 字符串(Strings) 哈希(Hashs) 列表(Lists) 集合(Sets) 有序集合(SortedSets)  String（字符串）#String 类型是最常用，也是最简单的的一种类型，string 类型是二进制安全的。也就是说 string 可以包含任何数据。比如 jpg 图片 或者 序列化的对象 。一个键最大能存储 512MB。</description>
+    </item>
+    
+    <item>
+      <title>Redis 安装配置</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/02_redis-config/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/02_redis-config/</guid>
+      <description>Redis 安装配置#Redis 安装，配置认证密码，配置 service 服务。
+安装##下载 wget http://download.redis.io/releases/redis-x.x.x.tar.gz #解压 tar -xzvf redis-x.x.x.tar.gz # 编译安装 cd redis-x.x.x make make install make install 会在 /usr/local/bin 目录下生成以下文件：
+ redis-server：Redis 服务器端启动程序 redis-cli：Redis 客户端操作工具。也可以用 telnet 根据其纯文本协议来操作 redis-benchmark：Redis 性能测试工具 redis-check-aof：数据修复工具 redis-check-dump：检查导出工具  如果出现以下错误：
+make[1]: Entering directory `/root/redis/src&amp;#39; You need tcl 8.5 or newer in order to run the Redis test …… 这是因为没有安装 tcl 导致，yum 安装即可：
+yum install tcl 配置 Redis 复制配置文件到 /etc/ 目录：</description>
+    </item>
+    
+    <item>
+      <title>Redis 数据类型 Hash</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/04_redis-hash/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/04_redis-hash/</guid>
+      <description>Redis 对 JSON 数据的支持不是很友好。通常把 JSON 转成 String 存储到 Redis 中，但现在的 JSON 数据都是连环嵌套的，每次更新 时都要先获取整个 JSON，然后更改其中一个字段再放上去。这种使用方式，如果在海量的请求下，JSON 字符串比较复杂，会导致在频繁更新数 据使网络I/O跑满，甚至导致系统超时、崩溃。所以 Redis 官方推荐采用 Hash(字典)保存对象。但是 Hash 结构的存储消耗要高于单个字符串。
+Redis 的字典和 Java的 HashMap 类似，它是无序字典。包括内部结构的实现也和 HashMap 也是一致的，同样的数组 + 链表二维结构。
+存取#HSET#设置字典 key 值的 field 字段值为 value。
+HSET key field value 如果 key 不存在，创建 key 并进行 HSET 操作。 如果 field 不存在，则增加新字段，设置成功，返回 1。如果 field 已存在，覆盖旧值，返回 0。
+redis&amp;gt; hset student name xiaoming (integer) 1 redis&amp;gt; hget student name &amp;#34;xiaoming&amp;#34; redis&amp;gt; hset student age 18 (integer) 0 redis&amp;gt; hget student age &amp;#34;18&amp;#34; HSETNX#和 HSET 一样，但是只在字段 field 不存时才会设置。设置成功，返回 1。失败，返回 0。</description>
+    </item>
+    
+    <item>
+      <title>Redis 数据类型 List</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/07_redis-list/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/07_redis-list/</guid>
+      <description>Redis 数据类型 List#Redis 列表(Lists)是简单的字符串列表，并根据插入顺序进行排序。一个 Redis 列表中最多可存储 232-1(40亿)个元素。
+Redis 的列表和 Java 的 LinkedList 类似，注意它是链表而不是数组。这意味着 List 的插入和删除操作非常快，但是索引定位很慢。 当列表移除了最后一个元素之后，该 key 会被自动被删除，内存被回收。
+Redis 的列表结构常用来做异步队列使用。将需要延后处理的任务结构体序列化成字符串塞进列表，另一个线程从这个列表中读取数据进行处理。
+存取#LPUSH#将一个或多个值 value 插入到列表 key 的头部。
+LPUSH key value [value ...] 如果有多个 value，那么从左到右依次插入列表。如果 key 不存在，首先会创建一个空列表再执行 LPUSH 操作。 命令执行成功，返回列表的长度。如果 key 存在，但不是 List 类型，会返回一个错误。
+# 加入单个元素 redis&amp;gt; LPUSH languages python (integer) 1 # 加入重复元素 redis&amp;gt; LPUSH languages python (integer) 2 redis&amp;gt; LRANGE languages 0 -1 # 列表允许重复元素 1) &amp;#34;python&amp;#34; 2) &amp;#34;python&amp;#34; # 加入多个元素 redis&amp;gt; LPUSH mylist a b c (integer) 3 redis&amp;gt; LRANGE mylist 0 -1 1) &amp;#34;c&amp;#34; 2) &amp;#34;b&amp;#34; 3) &amp;#34;a&amp;#34; LPUSHX#LPUSHX 和 LPUSH 相同，不同的是，LPUSHX 一次只能插入一个 value，而且只有当 key 存在且是 List 类型时，才会将值 value 插入到列表 key 的头部。如果 key 不存在，则不执行操作。</description>
+    </item>
+    
+    <item>
+      <title>Redis 数据类型 Set</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/05_redis-set/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/05_redis-set/</guid>
+      <description>Redis 的 Set 是 string 类型的无序集合，类似于 List 类型。但是集合中不允许重复成员的存在。一个 Redis 集合中最多可 包含 232-1(40亿) 个元素。Set 类型有一个非常重要的特性，就是支持集合之间的聚合计算操作，这些操作均在服务端完成，效率极高，而且也 节省了的网络 I/O 开销。
+Redis 的集合和 Java 的 HashSet 类似，它内部的键值对是无序的唯一的。它的内部实现相当于一个特殊的字典，字典中所有的 value 都 是一个值 NULL。当集合移除了最后一个元素之后，该 key 会被自动被删除，内存被回收。
+存取#SADD#添加一个或多个 member 元素到集合 key 中。
+SADD key member [member ...] 返回被添加到集合中的新元素的数量。如果集合 key 不存在，创建集合 key，并执行 SADD。如果 key 不是集合类型，将返回一个错误。
+# 添加单个元素 redis&amp;gt; SADD blog &amp;#34;segmentfault.com&amp;#34; (integer) 1 # 添加重复元素 redis&amp;gt; SADD blog &amp;#34;segmentfault.com&amp;#34; (integer) 0 # 添加多个元素 redis&amp;gt; SADD blog &amp;#34;csdn.</description>
+    </item>
+    
+    <item>
+      <title>Redis 数据类型 Sorted Set</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/06_redis-sortedset/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/06_redis-sortedset/</guid>
+      <description>Redis 的有序集合和 Set 一样也是 String 类型元素的集合,且不允许重复的成员。 Redis 提供的最为特色的数据结构。不同的是每个元素都 会关联一个 double 类型的分数。redis 正是通过分数来为集合中的成员进行从小到大的排序。zset 的成员是唯一的,但分数(score)却可以重复。
+Redis 的 ZSET 类似 Java 的 SortedSet 和 HashMap 的结合体，既保证了内部 value 的唯一性，还可以给每个 value 赋予 一个 score，代表这个 value 的排序权重。当集合移除了最后一个元素之后，该 key 会被自动被删除，内存被回收。
+ZSET可以用来存粉丝列表，value值是粉丝的用户ID，score是关注时间。我们可以对粉丝列表按关注时间进行排序。 ZSET还可以用来存储学生的成绩，value值是学生的ID，score是考试成绩。可以按分数对名次进行排序就。
+存取#ZADD#将一个或多个 member 元素及其 score 值添加到有序集合 key 中。
+ZADD key score member [[score member] [score member] ...] score 可以是整数或双精度浮点数。 如果 key 不存在，创建 key 并执行 ZADD。如果 key 不是有序集合类型，返回一个错误。 如果 member 已经存在，则更新其 score 值，并重新插入，排序。</description>
+    </item>
+    
+    <item>
+      <title>Redis 数据类型 String</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/03_redis-string/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/03_redis-string/</guid>
+      <description>Redis 数据类型 String#String 类型是最常用，也是最简单的的一种类型，string 类型是二进制安全的。也就是说 string 可以包含任何数据。比如 jpg图片 或者 序列化的对象 。一个键最大能存储 512MB。Redis 所有的数据结构都是以唯一的 key 字符串作为名称，然后通过这个唯 一 key 值来获取相应的 value 数据。不同类型的数据结构的差异就在于 value 的结构不一样。
+字符串结构使用非常广泛，不仅限于字符串，通常会使用 JSON 序列化成字符串，然后将序列化后的字符串塞进 Redis 来缓存。
+键值对存取#redis&amp;gt; set testkey hello OK redis&amp;gt; get testkey &amp;#34;hello&amp;#34; //EX redis&amp;gt; set testkey hello2 EX 60 OK redis&amp;gt; get testkey &amp;#34;hello2&amp;#34; redis&amp;gt; TTL testkey (integer) 55 //PX redis&amp;gt; SET testkey hello3 PX 60000 OK redis&amp;gt; GET testkey &amp;#34;hello3&amp;#34; redis&amp;gt; PTTL testkey (integer) 55000 //NX redis&amp;gt; SET testkey hello4 NX OK # 键不存在，设置成功 redis&amp;gt; GET testkey &amp;#34;hello4&amp;#34; redis&amp;gt; SET testkey hello4 NX (nil) # 键已经存在，设置失败 redis&amp;gt; GET testkey &amp;#34;hello4&amp;#34; //XX redis&amp;gt; SET testkey hello5 XX OK # 键已经存在，设置成功 redis&amp;gt; GET testkey &amp;#34;hello5&amp;#34; redis&amp;gt; SET testkey2 hello XX (nil) # 键不存在，设置失败 //EX 和 PX 同时使用，后面的选项会覆盖前面设置的选项 redis&amp;gt; set testkey hello2 EX 10 PX 50000 OK redis&amp;gt; TTL testkey (integer) 45000 # PX 参数覆盖了 EX redis&amp;gt; set testkey hello2 PX 50000 EX 10 OK redis&amp;gt; TTL testkey (integer) 8 # EX 参数覆盖了 PX SET#SET [key] [value] [EX seconds] [PX milliseconds] [NX|XX]  EX seconds - 设置过期时间，单位为秒。 PX millisecond - 设置过期时间，单位毫秒。 NX - 只在 key 不存在时才进行设置。 XX - 只在 key 存在时才进行设置。  SETEX#设置 key 值并指定过期时间，单位秒。 SETEX key second value 等同于 SET key value EX second</description>
+    </item>
+    
+    <item>
+      <title>Redis 的过期策略和内存淘汰机制</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/25_redis-expire-strategy/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/25_redis-expire-strategy/</guid>
+      <description>Redis 的过期策略和内存淘汰机制#在日常开发中，我们使用 Redis 存储 key 时通常会设置一个过期时间，但是 Redis 是怎么删除过期的 key，而且 Redis 是单线程的， 删除 key 过于频繁会不会造成阻塞。要搞清楚这些，就要了解 Redis 的过期策略和内存淘汰机制。
+Redis 采用的是定期删除加懒惰删除策略。懒惰删除就是在客户端访问这个 key 的时候，redis 对 key 的过期时间进行检查，如果过期了 就立即删除。定时删除是集中处理，惰性删除是零散处理。
+定期删除策略#Redis 会将每个设置了过期时间的 key 放入到一个独立的字典中，默认每 100ms 进行一次过期扫描：
+ 随机抽取 20 个 key 删除这 20 个 key 中过期的 key 如果过期的 key 比例超过 1/4，就重复步骤 1，继续删除。  之所以不扫描所有的 key，是因为 Redis 是单线程，全部扫描会导致线程卡死。
+而且为了防止每次扫描过期的 key 比例都超过 1/4，导致不停循环卡死线程，Redis 为每次扫描添加了上限时间，默认是 25ms。
+如果一个大型的 Redis 实例中所有的 key 在同一时间过期了，会出现怎样的结果？#大量的 key 在同一时间过期，那么 Redis 会持续扫描过期字典 (循环多次)，直到过期字典中过期的 key 变得稀疏，才会停止 (循环次数明显下降)。 这会导致线上读写请求出现明显的卡顿现象。导致这种卡顿的另外一种原因是内存管理器需要频繁回收内存页，这也会产生一定的 CPU 消耗。</description>
+    </item>
+    
+    <item>
+      <title>redo 日志</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/redolog/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/redolog/</guid>
+      <description>redo 日志#</description>
+    </item>
+    
+    <item>
+      <title>undo 日志</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/undolog/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/undolog/</guid>
+      <description>undo 日志#</description>
+    </item>
+    
+    <item>
+      <title>一些命令行技巧</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/27_skills/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/27_skills/</guid>
+      <description>一些命令行技巧#直接模式#一般使用 redis-cli 都会进入交互模式，然后一问一答来读写服务器，这是交互模式。还有一种直接模式，通过将命令参数直接 传递给 redis-cli 来执行指令并获取输出结果。
+$ redis-cli incrby foo 5 (integer) 5 # 输出的内容较大，可以将输出重定向到外部文件 $ redis-cli info &amp;gt; info.txt $ wc -l info.txt 120 info.txt # 如果想指向特定的服务器 # -n 2 表示使用第 2 个库，相当于 select 2 $ redis-cli -h localhost -p 6379 -n 2 ping PONG 批量执行命令#$ cat cmds.txt set foo1 bar1 set foo2 bar2 set foo3 bar3 ...... $ cat cmds.</description>
+    </item>
+    
+    <item>
+      <title>主从同步</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/22_sync/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/22_sync/</guid>
+      <description>主从同步#Redis 同步支持主从同步和从从同步。
+增量同步#Redis 同步的是指令流，主节点会将那些对自己的状态产生修改性影响的指令记录在本地的内存 buffer 中，然后异步将 buffer 中的指令 同步到从节点，从节点一边执行同步的指令流来达到和主节点一样的状态，一边向主节点反馈自己同步到哪里了 (偏移量)。
+因为内存的 buffer 是有限的，所以 Redis 主库不能将所有的指令都记录在内存 buffer 中。Redis 的复制内存 buffer 是一个定长的 环形数组，如果数组内容满了，就会从头开始覆盖前面的内容。
+如果因为网络状况不好，从节点在短时间内无法和主节点进行同步，那么当网络状况恢复时，Redis 的主节点中那些没有同步的指令在 buffer 中有 可能已经被后续的指令覆盖掉了，从节点将无法直接通过指令流来进行同步，这个时候就需要用到更加复杂的同步机制 —— 快照同步。
+快照同步#快照同步是一个非常耗费资源的操作，同步过程：
+ 在主库上进行一次 bgsave 将当前内存的数据全部快照到磁盘文件中，然后再将快照文件的内容全部传送到从节点。 从节点将快照文件接受完毕后，立即执行一次全量加载，加载之前先要将当前内存的数据清空。 加载完毕后通知主节点继续进行增量同步。  在整个快照同步进行的过程中，主节点的复制 buffer 还在不停的往前移动，如果快照同步的时间过长或者复制 buffer 太小，都会导致同步期间 的增量指令在复制 buffer 中被覆盖，这样就会导致快照同步完成后无法进行增量复制，然后会再次发起快照同步，如此极有可能会陷入快照同步的 死循环。
+所以务必配置一个合适的复制 buffer 大小参数，避免快照复制的死循环。
+增加从节点#当从节点刚刚加入到集群时，它必须先要进行一次快照同步，同步完成后再继续进行增量同步。
+无盘复制#主节点在进行快照同步时，会进行很重的文件 IO 操作，特别是对于非 SSD 磁盘存储时，快照会对系统的负载产生较大影响。特别是当系统正 在进行 AOF 的 fsync 操作时如果发生快照，fsync 将会被推迟执行，这就会严重影响主节点的服务效率。</description>
+    </item>
+    
+    <item>
+      <title>事务</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/transaction/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/transaction/</guid>
+      <description>事务#事务的四个特性：ACID（Atomicity、Consistency、Isolation、Durability，即原子性、一致性、隔离性、持久性）。
+事务处理是一种机制，用来管理必须成批执行的 MySQL 操作，以保证数据库不包含不完整的操作结果。利用事务处理，可以保证一组操作不会中途停止， 它们或者作为整体执行，或者完全不执行（除非明确指示）。如果没有错误发生，整组语句提交给（写到）数据库表。如果发生错误，则进行回退（撤销） 以恢复数据库到某个已知且安全的状态。
+关于事务处理需要知道的几个术语：
+ 事务（transaction）指一组 SQL 语句； 回退（rollback）指撤销指定 SQL 语句的过程； 提交（commit）指将未存储的 SQL 语句结果写入数据库表； 保留点（savepoint）指事务处理中设置的临时占位符（place- holder），你可以对它发布回退（与回退整个事务处理不同）  语法#控制事务处理#管理事务处理的关键在于将 SQL 语句组分解为逻辑块，并明确规定数据何时应该回退，何时不应该回退。
+下面的语句来标识事务的开始：
+START TRANSACTION ROLLBACK#ROLLBACK 命令用来回退（撤销）MySQL 语句：
+select * from ordertotals; start transaction; delete from ordertotals; select * from ordertotals; rollback; select * from ordertotals; 先执行一条 SELECT 以显示该表不为空。然后开始一个事务处理，用一条 DELETE 语句删除 ordertotals 中的所有行。 另一条 SELECT 语句验证 ordertotals 确实为空。这时用一条 ROLLBACK 语句回退 START TRANSACTION 之后的所有语句，最后 一条 SELECT 语句显示该表不为空。</description>
+    </item>
+    
+    <item>
+      <title>事务</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/21_transaction/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/21_transaction/</guid>
+      <description>事务#为了确保连续多个操作的原子性，一个成熟的数据库通常都会有事务支持，Redis 也支持简单的事务模型。
+使用#每个事务的操作都有 begin、commit 和 rollback 三个指令：
+ begin 事务的开始 commit 事务的提交 rollback 事务的回滚  begin(); try { command1(); command2(); .... commit(); } catch(Exception e) { rollback(); } Redis 在形式上看起来也差不多，分别是 multi/exec/discard。
+ multi 事务的开始 exec 事务的执行 discard 事务的丢弃  &amp;gt; multi OK &amp;gt; incr books QUEUED &amp;gt; incr books QUEUED &amp;gt; exec (integer) 1 (integer) 2 上面的指令演示了一个完整的事务过程，所有的指令在 exec 之前不执行，而是缓存在服务器的一个事务队列中，服务器一旦收到 exec 指令，才 开执行整个事务队列，执行完毕后一次性返回所有指令的运行结果。因为 Redis 的单线程特性，它不用担心自己在执行队列的时候被其它指令打搅，可 以保证他们能得到的原子性执行。</description>
+    </item>
+    
+    <item>
+      <title>事务的隔离级别</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/13_isolation-level/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/13_isolation-level/</guid>
+      <description>事务的隔离级别#事务并发执行遇到的问题#当数据库上多个事务并发执行的时候，就可能出现脏写（Dirty Write）、脏读（Dirty Read）、不可重复读（Non-Repeatable Read）、 幻读（Phantom Read）的问题。
+问题按照严重性来排序：
+脏写 &amp;gt; 脏读 &amp;gt; 不可重复读 &amp;gt; 幻读脏写#&amp;ldquo;脏写&amp;quot;是指，一个事务修改了另一个未提交事务修改过的数据。
+脏读#&amp;ldquo;脏读&amp;quot;是指，一个事务读到了另一个未提交事务修改过的数据。
+不可重复读#&amp;ldquo;不可重复读&amp;quot;是指，一个事务只能读到另一个已经提交的事务修改过的数据，并且其他事务每对该数据进行一次修改并提交后，该事务都能查询得到最新值。
+如上图在 Session B 中提交了几个隐式事务（注意是隐式事务，意味着语句结束事务就提交了），这些事务都修改了 number 列为 1 的记录的列 name 的值，每 次事务提交之后，Session A 中的事务都可以查看到最新的值，这就是不可重复读。
+幻读#&amp;ldquo;幻读&amp;quot;是指。一个事务先根据某些条件查询出了一些记录，然后另一个事务又向表中插入了一些符合这些条件的记录，第一个事务再次使用相同条件查询时，把另一个 事务插入的记录也读出来了。
+如上图，Session A 中的事务先根据条件 number &amp;gt; 0 这个条件查询表 hero，得到了 name 列值为&amp;rsquo;刘备&amp;rsquo;的记录；之后 Session B 中提交了一个隐式 事务，该事务向表 hero 中插入了一条新记录；之后 Session A 中的事务再根据相同的条件 number &amp;gt; 0 查询表 hero，得到的结果集中包含了 Session B 中的事务新插入的那条记录，这就是幻读。</description>
+    </item>
+    
+    <item>
+      <title>位图</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/12_bitmap/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/12_bitmap/</guid>
+      <description>位图#位图不是特殊的数据结构，它的内容其实就是普通的字符串，也就是 byte 数组。 在日常开发中，可能会有一些 bool 型数据需要存取，如果使用普通的 key/value 方式存储，会浪费很多存储空间,比如签到记录，签 了是 true，没签是 false，记录 365 天。如果每个用户存储 365 条记录，当用户量很庞大的时候，需要的存储空间是惊人的。
+对于这种操作，Redis 提供了位操作，这样每天的签到记录只占据一个位，用 1 表示已签到，0 表示没签，那么 365 天就是 365 个 bit，46 个字节 就可以完全容纳下，大大节约了存储空间。
+SETBIT#Redis 的位数组是自动扩展，如果设置了某个偏移位置超出了现有的内容范围，就会自动将位数组进行零扩充。
+SETBIT key offset value 设置指定偏移量上的 bit 的值。value 的值是 0 或 1。当 key 不存在时，自动生成一个新的 key。 offset 参数的取值范围为大于等于 0，小于 2^32(bit 映射限制在 512 MB 以内)。
+redis&amp;gt; SETBIT testbit 100 1 (integer) 0 redis&amp;gt; GETBIT testbit 100 (integer) 1 redis&amp;gt; GETBIT testbit 101 (integer) 0 # bit 默认被初始化为 0 GETBIT#获取指定偏移量上的位 bit 的值。</description>
+    </item>
+    
+    <item>
+      <title>使用</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mongo/03_advance/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mongo/03_advance/</guid>
+      <description>关系#MongoDB 中的关系表示文档之间的逻辑相关方式。关系可以通过内嵌（Embedded）或引用（Referenced）两种方式建模。 这样的关系可能是 1：1、1：N、N：1，也有可能是 N：N。
+例如，一个用户可能有多个地址，这是一个 1：N 的关系。
+// user 文档结构 { &amp;#34;_id&amp;#34;:ObjectId(&amp;#34;52ffc33cd85242f436000001&amp;#34;), &amp;#34;name&amp;#34;: &amp;#34;Tom Hanks&amp;#34;, &amp;#34;contact&amp;#34;: &amp;#34;987654321&amp;#34;, &amp;#34;dob&amp;#34;: &amp;#34;01-01-1991&amp;#34; } // address 文档结构 { &amp;#34;_id&amp;#34;:ObjectId(&amp;#34;52ffc4a5d85242602e000000&amp;#34;), &amp;#34;building&amp;#34;: &amp;#34;22 A, Indiana Apt&amp;#34;, &amp;#34;pincode&amp;#34;: 123456, &amp;#34;city&amp;#34;: &amp;#34;Los Angeles&amp;#34;, &amp;#34;state&amp;#34;: &amp;#34;California&amp;#34; } // 内嵌关系的建模 { &amp;#34;_id&amp;#34;:ObjectId(&amp;#34;52ffc33cd85242f436000001&amp;#34;), &amp;#34;contact&amp;#34;: &amp;#34;987654321&amp;#34;, &amp;#34;dob&amp;#34;: &amp;#34;01-01-1991&amp;#34;, &amp;#34;name&amp;#34;: &amp;#34;Tom Benzamin&amp;#34;, &amp;#34;address&amp;#34;: [ { &amp;#34;building&amp;#34;: &amp;#34;22 A, Indiana Apt&amp;#34;, &amp;#34;pincode&amp;#34;: 123456, &amp;#34;city&amp;#34;: &amp;#34;Los Angeles&amp;#34;, &amp;#34;state&amp;#34;: &amp;#34;California&amp;#34; }, { &amp;#34;building&amp;#34;: &amp;#34;170 A, Acropolis Apt&amp;#34;, &amp;#34;pincode&amp;#34;: 456789, &amp;#34;city&amp;#34;: &amp;#34;Chicago&amp;#34;, &amp;#34;state&amp;#34;: &amp;#34;Illinois&amp;#34; }] } 该方法会将所有相关数据都保存在一个文档中，从而易于检索和维护。缺点是，如果内嵌文档不断增长，会对读写性能造成影响。</description>
+    </item>
+    
+    <item>
+      <title>保护 Redis</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/26_protect-redis/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/26_protect-redis/</guid>
+      <description>保护 Redis#指令安全#Redis 有一些非常危险的指令。比如 keys 指令会导致 Redis 卡顿，flushdb 和 flushall 会让 Redis 的所有数据全部清空。 如何避免人为操作失误导致这些灾难性的后果也是运维人员特别需要注意的风险点之一。
+Redis 在配置文件中提供了 rename-command 指令用于将某些危险的指令修改成特别的名称，用来避免人为误操作。比如在配置文 件的 security 块增加下面的内容:
+rename-command keys abckeysabc如果还想执行 keys 方法，需要键入 abckeysabc。如果想完全封杀某条指令，将指令 rename 成空串，就无法通过任何字符串指令来执行这 条指令了：
+rename-command flushall &amp;quot;&amp;quot;端口安全#Redis 默认会监听 *:6379，Redis 的服务地址一旦可以被外网直接访问，黑客可以通过 Redis 执行 Lua 脚本拿到服务器权限。
+所以，务必在 Redis 的配置文件中指定监听的 IP 地址。更进一步，还可以增加 Redis 的密码访问限制，客户端必须使用 auth 指令传入正 确的密码才可以访问 Redis，这样即使地址暴露出去了，普通黑客也无法对 Redis 进行任何指令操作。
+Lua 脚本安全#禁止 Lua 脚本由用户输入的内容 (UGC) 生成，避免黑客利用以植入恶意的攻击代码来得到 Redis 的主机权限。Redis 应该以普通用户的身份启动。</description>
+    </item>
+    
+    <item>
+      <title>入门</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mongo/02_getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mongo/02_getting-started/</guid>
+      <description>database，和&amp;quot;数据库&amp;quot;一样的概念 (对 Oracle 来说就是 schema)。一个 MongoDB 实例中，可以有零个或多个数据库 collections，数据库中可以有零个或多个 collections (集合)。和传统意义上的table基本一致。 documents，集合是由零个或多个 documents (文档)组成。一个文档可以看成是一 row。 fields，文档是由零个或多个 fields (字段)组成。可以看成是 columns。 Indexes (索引)在 MongoDB 中扮演着和它们在 RDBMS(Relational Database Management System 关系数据库管理系统) 中一样的角色。 Cursors (游标)，游标是，当你问 MongoDB 拿数据的时候，它会给你返回一个结果集的指针而不是真正的数据，这个指针我们叫它游标， 我们可以拿游标做我们想做的任何事情，比如说计数或者跨行之类的，而无需把真正的数据拖下来，在真正的数据上操作。  这些概念和关系型数据中的概念类似，但是还是有差异的。
+核心差异在于，关系型数据库是在 table 上定义的 columns，而面向文档数据库是在 document 上定义的 fields。 也就是说，在 collection 中的每个 document 都可以有它自己独立的 fields。
+要点就是，集合不对存储内容严格限制 (所谓的无模式(schema-less))。
+mongo shell#mongo shell 是一个完整的 JavaScript 解释器。可以运行任意的 JavaScript 程序。比如 db.help() 或者 db.stats()。大多数情况下我们会操作集合而不是数据库， 用 db.COLLECTION_NAME ，比如 db.unicorns.help() 或者 db.</description>
+    </item>
+    
+    <item>
+      <title>入门</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/01_getting_started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/01_getting_started/</guid>
+      <description>MySQL 服务器的进程也被称为 MySQL 数据库实例，简称数据库实例。MySQL 服务器进程的默认名称为 mysqld， 而 MySQL 客户 端进程的默认名称为 mysql。
+基本概念#表#数据库可以理解是一个文件柜。此文件柜是一个存放数据的物理位置，不管数据是什么以及如何组织的。 在将资料放入文件柜时，并不是随便将它们扔进某个抽屉就完事了，而是在文件柜中创建文件，然后将相关的资料放入特定的文件中。 这种文件称为表。是一种结构化的文件，可用来存储某种特定类型的数据。
+列和数据类型#列是表中的一个字段。所有表都是由一个或多个列组成的。
+数据类型（datatype）所容许的数据的类型。每个表列都有相应的数据类型，它限制（或容许）该列中存储的数据。
+行#行是表中的一个记录。
+主键#主键是表中的一列（或一组列），其值能够唯一区分表中每个行。
+表中的任何列都可以作为主键，只要它满足以下条件：
+ 任意两行都不具有相同的主键值 每个行都必须具有一个主键值（主键列不允许NULL值）。  主键通常定义在表的一列上，但这并不是必需的。
+外键#外键为某个表中的一列，它包含另一个表的主键值，定义了两个表之间的关系。
+索引#索引是对数据库表中一列或多列的值进行排序的一种结构，使用索引可快速访问数据库表中的特定信息。
+索引的原理# 对要查询的字段建立索引其实就是把该字段按照一定的方式排序 建立的索引只对该字段有用，如果查询的字段改变，那么这个索引也就无效了，比如图书馆的书是按照书名的第一个字母排序的，那么你想要找作者叫张 三的书就不能用这个索引了  索引是优缺点#首先明白为什么索引会增加速度，DB 在执行一条 SQL 语句的时候，默认的方式是根据搜索条件进行全表扫描，遇到匹配条件的就加入搜索结果集合。 如果对某一字段增加索引，查询时就会先去索引列表中一次定位到特定值的行数，大大减少遍历匹配的行数，所以能明显增加查询的速度。不应该加索引 的场景：
+ 如果每次都需要取到所有表记录，无论如何都必须进行全表扫描了，那么是否加索引也没有意义了。 对非唯一的字段，例如“性别”这种大量重复值的字段，增加索引也没有什么意义。 对于记录比较少的表，增加索引不会带来速度的优化反而浪费了存储空间，因为索引是需要存储空间的，而且有个致命缺点是 对于 update/insert/delete 的每次执行，字段的索引都必须重新计算更新。  可伸缩性#可伸缩性（scale）能够适应不断增加的工作量而不失败。设计良好的数据库或应用程序称之为可伸缩性好（scale well）。</description>
+    </item>
+    
+    <item>
+      <title>其他</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/06_other/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/06_other/</guid>
+      <description>视图#select cust_name from customers, orders, orderitems where customers.cust_id = orders.cust_id and orderitems.order_num = orders.order_num and pod_id = &amp;#39;TNT2&amp;#39;; 上面的语句，涉及到三个表，用来检索订购了某个特定产品的客户。任何需要这个数据的人都必须理解相关表的结构， 并且知道如何创建查询和对表进行联结。为了检索其他产品（或多个产品）的相同数据，必须修改最后的 WHERE 子句。
+假如可以把整个查询包装成一个名为 productcustomers 的虚拟表，则可以如下轻松地检索出相同的数据：
+select cust_name from productcustomers where pod_id = &amp;#39;TNT2&amp;#39;; 这就是视图的作用。productcustomers 是一个视图，作为视图，它不包含表中应该有的任何列或数据，它包含的是一个 SQL 查询（与上 面用以正确联结表的相同的查询）。
+为什么使用视图# 重用 SQL 语句。 简化复杂的 SQL 操作。在编写查询后，可以方便地重用它而不必知道它的基本查询细节。 使用表的组成部分而不是整个表。 保护数据。可以给用户授予表的特定部分的访问权限而不是整个表的访问权限。 更改数据格式和表示。视图可返回与底层表的表示和格式不同的数据。  视图创建之后，可以用与表基本相同的方式利用它们。可以对视图执行 SELECT 操作，过滤和排序数据，将视图联结到其他视图或表，甚至能添加 和更新数据。
+视图本身不包含数据，因此它们返回的数据是从其他表中检索出来的。在添加或更改这些表中的数据时，视图将返回改变过的数据。
+性能问题#因为视图不包含数据，所以每次使用视图时，都必须处理查询执行时所需的任一个检索。如果你用多个联结和过滤创建了复杂的视图或者嵌套了视图，可能 会发现性能下降得很厉害。因此，在部署使用了大量视图的应用前，应该进行测试。
+规则和限制# 与表一样，视图必须唯一命名（不能给视图取与别的视图或表相同的名字）。 对于可以创建的视图数目没有限制。 为了创建视图，必须具有足够的访问权限。这些限制通常由数据库管理人员授予。 视图可以嵌套，即可以利用从其他视图中检索数据的查询来构造一个视图。 ORDER BY 可以用在视图中，但如果从该视图检索数据 SELECT 中也含有 ORDER BY，那么该视图中的 ORDER BY 将被覆盖。 视图不能索引，也不能有关联的触发器或默认值。 视图可以和表一起使用。例如，编写一条联结表和视图的 SELECT 语句。  使用视图# CREATE VIEW 语句创建视图。 SHOW CREATE VIEW viewname 查看创建视图的语句。 DROP 删除视图，其语法为 DROP VIEW viewname。 更新视图时，可以先用 DROP 再用 CREATE，也可以直接用 CREATE OR REPLACE VIEW。如果要更新的视图不存在， 则第 2 条更新语句会创建一个视图；如果要更新的视图存在，则第2条更新语句会替换原有视图  用视图重新格式化检索出的数据#视图的另一常见用途是重新格式化检索出的数据。</description>
+    </item>
+    
+    <item>
+      <title>写操作</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/05_write_operation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/05_write_operation/</guid>
+      <description>插入数据#插入完整的行#insert into customers values(&amp;#39;xiaoming&amp;#39;, &amp;#39;shanghai&amp;#39;, 18); insert into customers(cust_name, cust_address, cust_age) values(&amp;#39;xiaoming&amp;#39;, &amp;#39;shanghai&amp;#39;, 18); 第二条语句更安全。第一种语法不建议使用，因为各个列必须以它们在表定义中出现的次序填充。高度依赖于表中列的定义次序，并且还依赖于其次序容 易获得的信息。
+ 如果表的定义允许，则可以在 INSERT 操作中省略某些列。省略的列必须满足以下某个条件。该列定义为允许 NULL 值（无值或空值）。在表定义 中给出默认值。这表示如果不给出值，将使用默认值。 不管使用哪种 INSERT 语法，都必须给出 VALUES 的正确数目。如果不提供列名，则必须给每个表列提供一个值。如果提供列名，则必须对 每个列出的列给出一个值。
+ 插入多行#insert into customers(cust_name, cust_address, cust_age) values(&amp;#39;xiaoming&amp;#39;, &amp;#39;shanghai&amp;#39;, 18), values(&amp;#39;xiaoliang&amp;#39;, &amp;#39;shanghai&amp;#39;, 18); 其中单条 INSERT 语句有多组值，每组值用一对圆括号括起来，用逗号分隔。
+ MySQL 用单条 INSERT 语句处理多个插入比使用多条 INSERT 语句快。
+ 插入检索出的数据#INSERT 还存在另一种形式，可以利用它将一条 SELECT 语句的结果插入表中。
+insert into customers(cust_name, cust_address, cust_age) select cust_name, cust_address, cust_age from custnew; 使用 INSERT SELECT 从 custnew 中将所有数据导入 customers。SELECT 语句从 custnew 检索出要插入的值，而不是列出它们。</description>
+    </item>
+    
+    <item>
+      <title>分布式锁</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/13_distributed-lock/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/13_distributed-lock/</guid>
+      <description>分布式锁#分布式锁是用来解决并发问题的。比如一个操作要修改用户的状态，修改状态需要先读出用户的状态，在内存里进行修改，改完了再存回去。如果这样的操 作同时进行了，就会出现并发问题，因为读取和保存状态这两个操作不是原子的。
+分布式锁本质上要实现的目标就是在 Redis 里面占一个坑，当别的进程也要来占时，发现已经有人蹲在那里了，就只好放弃或者稍后再试。
+占坑一般是使用 setnx(set if not exists) 指令，只允许被一个客户端占坑。先来先占， 用完了，再调用 del 指令释放茅坑。
+&amp;gt; setnx lock:codehole true OK ... do something critical ... &amp;gt; del lock:codehole (integer) 1 但是有个问题，如果逻辑执行到中间出现异常了，可能会导致 del 指令没有被调用，这样就会陷入死锁，锁永远得不到释放。
+于是我们在拿到锁之后，再给锁加上一个过期时间，这样即使中间出现异常也可以保证锁会自动释放。
+&amp;gt; set lock:codehole true ex 5 nx OK ... do something critical ... &amp;gt; del lock:codehole 超时问题#Redis 的分布式锁不能解决超时问题，例如：
+ 加锁和释放锁之间的逻辑执行的太长，以至于超出了过期时间，导致锁过期了。 这时候第一个线程持有的锁过期了，但是临界区的逻辑还没有执行完。 这个时候第二个线程就提前重新持有了这把锁，导致临界区代码不能得到严格的串行执行。  解决方案#tag = random.nextint() # 随机数 if redis.</description>
+    </item>
+    
+    <item>
+      <title>压缩列表</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/ziplist/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/ziplist/</guid>
+      <description>压缩列表#压缩列表（ziplist）是列表键和哈希键的底层实现之一。
+当一个列表键只包含少量列表项，并且每个列表项要么就是小整数值，要么就是长度比较短的字符串，那么 Redis 就会使用压缩列表来做列表键的 底层实现。
+比如：
+redis&amp;gt; RPUSH lst 1 3 5 10086 &amp;#34;hello&amp;#34; &amp;#34;world&amp;#34; (integer) 6 redis&amp;gt; OBJECT ENCODING lst &amp;#34;ziplist&amp;#34; 因为列表键里面包含的都是 1 、 3 、 5 、 10086 这样的小整数值，以及 &amp;ldquo;hello&amp;rdquo; 、 &amp;ldquo;world&amp;rdquo; 这样的短字符串。
+当一个哈希键只包含少量键值对，并且每个键值对的键和值要么就是小整数值，要么就是长度比较短的字符串，那么 Redis 就会使用压缩列表来做 哈希键的底层实现。
+redis&amp;gt; HMSET profile &amp;#34;name&amp;#34; &amp;#34;Jack&amp;#34; &amp;#34;age&amp;#34; 28 &amp;#34;job&amp;#34; &amp;#34;Programmer&amp;#34; OK redis&amp;gt; OBJECT ENCODING profile &amp;#34;ziplist&amp;#34; 压缩列表的构成#压缩列表是 Redis 为了节约内存而开发的，由一系列特殊编码的连续内存块组成的顺序型（sequential）数据结构。
+压缩列表的各个组成部分：  zlbytes，uint32_t，4 字节，记录整个压缩列表占用的内存字节数：在对压缩列表进行内存重分配，或者计算 zlend 的位置时使用。 zltail，uint32_t，4 字节，记录压缩列表表尾节点距离压缩列表的起始地址有多少字节：通过这个偏移量，程序无须遍历整个压缩列表就可以确定表尾节点的地址。 zllen，uint16_t，2 字节，记录了压缩列表包含的节点数量：当这个属性的值小于 UINT16_MAX （65535）时，这个属性的值就是压缩列表包含节点的数量； 当这个值等于 UINT16_MAX 时，节点的真实数量需要遍历整个压缩列表才能计算得出。 entryX，压缩列表包含的各个节点，节点的长度由节点保存的内容决定。 zlend，uint8_t，1 字节，特殊值 0xFF （十进制 255 ），用于标记压缩列表的末端。  压缩列表节点的构成#压缩列表节点组成： 每个压缩列表节点可以保存一个字节数组或者一个整数值，其中，字节数组可以是以下三种长度的其中一种：</description>
+    </item>
+    
+    <item>
+      <title>启动选项和配置文件</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/08_config/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/08_config/</guid>
+      <description>MySQL 服务端设置项一般都有各自的默认值，例如，服务端客户端做大连接数默认是 151，默认存储引擎是 InnoDB，这些选项叫做启动选项，可以在 程序启动的时候去修改。
+不论是服务端相关的程序（mysqld、mysqld_safe）还是客户端相关的程序（mysql、mysqladmin），在启动的时候基本都可以指定启动参数。 这些启动参数可以放在命令行中指定，也可以把它们放在配置文件中指定。
+在命令行上使用选项# --skip-networking 选项禁止各客户端使用 TCP/IP 网络进行通信。（也可以使用 skip_networking，当选项名由多个单词构成时，可以 - 连接， 也可以 _ 连接） --default-storage-engine=&amp;lt;engine&amp;gt; 改变默认存储引擎。  示例：
+mysqld --default-storage-engine=MyISAM 查看更多启动选项：
+mysqld --verbose --help mysqld_safe --help 配置文件中使用选项#在配置文件中使用选项，就不需要每次都在命令行中添加参数。
+配置文件的路径#Windows 操作系统的配置文件#MySQL 会按照下列路径来寻找配置文件：
+   路径 描述     %WINDIR%\my.ini， %WINDIR%\my.cnf    C:\my.ini， C:\my.cnf    BASEDIR\my.ini， BASEDIR\my.cnf    defaults-extra-file 命令行指定的额外配置文件路径   %APPDATA%\MySQL\.</description>
+    </item>
+    
+    <item>
+      <title>字典</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/10_dict/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/10_dict/</guid>
+      <description>字典#Redis 中除了 hash 结构的数据会用到字典外，整个 Redis 数据库的所有 key 和 value 也组成了一个全局字典，还有带过期时间的 key 集合 也是一个字典。zset 集合中存储 value 和 score 值的映射关系也是通过字典实现的。
+struct RedisDb { dict* dict; // all keys key=&amp;gt;value  dict* expires; // all expired keys key=&amp;gt;long(timestamp)  ... } struct zset { dict *dict; // all values value=&amp;gt;score  zskiplist *zsl; } 字典的结构#dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后 进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新 的 hashtable 取而代之。</description>
+    </item>
+    
+    <item>
+      <title>字符集和比较规则</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/09_character/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/09_character/</guid>
+      <description>字符集和比较规则#字符集和比较规则简介#字符集简介#计算机中只能存储二进制数据，如何存储字符串？当然是建立字符与二进制数据的映射关系，建立这个关系要搞清楚两件事儿：
+ 要把哪些字符映射成二进制数据？也就是界定清楚字符范围。 怎么映射？将一个字符映射成一个二进制数据的过程也叫做编码，将一个二进制数据映射到一个字符的过程叫做解码。  字符集就是来描述某个字符范围的编码规则。
+比较规则简介#怎么比较两个字符？最容易的就是直接比较这两个字符对应的二进制编码的大小。如，字符 &amp;lsquo;a&amp;rsquo; 的编码为 0x01，字符 &amp;lsquo;b&amp;rsquo; 的编码为 0x02，所 以 &amp;lsquo;a&amp;rsquo; 小于 &amp;lsquo;b&amp;rsquo;。
+二进制比较规则很简单，但有时候并不符合现实需求，比如在有些场景对于英文字符不区分大小写。这时候可以这样指定比较规则：
+ 将两个大小写不同的字符全都转为大写或者小写。 再比较这两个字符对应的二进制数据。  但是实际生活中的字符不止英文字符一种，比如汉字有几万之多，同一种字符集可以有多种比较规则。
+一些重要的字符集# ASCII 字符集，共收录 128 个字符，包括空格、标点符号、数字、大小写字母和一些不可见字符。 ISO 8859-1 字符集，共收录 256 个字符，是在 ASCII 字符集的基础上又扩充了 128 个西欧常用字符。别名 latin1。 GB2312 字符集，收录了汉字以及拉丁字母、希腊字母、日文平假名及片假名字母、俄语西里尔字母。其中收录汉字 6763 个，其他文字符号 682 个。同时这 种字符集又兼容ASCII字符集。 GBK 字符集，GBK 字符集只是在收录字符范围上对 GB2312 字符集作了扩充，编码方式上兼容 GB2312。 utf8 字符集，收录地球上能想到的所有字符，而且还在不断扩充。这种字符集兼容 ASCII 字符集，采用变长编码方式，编码一个字符需要使用 1～4 个字节。   utf8 只是 Unicode 字符集的一种编码方案，Unicode 字符集可以采用 utf8、utf16、utf32 这几种编码方案，utf8 使用 1～4 个字 节编码一个字符，utf16 使用 2 个或 4 个字节编码一个字符，utf32 使用 4 个字节编码一个字符。</description>
+    </item>
+    
+    <item>
+      <title>对象</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/11_redis-object/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/11_redis-object/</guid>
+      <description>对象#Redis 用到的所有主要数据结构，比如简单动态字符串（SDS）、双端链表、字典、压缩列表、整数集合，等等。
+Redis 并没有直接使用这些数据结构来实现键值对数据库，而是基于这些数据结构创建了一个对象系统，这个系统包含字符串对象、列表对象、哈希 对象、集合对象和有序集合对象这五种类型的对象。
+对象的类型与编码#Redis 使用对象来表示数据库中的键和值，每次在 Redis 的数据库中新创建一个键值对时，至少会创建两个对象，一个对象用作键值对的键（键对象）， 另一个对象用作键值对的值（值对象）。
+比如：
+redis&amp;gt; SET msg &amp;#34;hello world&amp;#34; OK 每个对象都由一个 redisObject 结构表示:
+typedef struct redisObject { // 类型  unsigned type:4; // 编码  unsigned encoding:4; // 指向底层实现数据结构的指针  void *ptr; // ...  } robj; type#对象的 type 属性记录了对象的类型，这个属性的值可以是下面列表中的任意一个：
+ REDIS_STRING，字符串对象 REDIS_LIST，列表对象 REDIS_HASH，哈希对象 REDIS_SET，集合对象 REDIS_ZSET，有序集合对象  对于 Redis 数据库保存的键值对来说，键总是一个字符串对象，而值则可以是字符串对象、列表对象、哈希对象、集合对象或者有序集合对象的其中 一种，因此：
+ 当我们称呼一个数据库键为“字符串键”时， 我们指的是“这个数据库键所对应的值为字符串对象” 当我们称呼一个键为“列表键”时， 我们指的是“这个数据库键所对应的值为列表对象”  编码和底层实现#对象的 ptr 指针指向对象的底层实现数据结构，而这些数据结构由对象的 encoding 属性决定。</description>
+    </item>
+    
+    <item>
+      <title>小对象压缩</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/redis-ziplist/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/redis-ziplist/</guid>
+      <description>小对象压缩#如果 Redis 内部管理的集合数据结构很小，它就会使用紧凑存储形式压缩存储。
+比如 HashMap 结构，如果内部元素比较少，使用散列表反而浪费空间，不如直接使用数组进行存储，需要查找时，因为元素少进行遍历也很快，甚至 可以比 HashMap 本身的查找还要快。
+ziplist#Redis 的 ziplist 是一个紧凑的 byte 数组结构，如下图，每个元素之间都是紧挨着的。
+如果 ziplist 存储的是 hash 结构，那么 key 和 value 会作为两个 entry 相邻存在一起。
+127.0.0.1:6379&amp;gt; hset hello a 1 (integer) 1 127.0.0.1:6379&amp;gt; hset hello b 2 (integer) 1 127.0.0.1:6379&amp;gt; hset hello c 3 (integer) 1 127.0.0.1:6379&amp;gt; object encoding hello &amp;#34;ziplist&amp;#34; 如果 ziplist 存储的是 zset，那么 value 和 score 会作为两个 entry 相邻存在一起。
+127.0.0.1:6379&amp;gt; zadd world 1 a (integer) 1 127.</description>
+    </item>
+    
+    <item>
+      <title>布隆过滤器</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/16_bloom-filter/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/16_bloom-filter/</guid>
+      <description>布隆过滤器#我们在使用新闻客户端看新闻时，它会给我们不停地推荐新的内容，它每次推荐时要去重，去掉那些已经看过的内容。问题来了，新闻客户端推荐系统 如何实现推送去重的？
+HyperLogLog 结构就无能为力了，它只提供了 pfadd 和 pfcount 方法，没有提供 pfcontains 这种方法。
+你会想到服务器记录了用户看过的所有历史记录，当推荐系统推荐新闻时会从每个用户的历史记录里进行筛选，过滤掉那些已经存在的记录。 问题是当用户量很大，每个用户看过的新闻又很多的情况下，这种方式，推荐系统的去重工作在性能上跟的上么？
+布隆过滤器 (Bloom Filter) 就是专门用来解决这种去重问题的。它在起到去重的同时，在空间上还能节省 90% 以上，只是稍微有那么点不精 确，也就是有一定的误判概率。
+布隆过滤器是什么？#布隆过滤器可以理解为一个不怎么精确的 set 结构，当你使用它的 contains 方法判断某个对象是否存在时，它可能会误判。但是布隆过滤器也不 是特别不精确，只要参数设置的合理，它的精确度可以控制的相对足够精确，只会有小小的误判概率。
+当布隆过滤器说某个值存在时，这个值可能不存在；当它说不存在时，那就肯定不存在。
+布隆过滤器能准确过滤掉那些已经看过的内容，那些没有看过的新内容，它也会过滤掉极小一部分 (误判)，但是绝大多数新内容它都能准确识别。
+Redis 中的布隆过滤器#Redis 官方提供的布隆过滤器到了 Redis 4.0 提供了插件功能之后才正式登场。布隆过滤器作为一个插件加载到 Redis Server 中，给 Redis 提供 了强大的布隆去重功能。
+&amp;gt; docker pull redislabs/rebloom # 拉取镜像 &amp;gt; docker run -p6379:6379 redislabs/rebloom # 运行容器 &amp;gt; redis-cli # 连接容器中的 redis 服务 使用#布隆过滤器有二个基本指令，bf.</description>
+    </item>
+    
+    <item>
+      <title>延时队列</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/14_queue/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/14_queue/</guid>
+      <description>延时队列#RabbitMQ 和 Kafka 是常用的消息队列中间件，但是这种专业的消息队列中间件使用复杂。
+对于那些只有一组消费者的消息队列，使用 Redis 就可以轻松搞定。Redis 的消息队列没有 ACK 保证，如果追求消息的可靠性，还是使用专业 的消息队列。
+异步消息队列#使用 Redis 的 list(列表) 数据结构来实现异步消息队列，使用 rpush/lpush 操作入队列，使用 lpop/rpop 来出队列。
+&amp;gt; rpush notify-queue apple banana pear (integer) 3 &amp;gt; llen notify-queue (integer) 3 &amp;gt; lpop notify-queue &amp;#34;apple&amp;#34; &amp;gt; llen notify-queue (integer) 2 &amp;gt; lpop notify-queue &amp;#34;banana&amp;#34; &amp;gt; llen notify-queue (integer) 1 &amp;gt; lpop notify-queue &amp;#34;pear&amp;#34; &amp;gt; llen notify-queue (integer) 0 &amp;gt; lpop notify-queue (nil) 上面是 rpush 和 lpop 结合使用的例子。还可以使用 lpush 和 rpop 结合使用，效果是一样的。这里不再赘述。</description>
+    </item>
+    
+    <item>
+      <title>快速列表</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/redis-quiicklist/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/redis-quiicklist/</guid>
+      <description>快速列表#Redis 早期版本存储 list 列表数据结构使用的是压缩列表 ziplist 和普通的双向链表 linkedlist，当元素少时用 ziplist，元素多时 用 linkedlist。
+考虑到链表的附加空间相对太高，prev 和 next 指针就要占去 16 个字节 (64bit 系统的指针是 8 个字节)，另外每个节点的内存都是单独分配，会 加剧内存的碎片化，影响内存管理效率。后续版本对列表数据结构进行了改造，使用 quicklist 代替了 ziplist 和 linkedlist。
+&amp;gt; rpush codehole go java python (integer) 3 &amp;gt; debug object codehole Value at:0x7fec2dc2bde0 refcount:1 encoding:quicklist serializedlength:31 lru:6101643 lru_seconds_idle:5 ql_nodes:1 ql_avg_node:3.00 ql_ziplist_max:-2 ql_compressed:0 ql_uncompressed_size:29 quicklist 是 ziplist 和 linkedlist 的混合体，它将 linkedlist 按段切分，每一段使用 ziplist 来紧凑存储，多个 ziplist 之间使用 双向指针串接起来。
+struct ziplist { .</description>
+    </item>
+    
+    <item>
+      <title>慢查询日志</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/28_slowlog/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/28_slowlog/</guid>
+      <description>慢查询日志#Redis 的慢查询日志功能用于记录执行时间超过给定时长的命令请求，用户可以通过这个功能产生的日志来监视和优化查询速度。
+服务器配置有两个和慢查询日志相关的选项：
+ slowlog-log-slower-than 选项指定执行时间超过多少微秒（1 秒等于 1,000,000 微秒）的命令请求会被记录到日志上。 slowlog-max-len 选项指定服务器最多保存多少条慢查询日志。当服务器储存的慢查询日志数量等于 slowlog-max-len 选项的值时， 服务器在添加一条新的慢查询日志之前， 会先将最旧的一条慢查询日志删除。  查看慢查询日志#使用 SLOWLOG GET 命令查看服务器所保存的慢查询日志：
+redis&amp;gt; SLOWLOG GET 1) 1) (integer) 4 # 日志的唯一标识符（uid） 2) (integer) 1378781447 # 命令执行时的 UNIX 时间戳 3) (integer) 13 # 命令执行的时长，以微秒计算 4) 1) &amp;#34;SET&amp;#34; # 命令以及命令参数 2) &amp;#34;database&amp;#34; 3) &amp;#34;Redis&amp;#34; </description>
+    </item>
+    
+    <item>
+      <title>持久化</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/19_persistence/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/19_persistence/</guid>
+      <description>持久化#Redis 的数据全部在内存里，如果突然宕机，数据就会全部丢失，因此必须有一种机制来保证 Redis 的数据不会因为故障而丢失， 这种机制就是 Redis 的持久化机制。
+Redis 的持久化机制有两种：
+ 快照，快照是一次全量备份。 AOF 日志，AOF 日志是连续的增量备份。  RDB#快照（RDB）是内存数据的二进制序列化形式，在存储上非常紧凑。
+Redis 是单线程程序，这个线程要同时负责多个客户端套接字的并发读写操作和内存数据结构的逻辑读写。内存快照要求 Redis 必须进行文件 IO 操作， 可文件 IO 操作是不能使用多路复用 API。
+这意味着单线程同时在服务线上的请求还要进行文件 IO 操作，文件 IO 操作会严重拖垮服务器请求的性能。
+还有个重要的问题是为了不阻塞线上的业务，就需要边持久化边响应客户端请求。持久化的同时，内存数据结构还在改变，比 如一个大型的 hash 字典正在持久化，结果一个请求过来把它给删掉了，还没持久化完呢，这尼玛要怎么搞？
+Redis 使用操作系统的多进程写时复制(Copy On Write，简称 COW) 机制来实现快照持久化。
+SAVE 和 BGSAVE#SAVE 和 BGSAVE 指令可以用来生成 rdb 文件，区别在于 SAVE 会阻塞 Redis 服务器进程，客户端的所有请求都会被拒绝，直到 SAVE 执行 完成。而 BGSAVE 指令会派生一个子进程，由子进程负责创建 rdb 文件，父进程继续处理客户端请求。
+创建 rdb 文件实际上是调用了 rdb.</description>
+    </item>
+    
+    <item>
+      <title>数据结构</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/data-structure/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/data-structure/</guid>
+      <description>数据结构#链表#链表提供了高效的节点重排能力，以及顺序性的节点访问方式，并且可以通过增删节点来灵活地调整链表的长度。
+作为一种常用数据结构，链表内置在很多高级的编程语言里面，因为 Redis 使用的 C 语言并没有内置这种数据结构，所以 Redis 构建了自己的链表 实现。
+链表节点的实现#每个链表节点使用一个 adlist.h/listNode 结构：
+typedef struct listNode { // 前置节点  struct listNode *prev; // 后置节点  struct listNode *next; // 节点的值  void *value; } listNode; 使用 adlist.h/list 来持有链表：
+typedef struct list { // 表头节点  listNode *head; // 表尾节点  listNode *tail; // 链表所包含的节点数量  unsigned long len; // 节点值复制函数  void *(*dup)(void *ptr); // 节点值释放函数  void (*free)(void *ptr); // 节点值对比函数  int (*match)(void *ptr, void *key); } list; list 结构为链表提供了表头指针 head 、表尾指针 tail ，以及链表长度计数器 len ，而 dup 、 free 和 match 成员则是用 于实现多态链表所需的类型特定函数：</description>
+    </item>
+    
+    <item>
+      <title>数据迁移</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mongo/04_migrate/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mongo/04_migrate/</guid>
+      <description>简单迁移#如何将一台 linux A 上的 mongodb 数据迁移到另外一台 linux B 上？
+两个命令即可完成任务：
+ 数据的导出：mongoexport 数据的导入：mongoimport  具体步骤：
+ 找到 A 的 mongodb 的mongoexport所在目录，一般在/usr/bin或者/usr/local/mongodb/bin下。  cd /usr/local/mongodb/bin 将数据导出，执行命令：./mongoexport -d dbname -c collectionname -o xxx.dat dbname为数据库名称，collectionname为集合名称，xxx.dat为导出后的数据的名称。导出后的xxx.dat在mongoexport所在的目录下。  ./mongoexport -d moregold -c logs -o logdata.dat 将数据库moregold下的集合logs导出到mongoexport所在的目录下，并将其命名为logdata.dat
+将导出的集合数据移动到 B 服务器上。 找到 B 的mongoimport所在的目录：cd /db/mongo/bin 将数据导入，执行命令./mongoimport -h 127.0.0.1:port -u xxx -p xxx -d dbname -c collectionname /path/xxx.dat：  ./mongoimport -h 127.0.0.1:27017 -u zhangsan -p zhangsan -d moregold -c /root/logdata.</description>
+    </item>
+    
+    <item>
+      <title>查询优化</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/query-optimize/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/query-optimize/</guid>
+      <description>查询优化#</description>
+    </item>
+    
+    <item>
+      <title>简单动态字符串</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/09_sds/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/09_sds/</guid>
+      <description>简单动态字符串#Redis 没有直接使用 C 语言传统的字符串表示（以空字符结尾的字符数组，以下简称 C 字符串），而是自己构建了一种名为简单 动态字符串（simple dynamic string，SDS）的抽象类型， 并将 SDS 用作 Redis 的默认字符串表示。内部结构实现上类 似于 Java 的 ArrayList。
+Redis 中， C 字符串只会作为字符串字面量（string literal），用在一些无须对字符串值进行修改的地方，比如打印日志：
+redisLog(REDIS_WARNING,&amp;#34;Redis is now ready to exit, bye bye...&amp;#34;); 一个可以被修改的字符串值时，Redis 就会使用 SDS 来表示字符串值：比如在 Redis 的数据库里面，包含字符串值的键值对在底层都是由 SDS 实现的。
+redis&amp;gt; SET msg &amp;#34;hello world&amp;#34; OK 其中：
+ 键值对的键是一个字符串对象，对象的底层实现是一个保存着字符串 &amp;ldquo;msg&amp;rdquo; 的 SDS 。 键值对的值也是一个字符串对象，对象的底层实现是一个保存着字符串 &amp;ldquo;hello world&amp;rdquo; 的 SDS。  又比如：
+redis&amp;gt; RPUSH fruits &amp;#34;apple&amp;#34; &amp;#34;banana&amp;#34; &amp;#34;cherry&amp;#34; (integer) 3 其中：</description>
+    </item>
+    
+    <item>
+      <title>管道</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/20_pipeline/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/20_pipeline/</guid>
+      <description>管道#Redis 管道 (Pipeline) 这个技术本质上是由客户端提供的，跟服务器没有什么直接的关系。
+Redis 的消息交互#当我们使用客户端对 Redis 进行一次操作时，客户端将请求传送给服务器，服务器处理完毕后，再将响应回复给客户端。这要花费一个网络数据 包来回的时间。
+如果连续执行多条指令，那就会花费多个网络数据包来回的时间。
+管道操作的本质，服务器根本没有任何区别对待，还是收到一条消息，执行一条消息，回复一条消息的正常的流程。客户端通过对管道中的指令 列表改变读写顺序，合并 write 和 read 操作，就可以大幅节省 IO 时间。
+管道压力测试#Redis 自带了一个压力测试工具 redis-benchmark，使用这个工具就可以进行管道测试。
+首先我们对一个普通的 set 指令进行压测，QPS 大约 5w/s。
+&amp;gt; redis-benchmark -t set -q SET: 51975.05 requests per second 加入管道选项 -P 参数，它表示单个管道内并行的请求数量，看下面 P=2，QPS 达到了 9w/s。
+&amp;gt; redis-benchmark -t set -P 2 -q SET: 91240.88 requests per second 再看看 P=3，QPS 达到了 10w/s。
+&amp;gt; redis-benchmark -t set -P 3 -q SET: 102354.</description>
+    </item>
+    
+    <item>
+      <title>紧凑列表</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/redis-listpack/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/redis-listpack/</guid>
+      <description>紧凑列表#Redis 5.0 引入了数据结构 listpack，它是对 ziplist 结构的改进，在存储空间上会更加节省，而且结构上也比 ziplist 要精简。 listpack 的设计的目的是用来取代 ziplist，但是 ziplist 在 Redis 数据结构中使用太广泛了，替换起来复杂度会非常之高。目前只使用在了新增 加的 Stream 数据结构中。
+struct listpack&amp;lt;T&amp;gt; { int32 total_bytes; // 占用的总字节数  int16 size; // 元素个数  T[] entries; // 紧凑排列的元素列表  int8 end; // 同 zlend 一样，恒为 0xFF } listpack 跟 ziplist 的结构几乎一摸一样，只是少了一个 zltail_offset 字段。因为 listpack 可以是通过其它方式来定位出最后一个元素 的位置的。
+struct lpentry { int&amp;lt;var&amp;gt; encoding; optional byte[] content; int&amp;lt;var&amp;gt; length; } 元素的结构和 ziplist 的元素结构也很类似，都是包含三个字段。不同的是 length 字段放在了元素的尾部，而且存储的不是上一个元素的长度，是 当前元素的长度。正是因为长度放在了尾部，所以可以省去了 zltail_offset 字段来标记最后一个元素的位置，这个位置可以 通过 total_bytes 字段和最后一个元素的长度字段计算出来。</description>
+    </item>
+    
+    <item>
+      <title>表空间</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/table-space/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/table-space/</guid>
+      <description>表空间#</description>
+    </item>
+    
+    <item>
+      <title>跳表</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/redis-skiplist/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/redis-skiplist/</guid>
+      <description>跳表#zset 的内部实现是一个 hash 字典加一个跳跃列表 (skiplist)。
+struct zset { dict *dict; // all values value=&amp;gt;score  zskiplist *zsl; } dict 结构存储 value 和 score 值的映射关系。
+参考 跳表。</description>
+    </item>
+    
+    <item>
+      <title>锁</title>
+      <link>http://shipengqi.github.io/db-learn/docs/mysql/14_lock/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/mysql/14_lock/</guid>
+      <description>锁#在处理并发读或者写时，可以通过实现两种类型的锁组成的锁系统来解决。这两种类型分别是共享锁（shared lock）和排他锁（exclusive lock）， 也叫读锁（read lock）和写锁（write lock）
+读锁是共享的，相互不阻塞。写锁是排他的，一个写锁会阻塞其他的写锁和读锁，只有这样，才能保证同一时间只有一个用户可以执行写入，并防止其他用户读取正 在写入的同一资源。
+锁粒度#提高共享资源并发性的方式就是让锁定对象更有选择性。尽量只锁定需要修改的部分数据，而不是多有的资源。只对会修改的数据进行精确的锁定。 在给定的资源上，锁定的数据量越少，则系统的并发程度越高，只要不发生冲突即可。
+但是锁也会消耗资源</description>
+    </item>
+    
+    <item>
+      <title>限流</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/17_current-limit/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/17_current-limit/</guid>
+      <description>限流#限流算法在分布式领域是一个经常被提起的话题，当系统的处理能力有限时，如何阻止计划外的请求继续对系统施压，这是一个需要重视的问题。
+除了控制流量，限流还有一个应用目的是用于控制用户行为，避免垃圾请求。比如在 UGC 社区，用户的发帖、回复、点赞等行为都要严格受控，一般要 严格限定某行为在规定时间内允许的次数，超过了次数那就是非法行为。
+Redis 实现简单限流#系统要限定用户的某个行为在指定的时间里只能允许发生 N 次，如何使用 Redis 的数据结构来实现这个限流的功能？
+# 指定用户 user_id 的某个行为 action_key 在特定的时间内 period 只允许发生一定的次数 max_count def is_action_allowed(user_id, action_key, period, max_count): return True # 调用这个接口 , 一分钟内只允许最多回复 5 个帖子 can_reply = is_action_allowed(&amp;#34;laoqian&amp;#34;, &amp;#34;reply&amp;#34;, 60, 5) if can_reply: do_reply() else: raise ActionThresholdOverflow() 解决方案#这个限流需求中存在一个滑动时间窗口，想想 zset 数据结构的 score 值，是不是可以通过 score 来圈出这个时间窗口来。 而且我们只需要保留这个时间窗口，窗口之外的数据都可以砍掉。那这个 zset 的 value 填什么比较合适？它只需要保证唯一性即可， 用 uuid 会比较浪费空间，那就改用毫秒时间戳吧。
+一个 zset 结构记录用户的行为历史，每一个行为都会作为 zset 中的一个 key 保存下来。同一个用户同一种行为用一个 zset 记录。</description>
+    </item>
+    
+    <item>
+      <title>集群</title>
+      <link>http://shipengqi.github.io/db-learn/docs/redis/23_cluster/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://shipengqi.github.io/db-learn/docs/redis/23_cluster/</guid>
+      <description>集群#Sentinel#可以将 Redis Sentinel 集群看成是一个 ZooKeeper 集群，它是集群高可用的心脏，它一般是由 3～5 个节点组成，这样挂了个别节点集群还可 以正常运转。
+它负责持续监控主从节点的健康，当主节点挂掉时，自动选择一个最优的从节点切换为主节点。客户端来连接集群时，会首先连接 sentinel，通 过 sentinel 来查询主节点的地址，然后再去连接主节点进行数据交互。当主节点发生故障时，客户端会重新向 sentinel 要地址，sentinel 会将 最新的主节点地址告诉客户端。
+从这张图中我们能看到主节点挂掉了，原先的主从复制也断开了，客户端和损坏的主节点也断开了。从节点被提升为新的主节点，其它从节点开始和新的 主节点建立复制关系。客户端通过新的主节点继续进行交互
+Sentinel 会持续监控已经挂掉了主节点，待它恢复后原先挂掉的主节点现在变成了从节点，从新的主节点那里建立复制关系。
+消息丢失#Redis 主从采用异步复制，意味着当主节点挂掉时，从节点可能没有收到全部的同步消息，这部分未同步的消息就丢失了。如果主从延迟特别大，那么 丢失的数据就可能会特别多。Sentinel 无法保证消息完全不丢失，但是也尽可能保证消息少丢失。它有两个选项可以限制主从延迟过大。
+min-slaves-to-write 1 # 表示主节点必须至少有一个从节点在进行正常复制，否则就停止对外写服务min-slaves-max-lag 10 # 单位是秒，表示如果 10s 没有收到从节点的反馈，就意味着从节点同步异常Cluster#RedisCluster 是 Redis 提供的分布式数据库方案，集群通过分片来进行数据共享，并提供复制和故障转移功能。RedisCluster 是去中心化的， 如下图，该集群有三个 Redis 节点组成，每个节点负责整个集群的一部分数据，每个节点负责的数据多少可能不一样。这三个节点相互连接组成 一个对等的集群，它们之间通过一种特殊的二进制协议相互交互集群信息。
+槽#Redis 通过分片的方式来保存数据：集群的整个数据库被分为 16384 个槽（slot），集群中的每个节点可以处理 0 个或最多 16384 个槽。</description>
+    </item>
+    
+  </channel>
+</rss>

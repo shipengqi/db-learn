@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="数据结构#链表#链表提供了高效的节点重排能力，以及顺序性的节点访问方式，并且可以通过增删节点来灵活地调整链表的长度。
+作为一种常用数据结构，链表内置在很多高级的编程语言里面，因为 Redis 使用的 C 语言并没有内置这种数据结构，所以 Redis 构建了自己的链表 实现。
+链表节点的实现#每个链表节点使用一个 adlist.h/listNode 结构：
+typedef struct listNode { // 前置节点  struct listNode *prev; // 后置节点  struct listNode *next; // 节点的值  void *value; } listNode; 使用 adlist.h/list 来持有链表：
+typedef struct list { // 表头节点  listNode *head; // 表尾节点  listNode *tail; // 链表所包含的节点数量  unsigned long len; // 节点值复制函数  void *(*dup)(void *ptr); // 节点值释放函数  void (*free)(void *ptr); // 节点值对比函数  int (*match)(void *ptr, void *key); } list; list 结构为链表提供了表头指针 head 、表尾指针 tail ，以及链表长度计数器 len ，而 dup 、 free 和 match 成员则是用 于实现多态链表所需的类型特定函数：">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="数据结构" />
+<meta property="og:description" content="数据结构#链表#链表提供了高效的节点重排能力，以及顺序性的节点访问方式，并且可以通过增删节点来灵活地调整链表的长度。
+作为一种常用数据结构，链表内置在很多高级的编程语言里面，因为 Redis 使用的 C 语言并没有内置这种数据结构，所以 Redis 构建了自己的链表 实现。
+链表节点的实现#每个链表节点使用一个 adlist.h/listNode 结构：
+typedef struct listNode { // 前置节点  struct listNode *prev; // 后置节点  struct listNode *next; // 节点的值  void *value; } listNode; 使用 adlist.h/list 来持有链表：
+typedef struct list { // 表头节点  listNode *head; // 表尾节点  listNode *tail; // 链表所包含的节点数量  unsigned long len; // 节点值复制函数  void *(*dup)(void *ptr); // 节点值释放函数  void (*free)(void *ptr); // 节点值对比函数  int (*match)(void *ptr, void *key); } list; list 结构为链表提供了表头指针 head 、表尾指针 tail ，以及链表长度计数器 len ，而 dup 、 free 和 match 成员则是用 于实现多态链表所需的类型特定函数：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/data-structure/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>数据结构 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>数据结构</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#链表">链表</a>
+      <ul>
+        <li><a href="#链表节点的实现">链表节点的实现</a></li>
+      </ul>
+    </li>
+    <li><a href="#跳跃表">跳跃表</a>
+      <ul>
+        <li><a href="#跳跃表的简单解释">跳跃表的简单解释</a></li>
+        <li><a href="#跳跃表的实现">跳跃表的实现</a></li>
+      </ul>
+    </li>
+    <li><a href="#整数集合">整数集合</a>
+      <ul>
+        <li><a href="#整数集合的实现">整数集合的实现</a></li>
+        <li><a href="#升级">升级</a></li>
+        <li><a href="#不支持降级">不支持降级</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="数据结构">
+  数据结构
+  <a class="anchor" href="#%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84">#</a>
+</h1>
+<h2 id="链表">
+  链表
+  <a class="anchor" href="#%e9%93%be%e8%a1%a8">#</a>
+</h2>
+<p>链表提供了高效的节点重排能力，以及顺序性的节点访问方式，并且可以通过增删节点来灵活地调整链表的长度。</p>
+<p>作为一种常用数据结构，链表内置在很多高级的编程语言里面，因为 Redis 使用的 C 语言并没有内置这种数据结构，所以 Redis 构建了自己的链表
+实现。</p>
+<h3 id="链表节点的实现">
+  链表节点的实现
+  <a class="anchor" href="#%e9%93%be%e8%a1%a8%e8%8a%82%e7%82%b9%e7%9a%84%e5%ae%9e%e7%8e%b0">#</a>
+</h3>
+<p>每个链表节点使用一个 <code>adlist.h/listNode</code> 结构：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> listNode {
+
+    <span style="color:#75715e">// 前置节点
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">struct</span> listNode <span style="color:#f92672">*</span>prev;
+
+    <span style="color:#75715e">// 后置节点
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">struct</span> listNode <span style="color:#f92672">*</span>next;
+
+    <span style="color:#75715e">// 节点的值
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>value;
+
+} listNode;
+</code></pre></div><p>使用 <code>adlist.h/list</code> 来持有链表：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> list {
+
+    <span style="color:#75715e">// 表头节点
+</span><span style="color:#75715e"></span>    listNode <span style="color:#f92672">*</span>head;
+
+    <span style="color:#75715e">// 表尾节点
+</span><span style="color:#75715e"></span>    listNode <span style="color:#f92672">*</span>tail;
+
+    <span style="color:#75715e">// 链表所包含的节点数量
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">long</span> len;
+
+    <span style="color:#75715e">// 节点值复制函数
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>(<span style="color:#f92672">*</span>dup)(<span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>ptr);
+
+    <span style="color:#75715e">// 节点值释放函数
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> (<span style="color:#f92672">*</span>free)(<span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>ptr);
+
+    <span style="color:#75715e">// 节点值对比函数
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">int</span> (<span style="color:#f92672">*</span>match)(<span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>ptr, <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>key);
+
+} list;
+</code></pre></div><p><code>list</code> 结构为链表提供了表头指针 <code>head</code> 、表尾指针 <code>tail</code> ，以及链表长度计数器 <code>len</code> ，而 <code>dup</code> 、 <code>free</code> 和 <code>match</code> 成员则是用
+于实现多态链表所需的类型特定函数：</p>
+<ul>
+<li><code>dup</code> 函数用于复制链表节点所保存的值；</li>
+<li><code>free</code> 函数用于释放链表节点所保存的值；</li>
+<li><code>match</code> 函数则用于对比链表节点所保存的值和另一个输入值是否相等。</li>
+</ul>
+<p>
+  <img src="../../../images/list-nodes.png" alt="" /></p>
+<p>Redis 的链表实现的特性：</p>
+<ul>
+<li>双向：链表节点带有 <code>prev</code> 和 <code>next</code> 指针，获取某个节点的前置节点和后置节点的复杂度都是 <code>O(1)</code>。</li>
+<li>无环：表头节点的 <code>prev</code> 指针和表尾节点的 <code>next</code> 指针都指向 <code>NULL</code> ，对链表的访问以 <code>NULL</code> 为终点。</li>
+<li>带表头指针和表尾指针：通过 <code>list</code> 结构的 <code>head</code> 指针和 <code>tail</code> 指针，程序获取链表的表头节点和表尾节点的复杂度为 <code>O(1)</code>。</li>
+<li>带链表长度计数器：程序使用 <code>list</code> 结构的 <code>len</code> 属性来对 <code>list</code> 持有的链表节点进行计数，程序获取链表中节点数量的复杂度为 <code>O(1)</code>。</li>
+<li>多态：链表节点使用 <code>void*</code> 指针来保存节点值， 并且可以通过 <code>list</code> 结构的 <code>dup</code> 、 <code>free</code> 、 <code>match</code> 三个属性为节点值设置类型特
+定函数，所以链表可以用于保存各种不同类型的值。</li>
+</ul>
+<h2 id="跳跃表">
+  跳跃表
+  <a class="anchor" href="#%e8%b7%b3%e8%b7%83%e8%a1%a8">#</a>
+</h2>
+<p><strong>跳跃表（skiplist）是一种有序数据结构，它通过在每个节点中维持多个指向其他节点的指针，从而达到快速访问节点的目的</strong>。</p>
+<p>Redis 只在两个地方用到了跳跃表 一个是实现有序集合键，另一个是在集群节点中用作内部数据结构。</p>
+<h3 id="跳跃表的简单解释">
+  跳跃表的简单解释
+  <a class="anchor" href="#%e8%b7%b3%e8%b7%83%e8%a1%a8%e7%9a%84%e7%ae%80%e5%8d%95%e8%a7%a3%e9%87%8a">#</a>
+</h3>
+<p>想想一个创业公司，刚开始只有几个人，团队成员之间人人平等，都是联合创始人。随着公司的成长，人数渐渐变多，团队沟通成本随之增加。这时候就
+会引入组长制，对团队进行划分。每个团队会有一个组长。开会的时候分团队进行，多个组长之间还会有自己的会议安排。公司规模进一步扩展，需要再增
+加一个层级 —— 部门，每个部门会从组长列表中推选出一个代表来作为部长。部长们之间还会有自己的高层会议安排。</p>
+<p>跳跃列表就是类似于这种层级制，最下面一层所有的元素都会串起来。然后每隔几个元素挑选出一个代表来，再将这几个代表使用另外一级指针串起来。然
+后在这些代表里再挑出二级代表，再串起来。最终就形成了金字塔结构。</p>
+<p>跳跃表之所以<strong>跳跃</strong>，是因为内部的元素可能<strong>身兼数职</strong>，比如下节图中的第一个节点，同时处于 L1、L2、L3 和 L4 层，可以快速在不同层次之间进行<strong>跳跃</strong>。</p>
+<h3 id="跳跃表的实现">
+  跳跃表的实现
+  <a class="anchor" href="#%e8%b7%b3%e8%b7%83%e8%a1%a8%e7%9a%84%e5%ae%9e%e7%8e%b0">#</a>
+</h3>
+<p>Redis 的跳跃表由 <code>redis.h/zskiplistNode</code> 和 <code>redis.h/zskiplist</code> 两个结构定义，其中 <code>zskiplistNode</code> 结构用于表示跳跃表节点，而 <code>zskiplist</code> 结构则用于保存跳跃表
+节点的相关信息，比如节点的数量，以及指向表头节点和表尾节点的指针等等。</p>
+<p>
+  <img src="../../../images/skiplist.png" alt="" /></p>
+<p><code>zskiplist</code> 结构， 该结构包含以下属性：</p>
+<ul>
+<li><code>header</code>：指向跳跃表的表头节点。</li>
+<li><code>tail</code>：指向跳跃表的表尾节点。</li>
+<li><code>level</code>：记录目前跳跃表内，层数最大的那个节点的层数（表头节点的层数不计算在内）。</li>
+<li><code>length</code>：记录跳跃表的长度，也即是，跳跃表目前包含节点的数量（表头节点不计算在内）。</li>
+</ul>
+<p><code>zskiplistNode</code> 结构， 该结构包含以下属性：</p>
+<ul>
+<li>层（level）：节点中用 L1 、 L2 、 L3 等字样标记节点的各个层， L1 代表第一层， L2 代表第二层，以此类推。每个层都带有两个属性：<strong>前进指针和跨度</strong>。
+前进指针用于访问位于表尾方向的其他节点，而跨度则记录了前进指针所指向节点和当前节点的距离。在上面的图片中，连线上带有数字的箭头就代表前进
+指针，而那个数字就是跨度。当程序从表头向表尾进行遍历时，访问会沿着层的前进指针进行。</li>
+<li>后退（backward）指针：节点中用 BW 字样标记节点的后退指针，它指向位于当前节点的前一个节点。后退指针在程序从表尾向表头遍历时使用。</li>
+<li>分值（score）：各个节点中的 1.0 、 2.0 和 3.0 是节点所保存的分值。在跳跃表中，节点按各自所保存的分值从小到大排列。</li>
+<li>成员对象（obj）：各个节点中的 o1 、 o2 和 o3 是节点所保存的成员对象。</li>
+</ul>
+<h4 id="跳跃表节点">
+  跳跃表节点
+  <a class="anchor" href="#%e8%b7%b3%e8%b7%83%e8%a1%a8%e8%8a%82%e7%82%b9">#</a>
+</h4>
+<p><code>redis.h/zskiplistNode</code> 结构定义：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> zskiplistNode {
+
+    <span style="color:#75715e">// 后退指针
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">struct</span> zskiplistNode <span style="color:#f92672">*</span>backward;
+
+    <span style="color:#75715e">// 分值
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">double</span> score;
+
+    <span style="color:#75715e">// 成员对象
+</span><span style="color:#75715e"></span>    robj <span style="color:#f92672">*</span>obj;
+
+    <span style="color:#75715e">// 层
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">struct</span> zskiplistLevel {
+
+        <span style="color:#75715e">// 前进指针
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">struct</span> zskiplistNode <span style="color:#f92672">*</span>forward;
+
+        <span style="color:#75715e">// 跨度
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> span;
+
+    } level[];
+
+} zskiplistNode;
+</code></pre></div><h5 id="层">
+  层
+  <a class="anchor" href="#%e5%b1%82">#</a>
+</h5>
+<p><code>level</code> 数组可以包含多个元素，每次创建一个新跳跃表节点的时候，程序都根据幂次定律 （power law，越大的数出现的概率越小） 随机生成一个介
+于 1 和 32 之间的值作为 <code>level</code> 数组的大小， 这个大小就是层的“高度”。</p>
+<p>程序可以通过这些层来加快访问其他节点的速度，<strong>一般来说，层的数量越多，访问其他节点的速度就越快</strong>。</p>
+<p><strong>前进指针</strong>：</p>
+<p>每个层都有一个指向表尾方向的前进指针（<code>level[i].forward</code> 属性），用于从表头向表尾方向访问节点。</p>
+<p><strong>跨度</strong>：</p>
+<p>层的跨度（<code>level[i].span</code> 属性）用于记录两个节点之间的距离：</p>
+<ul>
+<li>两个节点之间的跨度越大， 它们相距得就越远。</li>
+<li>指向 <code>NULL</code> 的所有前进指针的跨度都为 0 ，因为它们没有连向任何节点。</li>
+</ul>
+<p>初看上去，很容易以为跨度和遍历操作有关，但实际上并不是这样 —— 遍历操作只使用前进指针就可以完成了，<strong>跨度实际上是用来计算排位（rank）
+的：在查找某个节点的过程中，将沿途访问过的所有层的跨度累计起来，得到的结果就是目标节点在跳跃表中的排位</strong>。</p>
+<p>例如，前面途中在跳跃表中查找分值为 3.0 、成员对象为 o3 的节点时，沿途经历的层：查找的过程只经过了一个层，并且层的跨度为 3 ，所以
+目标节点在跳跃表中的排位为 3 。</p>
+<p><strong>后退指针</strong>：</p>
+<p>节点的后退指针（<code>backward</code> 属性）用于从表尾向表头方向访问节点：跟可以一次跳过多个节点的前进指针不同，因为每个节点只有一个后退指针，所以
+每次只能后退至前一个节点。</p>
+<p><strong>分值和成员</strong>：</p>
+<ul>
+<li>节点的分值（<code>score</code> 属性）是一个 double 类型的浮点数， 跳跃表中的所有节点都按分值从小到大来排序。</li>
+<li>节点的成员对象（<code>obj</code> 属性）是一个指针， 它指向一个字符串对象， 而字符串对象则保存着一个 SDS 值。</li>
+</ul>
+<p>同<strong>一个跳跃表中，各个节点保存的成员对象必须是唯一的，但是多个节点保存的</strong>分值却可以是相同的**：分值相同的节点将按照成员对象在字典
+序中的大小来进行排序，成员对象较小的节点会排在前面（靠近表头的方向），而成员对象较大的节点则会排在后面（靠近表尾的方向）。</p>
+<h4 id="跳跃表-1">
+  跳跃表
+  <a class="anchor" href="#%e8%b7%b3%e8%b7%83%e8%a1%a8-1">#</a>
+</h4>
+<p>多个跳跃表节点就可以组成一个跳跃表，通过使用一个 <code>zskiplist</code> 结构来持有这些节点，程序可以更方便地对整个跳跃表进行处理，比如快速访问
+跳跃表的表头节点和表尾节点，又或者快速地获取跳跃表节点的数量（也即是跳跃表的长度）等信息。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> zskiplist {
+
+    <span style="color:#75715e">// 表头节点和表尾节点
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">struct</span> zskiplistNode <span style="color:#f92672">*</span>header, <span style="color:#f92672">*</span>tail;
+
+    <span style="color:#75715e">// 表中节点的数量
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">long</span> length;
+
+    <span style="color:#75715e">// 表中层数最大的节点的层数
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">int</span> level;
+
+} zskiplist;
+</code></pre></div><p><code>header</code> 和 <code>tail</code> 指针分别指向跳跃表的表头和表尾节点，通过这两个指针，程序定位表头节点和表尾节点的复杂度为 <code>O(1)</code>。</p>
+<p>通过使用 <code>length</code> 属性来记录节点的数量，程序可以在 <code>O(1)</code> 复杂度内返回跳跃表的长度，<strong>注意表头节点不计算在内</strong>。</p>
+<p><code>level</code> 属性则用于在 <code>O(1)</code> 复杂度内获取跳跃表中层高最大的那个节点的层数量，<strong>注意表头节点的层高并不计算在内</strong>。</p>
+<h2 id="整数集合">
+  整数集合
+  <a class="anchor" href="#%e6%95%b4%e6%95%b0%e9%9b%86%e5%90%88">#</a>
+</h2>
+<p>整数集合（<code>intset</code>）是集合键的底层实现之一：当一个集合只包含整数值元素，并且这个集合的元素数量不多时，Redis 就会使用整数集合作为集
+合键的底层实现。</p>
+<h3 id="整数集合的实现">
+  整数集合的实现
+  <a class="anchor" href="#%e6%95%b4%e6%95%b0%e9%9b%86%e5%90%88%e7%9a%84%e5%ae%9e%e7%8e%b0">#</a>
+</h3>
+<p>整数集合它可以保存类型为 <code>int16_t</code> 、 <code>int32_t</code> 或者 <code>int64_t</code> 的整数值，<strong>并且保证集合中不会出现重复元素</strong>。</p>
+<p><code>intset.h/intset</code> 结构：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> intset {
+
+    <span style="color:#75715e">// 编码方式
+</span><span style="color:#75715e"></span>    uint32_t encoding;
+
+    <span style="color:#75715e">// 集合包含的元素数量
+</span><span style="color:#75715e"></span>    uint32_t length;
+
+    <span style="color:#75715e">// 保存元素的数组
+</span><span style="color:#75715e"></span>    int8_t contents[];
+
+} intset;
+</code></pre></div><p><code>contents</code> 数组是整数集合的底层实现：整数集合的每个元素在数组中按值的大小从小到大有序地排列，并且数组中不包含任何重复项。</p>
+<p>虽然 <code>intset</code> 结构将 <code>contents</code> 属性声明为 <code>int8_t</code> 类型的数组，但实际上 <code>contents</code> 数组并不保存任何 <code>int8_t</code> 类
+型的值 —— <strong><code>contents</code> 数组的真正类型取决于 <code>encoding</code> 属性的值</strong>：</p>
+<ul>
+<li>如果 <code>encoding</code> 属性的值为 <code>INTSET_ENC_INT16</code> ，那么 <code>contents</code> 就是一个 <code>int16_t</code> 类型的数组，<code>int16_t</code> 类型的整
+数值（最小值为 <code>-32,768</code>，最大值为 <code>32,767</code> ）。</li>
+<li>如果 <code>encoding</code> 属性的值为 <code>INTSET_ENC_INT32</code> ，那么 <code>contents</code> 就是一个 <code>int32_t</code> 类型的数组，<code>int32_t</code> 类型的整
+数值（最小值为 <code>-2,147,483,648</code>，最大值为 <code>2,147,483,647</code> ）。</li>
+<li>如果 <code>encoding</code> 属性的值为 <code>INTSET_ENC_INT64</code> ，那么 <code>contents</code> 就是一个 <code>int64_t</code> 类型的数组，<code>int64_t</code> 类型的
+整数值（最小值为 <code>-9,223,372,036,854,775,808</code>，最大值为 <code>9,223,372,036,854,775,807</code>）。</li>
+</ul>
+<h3 id="升级">
+  升级
+  <a class="anchor" href="#%e5%8d%87%e7%ba%a7">#</a>
+</h3>
+<p>当我们要将一个新元素添加到整数集合里面，并且新元素的类型比整数集合现有所有元素的类型都要长时，整数集合需要先进行升级（upgrade），然后
+才能将新元素添加到整数集合里面。</p>
+<p>升级整数集合并添加新元素共分为三步进行：</p>
+<ol>
+<li>根据新元素的类型，扩展整数集合底层数组的空间大小，并为新元素分配空间。</li>
+<li>将底层数组现有的所有元素都转换成与新元素相同的类型，并将类型转换后的元素放置到正确的位上，而且在放置元素的过程中，需要继续维持底层
+数组的有序性质不变。</li>
+<li>将新元素添加到底层数组里面。</li>
+</ol>
+<p>例如，一个 <code>INTSET_ENC_INT16</code> 编码的整数集合，包含三个 <code>int16_t</code> 类型的元素（1，2，3），每个元素都占用 16 位空间， 所以整数集合
+底层数组的大小为 <code>3 * 16 = 48</code> 位。</p>
+<p>现在要将类型为 <code>int32_t</code> 的整数值 65535 添加到整数集合里面，因为 65535 的类型 <code>int32_t</code> 比整数集合当前所有元素的类型都要长，所以在
+将 65535 添加到整数集合之前，程序需要先对整数集合进行升级。</p>
+<ol>
+<li>升级首先，对底层数组进行空间重分配。每个 <code>int32_t</code> 整数值占用 32 位空间，四个元素就是 <code>32 * 4 = 128</code> 位。</li>
+<li>空间重分配之后，数组原有的三个元素仍然是 <code>int16_t</code> 类型， 还保存在数组的前 48 位里面，接下来要做的就是将这三个元素转换成 <code>int32_t</code>
+类型，并将转换后的元素放置到正确的位上面。</li>
+<li>将新元素添加到底层数组里面。</li>
+</ol>
+<h4 id="升级的好处">
+  升级的好处
+  <a class="anchor" href="#%e5%8d%87%e7%ba%a7%e7%9a%84%e5%a5%bd%e5%a4%84">#</a>
+</h4>
+<p>升级策略有两个好处：</p>
+<ul>
+<li>是提升整数集合的灵活性，整数集合可以通过自动升级底层数组来适应新元素，所以我们可以随意地将 <code>int16_t</code> 、 <code>int32_t</code> 或者 <code>int64_t</code> 
+类型的整数添加到集合中，而不必担心出现类型错误，这种做法非常灵活。</li>
+<li>节约内存，要让一个数组可以同时保存 <code>int16_t</code> 、 <code>int32_t</code> 、 <code>int64_t</code> 三种类型的值，最简单的做法就是直接使用 <code>int64_t</code> 类型的数
+组作为整数集合的底层实现。不过这样一来，即使添加到整数集合里面的都是 <code>int16_t</code> 类型或者 <code>int32_t</code> 类型的值，数组都需要使用 <code>int64_t</code> 
+类型的空间去保存它们，从而出现浪费内存的情况。整数集合现在的做法既可以让集合能同时保存三种不同类型的值，又可以确保升级操作只会在有需要的
+时候进行，这可以尽量节省内存。</li>
+</ul>
+<h3 id="不支持降级">
+  不支持降级
+  <a class="anchor" href="#%e4%b8%8d%e6%94%af%e6%8c%81%e9%99%8d%e7%ba%a7">#</a>
+</h3>
+<p><strong>整数集合不支持降级操作</strong>，一旦对数组进行了升级，编码就会一直保持升级后的状态。</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/data-structure.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#链表">链表</a>
+      <ul>
+        <li><a href="#链表节点的实现">链表节点的实现</a></li>
+      </ul>
+    </li>
+    <li><a href="#跳跃表">跳跃表</a>
+      <ul>
+        <li><a href="#跳跃表的简单解释">跳跃表的简单解释</a></li>
+        <li><a href="#跳跃表的实现">跳跃表的实现</a></li>
+      </ul>
+    </li>
+    <li><a href="#整数集合">整数集合</a>
+      <ul>
+        <li><a href="#整数集合的实现">整数集合的实现</a></li>
+        <li><a href="#升级">升级</a></li>
+        <li><a href="#不支持降级">不支持降级</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 对 JSON 数据的支持不是很友好。通常把 JSON 转成 String 存储到 Redis 中，但现在的 JSON 数据都是连环嵌套的，每次更新 时都要先获取整个 JSON，然后更改其中一个字段再放上去。这种使用方式，如果在海量的请求下，JSON 字符串比较复杂，会导致在频繁更新数 据使网络I/O跑满，甚至导致系统超时、崩溃。所以 Redis 官方推荐采用 Hash(字典)保存对象。但是 Hash 结构的存储消耗要高于单个字符串。
+Redis 的字典和 Java的 HashMap 类似，它是无序字典。包括内部结构的实现也和 HashMap 也是一致的，同样的数组 &#43; 链表二维结构。
+存取#HSET#设置字典 key 值的 field 字段值为 value。
+HSET key field value 如果 key 不存在，创建 key 并进行 HSET 操作。 如果 field 不存在，则增加新字段，设置成功，返回 1。如果 field 已存在，覆盖旧值，返回 0。
+redis&gt; hset student name xiaoming (integer) 1 redis&gt; hget student name &#34;xiaoming&#34; redis&gt; hset student age 18 (integer) 0 redis&gt; hget student age &#34;18&#34; HSETNX#和 HSET 一样，但是只在字段 field 不存时才会设置。设置成功，返回 1。失败，返回 0。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="Redis 数据类型 Hash" />
+<meta property="og:description" content="Redis 对 JSON 数据的支持不是很友好。通常把 JSON 转成 String 存储到 Redis 中，但现在的 JSON 数据都是连环嵌套的，每次更新 时都要先获取整个 JSON，然后更改其中一个字段再放上去。这种使用方式，如果在海量的请求下，JSON 字符串比较复杂，会导致在频繁更新数 据使网络I/O跑满，甚至导致系统超时、崩溃。所以 Redis 官方推荐采用 Hash(字典)保存对象。但是 Hash 结构的存储消耗要高于单个字符串。
+Redis 的字典和 Java的 HashMap 类似，它是无序字典。包括内部结构的实现也和 HashMap 也是一致的，同样的数组 &#43; 链表二维结构。
+存取#HSET#设置字典 key 值的 field 字段值为 value。
+HSET key field value 如果 key 不存在，创建 key 并进行 HSET 操作。 如果 field 不存在，则增加新字段，设置成功，返回 1。如果 field 已存在，覆盖旧值，返回 0。
+redis&gt; hset student name xiaoming (integer) 1 redis&gt; hget student name &#34;xiaoming&#34; redis&gt; hset student age 18 (integer) 0 redis&gt; hget student age &#34;18&#34; HSETNX#和 HSET 一样，但是只在字段 field 不存时才会设置。设置成功，返回 1。失败，返回 0。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/04_redis-hash/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>Redis 数据类型 Hash | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/"class=active>数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 数据类型 Hash</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#存取">存取</a>
+      <ul>
+        <li><a href="#hset">HSET</a></li>
+        <li><a href="#hsetnx">HSETNX</a></li>
+        <li><a href="#hget">HGET</a></li>
+        <li><a href="#hgetall">HGETALL</a></li>
+      </ul>
+    </li>
+    <li><a href="#批量操作">批量操作</a>
+      <ul>
+        <li><a href="#hmset">HMSET</a></li>
+        <li><a href="#hmget">HMGET</a></li>
+      </ul>
+    </li>
+    <li><a href="#自增">自增</a>
+      <ul>
+        <li><a href="#hincrby">HINCRBY</a></li>
+        <li><a href="#hincrbyfloat">HINCRBYFLOAT</a></li>
+      </ul>
+    </li>
+    <li><a href="#其他">其他</a>
+      <ul>
+        <li><a href="#hdel">HDEL</a></li>
+        <li><a href="#hexists">HEXISTS</a></li>
+        <li><a href="#hlen">HLEN</a></li>
+        <li><a href="#hkeys">HKEYS</a></li>
+        <li><a href="#hvals">HVALS</a></li>
+        <li><a href="#hstlen">HSTLEN</a></li>
+        <li><a href="#hscan">HSCAN</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><p>Redis 对 <code>JSON</code> 数据的支持不是很友好。通常把 <code>JSON</code> 转成 <code>String</code> 存储到 Redis 中，但现在的 <code>JSON</code> 数据都是连环嵌套的，每次更新
+时都要先获取整个 <code>JSON</code>，然后更改其中一个字段再放上去。这种使用方式，如果在海量的请求下，<code>JSON</code> 字符串比较复杂，会导致在频繁更新数
+据使网络<code>I/O</code>跑满，甚至导致系统超时、崩溃。所以 Redis 官方推荐采用 <code>Hash</code>(字典)保存对象。但是 <code>Hash</code> 结构的存储消耗要高于单个字符串。</p>
+<p>Redis 的字典和 <code>Java</code>的 <code>HashMap</code> 类似，它是无序字典。包括内部结构的实现也和 <code>HashMap</code> 也是一致的，同样的<strong>数组 + 链表</strong>二维结构。</p>
+<h2 id="存取">
+  存取
+  <a class="anchor" href="#%e5%ad%98%e5%8f%96">#</a>
+</h2>
+<h3 id="hset">
+  HSET
+  <a class="anchor" href="#hset">#</a>
+</h3>
+<p>设置字典 <code>key</code> 值的 <code>field</code> 字段值为 <code>value</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HSET key field value
+</code></pre></div><p>如果 <code>key</code> 不存在，创建 <code>key</code> 并进行 <code>HSET</code> 操作。
+如果 <code>field</code> 不存在，则增加新字段，设置成功，返回 <code>1</code>。如果 <code>field</code> 已存在，覆盖旧值，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; hset student name xiaoming
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; hget student name
+<span style="color:#e6db74">&#34;xiaoming&#34;</span>
+redis&gt; hset student age <span style="color:#ae81ff">18</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; hget student age
+<span style="color:#e6db74">&#34;18&#34;</span>
+</code></pre></div><h3 id="hsetnx">
+  HSETNX
+  <a class="anchor" href="#hsetnx">#</a>
+</h3>
+<p>和 <code>HSET</code> 一样，但是只在字段 <code>field</code> 不存时才会设置。设置成功，返回 <code>1</code>。失败，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HSETNX key field value
+</code></pre></div><p>如果 <code>field</code> 字段已经存在，该操作无效，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; HSETNX student phone <span style="color:#ae81ff">16790624749</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; HSETNX student phone <span style="color:#ae81ff">16790624778</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+</code></pre></div><h3 id="hget">
+  HGET
+  <a class="anchor" href="#hget">#</a>
+</h3>
+<p>获取指定字段 <code>field</code> 的值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HGET key field value
+</code></pre></div><p><code>key</code> 存在且 <code>field</code> 存在则返回其值，否则返回 <code>nil</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; HGET student address
+<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>
+
+redis&gt; HGET student phone
+<span style="color:#e6db74">&#34;16790624749&#34;</span>
+</code></pre></div><h3 id="hgetall">
+  HGETALL
+  <a class="anchor" href="#hgetall">#</a>
+</h3>
+<p>获取 <code>key</code> 所有字段的值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HGETALL key
+</code></pre></div><p>以列表形式返回哈希表中的字段和值。若哈希表不存在，否则返回一个空列表。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; HSET people jack <span style="color:#e6db74">&#34;Jack Sparrow&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; HSET people gump <span style="color:#e6db74">&#34;Forrest Gump&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; HGETALL people
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>          <span style="color:#75715e"># 域</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Jack Sparrow&#34;</span>  <span style="color:#75715e"># 值</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;gump&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Forrest Gump&#34;</span>
+</code></pre></div><h2 id="批量操作">
+  批量操作
+  <a class="anchor" href="#%e6%89%b9%e9%87%8f%e6%93%8d%e4%bd%9c">#</a>
+</h2>
+<p><code>Hash</code> 和 <code>String</code> 一样，支持操作多个字段。</p>
+<h3 id="hmset">
+  HMSET
+  <a class="anchor" href="#hmset">#</a>
+</h3>
+<p>将一个或多个 <code>field/value</code> 对设置到哈希表 <code>key</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HMSET key field value <span style="color:#f92672">[</span>field value ...<span style="color:#f92672">]</span>
+</code></pre></div><p>如果 <code>key</code> 不存在，创建 <code>key</code> 并进行 <code>HMSET</code> 操作。
+如果 <code>field</code> 不存在，则增加新字段，设置成功，返回 <code>1</code>。如果 <code>field</code> 已存在，覆盖旧值，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; HMSET website google www.google.com yahoo www.yahoo.com
+OK
+redis&gt; HGET website google
+<span style="color:#e6db74">&#34;www.google.com&#34;</span>
+redis&gt; HGET website yahoo
+<span style="color:#e6db74">&#34;www.yahoo.com&#34;</span>
+</code></pre></div><h3 id="hmget">
+  HMGET
+  <a class="anchor" href="#hmget">#</a>
+</h3>
+<p>返回 <code>key</code> 中一个或多个指定字段的值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HMGET key field <span style="color:#f92672">[</span>field ...<span style="color:#f92672">]</span>
+</code></pre></div><p>返回一个列表，如果指定的字段在不存在，则返回一个 <code>nil</code>。如果 <code>key</code> 不存在将返回一个只带有 <code>nil</code> 值的表。如果 <code>key</code> 为非 <code>Hash</code>结构，
+则返回一个错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; HMSET pet dog <span style="color:#e6db74">&#34;doudou&#34;</span> cat <span style="color:#e6db74">&#34;nounou&#34;</span>
+OK
+
+redis&gt; HMGET pet dog cat fake_pet
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;doudou&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;nounou&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>        <span style="color:#75715e"># 不存在,返回nil值</span>
+
+<span style="color:#75715e"># 非Hash结构</span>
+redis&gt; set istring <span style="color:#e6db74">&#34;Hello&#34;</span>
+OK
+redis&gt; hmget istring notexsitfield
+<span style="color:#f92672">(</span>error<span style="color:#f92672">)</span> WRONGTYPE Operation against a key holding the wrong kind of value
+</code></pre></div><h2 id="自增">
+  自增
+  <a class="anchor" href="#%e8%87%aa%e5%a2%9e">#</a>
+</h2>
+<h3 id="hincrby">
+  HINCRBY
+  <a class="anchor" href="#hincrby">#</a>
+</h3>
+<p>为 <code>key</code> 中的指定字段 <code>field</code> 增加一个增量 <code>increment</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HINCRBY key field increment
+</code></pre></div><p><code>increment</code> 可以为负数，相当于对进行减法操作。
+如果 <code>key</code> 不存在，创建 <code>key</code>，并执行 <code>HINCRBY</code> 操作。如果指定 <code>field</code> 不存在，先初始化为 <code>0</code>，再执行 <code>HINCRBY</code>。如果为非数字
+值执行 <code>HINCRBY</code> 操作，则返回一个错误。
+<strong>本操作的值被限制在 64 位(bit)有符号数字表示之内</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># increment 为正数</span>
+
+redis&gt; HEXISTS counter page_view    <span style="color:#75715e"># 对空域进行设置</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis&gt; HINCRBY counter page_view <span style="color:#ae81ff">200</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">200</span>
+
+redis&gt; HGET counter page_view
+<span style="color:#e6db74">&#34;200&#34;</span>
+
+
+<span style="color:#75715e"># increment 为负数</span>
+
+redis&gt; HGET counter page_view
+<span style="color:#e6db74">&#34;200&#34;</span>
+
+redis&gt; HINCRBY counter page_view -50
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">150</span>
+
+redis&gt; HGET counter page_view
+<span style="color:#e6db74">&#34;150&#34;</span>
+
+
+<span style="color:#75715e"># 尝试对字符串值的域执行HINCRBY命令</span>
+
+redis&gt; HSET myhash string hello,world       <span style="color:#75715e"># 设定一个字符串值</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; HGET myhash string
+<span style="color:#e6db74">&#34;hello,world&#34;</span>
+
+redis&gt; HINCRBY myhash string <span style="color:#ae81ff">1</span>              <span style="color:#75715e"># 命令执行失败，错误。</span>
+<span style="color:#f92672">(</span>error<span style="color:#f92672">)</span> ERR hash value is not an integer
+
+redis&gt; HGET myhash string                   <span style="color:#75715e"># 原值不变</span>
+<span style="color:#e6db74">&#34;hello,world&#34;</span>
+</code></pre></div><h3 id="hincrbyfloat">
+  HINCRBYFLOAT
+  <a class="anchor" href="#hincrbyfloat">#</a>
+</h3>
+<p>与 <code>HINCRBY</code> 一样，不同的是 <code>HINCRBYFLOAT</code> 是为指定字段 <code>field</code> 增加一个浮点数增量 <code>increment</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 值和增量都是普通小数</span>
+redis&gt; HSET mykey field 10.50
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; HINCRBYFLOAT mykey field 0.1
+<span style="color:#e6db74">&#34;10.6&#34;</span>
+
+<span style="color:#75715e"># 值和增量都是指数符号</span>
+redis&gt; HSET mykey field 5.0e3
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; HINCRBYFLOAT mykey field 2.0e2
+<span style="color:#e6db74">&#34;5200&#34;</span>
+
+<span style="color:#75715e"># 对不存在的键执行 HINCRBYFLOAT</span>
+redis&gt; EXISTS price
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; HINCRBYFLOAT price milk 3.5
+<span style="color:#e6db74">&#34;3.5&#34;</span>
+redis&gt; HGETALL price
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;milk&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3.5&#34;</span>
+
+<span style="color:#75715e"># 对不存在的字段进行 HINCRBYFLOAT</span>
+redis&gt; HGETALL price
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;milk&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3.5&#34;</span>
+redis&gt; HINCRBYFLOAT price coffee 4.5
+<span style="color:#e6db74">&#34;4.5&#34;</span>
+redis&gt; HGETALL price
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;milk&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3.5&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;coffee&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;4.5&#34;</span>
+</code></pre></div><h2 id="其他">
+  其他
+  <a class="anchor" href="#%e5%85%b6%e4%bb%96">#</a>
+</h2>
+<h3 id="hdel">
+  HDEL
+  <a class="anchor" href="#hdel">#</a>
+</h3>
+<p>删除 <code>key</code> 中的一个或多个字段。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HDEL key field <span style="color:#f92672">[</span>field ...<span style="color:#f92672">]</span>
+</code></pre></div><p>不存在的字段将被忽略。返回被成功删除的字段数量。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; HGETALL abbr
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;a&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;b&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;banana&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;cat&#34;</span>
+7<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d&#34;</span>
+8<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;dog&#34;</span>
+
+
+<span style="color:#75715e"># 删除单个域</span>
+
+redis&gt; HDEL abbr a
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+
+<span style="color:#75715e"># 删除不存在的域</span>
+
+redis&gt; HDEL abbr not-exists-field
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+
+<span style="color:#75715e"># 删除多个域</span>
+
+redis&gt; HDEL abbr b c
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; HGETALL abbr
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;dog&#34;</span>
+</code></pre></div><h3 id="hexists">
+  HEXISTS
+  <a class="anchor" href="#hexists">#</a>
+</h3>
+<p>判断 <code>key</code> 中指定的 <code>field</code> 是否存在。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HEXISTS key field
+</code></pre></div><p>指定字段存在，返回 <code>1</code>。不存在，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; HEXISTS phone myphone
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; HSET phone myphone nokia-1110
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; HEXISTS phone myphone
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><h3 id="hlen">
+  HLEN
+  <a class="anchor" href="#hlen">#</a>
+</h3>
+<p>返回 <code>key</code> 哈希表的长度，也就是所有字段的数量。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HLEN key
+</code></pre></div><p>哈希表存在，返回字段数。哈希表不存在，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; HSET db redis redis.com
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; HSET db mysql mysql.com
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; HLEN db
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; HSET db mongodb mongodb.org
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; HLEN db
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+</code></pre></div><h3 id="hkeys">
+  HKEYS
+  <a class="anchor" href="#hkeys">#</a>
+</h3>
+<p>返回 <code>key</code> 中的所有字段。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HKEYS key
+</code></pre></div><p>哈希表存在，返回字段列表。哈希表不存在，返回空列表。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 哈希表非空</span>
+redis&gt; HMSET website google www.google.com yahoo www.yahoo.com
+OK
+redis&gt; HKEYS website
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;google&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;yahoo&#34;</span>
+
+<span style="color:#75715e"># 空哈希表不存在</span>
+redis&gt; EXISTS fake_key
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; HKEYS fake_key
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+</code></pre></div><h3 id="hvals">
+  HVALS
+  <a class="anchor" href="#hvals">#</a>
+</h3>
+<p>与 <code>HKEYS</code> 对应，<code>HVALS</code> 返回 <code>key</code> 中的所有字段的值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HVALS key
+</code></pre></div><p>哈希表存在，返回字段数。哈希表不存在，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 非空哈希表</span>
+redis&gt; HMSET website google www.google.com yahoo www.yahoo.com
+OK
+redis&gt; HVALS website
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;www.google.com&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;www.yahoo.com&#34;</span>
+
+
+<span style="color:#75715e"># 空哈希表/不存在的key</span>
+redis&gt; EXISTS not_exists
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; HVALS not_exists
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+</code></pre></div><h3 id="hstlen">
+  HSTLEN
+  <a class="anchor" href="#hstlen">#</a>
+</h3>
+<p>返回 <code>key</code> 中指定 <code>field</code> 的 <code>value</code> 的字符串长度。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HSTLEN key field
+</code></pre></div><p>如果<code>key</code>或者<code>field</code>不存在，返回<code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; HMSET myhash f1 HelloWorld f2 <span style="color:#ae81ff">99</span> f3 -256
+OK
+redis&gt; HSTRLEN myhash f1
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">10</span>
+redis&gt; HSTRLEN myhash f2
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+redis&gt; HSTRLEN myhash f3
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">4</span>
+</code></pre></div><h3 id="hscan">
+  HSCAN
+  <a class="anchor" href="#hscan">#</a>
+</h3>
+<p>参考 
+  <a href="/db-learn/docs/redis/08_redis-key/">SCAN</a> 命令。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">HSCAN key cursor <span style="color:#f92672">[</span>MATCH pattern<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>COUNT count<span style="color:#f92672">]</span>
+</code></pre></div></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/04_redis-hash.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#存取">存取</a>
+      <ul>
+        <li><a href="#hset">HSET</a></li>
+        <li><a href="#hsetnx">HSETNX</a></li>
+        <li><a href="#hget">HGET</a></li>
+        <li><a href="#hgetall">HGETALL</a></li>
+      </ul>
+    </li>
+    <li><a href="#批量操作">批量操作</a>
+      <ul>
+        <li><a href="#hmset">HMSET</a></li>
+        <li><a href="#hmget">HMGET</a></li>
+      </ul>
+    </li>
+    <li><a href="#自增">自增</a>
+      <ul>
+        <li><a href="#hincrby">HINCRBY</a></li>
+        <li><a href="#hincrbyfloat">HINCRBYFLOAT</a></li>
+      </ul>
+    </li>
+    <li><a href="#其他">其他</a>
+      <ul>
+        <li><a href="#hdel">HDEL</a></li>
+        <li><a href="#hexists">HEXISTS</a></li>
+        <li><a href="#hlen">HLEN</a></li>
+        <li><a href="#hkeys">HKEYS</a></li>
+        <li><a href="#hvals">HVALS</a></li>
+        <li><a href="#hstlen">HSTLEN</a></li>
+        <li><a href="#hscan">HSCAN</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

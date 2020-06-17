@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="InnoDB 数据页结构#InnoDB 管理存储空间的基本单位是页，一个页的大小一般是 16KB。InnoDB 设计了多种不同类型的页，比如存放表空间头部信息的页， 存放 Insert Buffer 信息的页等等。我们聚焦的是那些存放我们表中记录的那种类型的页，官方称这种存放记录的页为索引（INDEX）页。我们 暂叫做数据页吧。
+数据页结构#一个 InnoDB 数据页的存储空间大致被划分成了 7 个部分：
+   名称 中文名 占用空间 简单描述     File Header 文件头部 38 字节 页的一些通用信息   Page Header 页面头部 56 字节 数据页专有的一些信息   Infimum &#43; Supremum 最小记录和最大记录 26 字节 两个虚拟的行记录   User Records 用户记录 不确定 实际存储的行记录内容   Free Space 空闲空间 不确定 页中尚未使用的空间   Page Directory 页面目录 不确定 页中的某些记录的相对位置   File Trailer 文件尾部 8 字节 校验页是否完整    记录在页中的存储#我们自己存储的记录会按照我们指定的行格式存储到 User Records 部分。但是在一开始生成页的时候，其实并没有 User Records 这个部分，每当插入 一条记录，都会从 Free Space 部分，也就是尚未使用的存储空间中申请一个记录大小的空间划分到 User Records 部分，当 Free Space 部分的 空间全部被 User Records 部分替代掉之后，也就意味着这个页使用完了，如果还有新的记录插入的话，就需要去申请新的页了。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="InnoDB 数据页结构" />
+<meta property="og:description" content="InnoDB 数据页结构#InnoDB 管理存储空间的基本单位是页，一个页的大小一般是 16KB。InnoDB 设计了多种不同类型的页，比如存放表空间头部信息的页， 存放 Insert Buffer 信息的页等等。我们聚焦的是那些存放我们表中记录的那种类型的页，官方称这种存放记录的页为索引（INDEX）页。我们 暂叫做数据页吧。
+数据页结构#一个 InnoDB 数据页的存储空间大致被划分成了 7 个部分：
+   名称 中文名 占用空间 简单描述     File Header 文件头部 38 字节 页的一些通用信息   Page Header 页面头部 56 字节 数据页专有的一些信息   Infimum &#43; Supremum 最小记录和最大记录 26 字节 两个虚拟的行记录   User Records 用户记录 不确定 实际存储的行记录内容   Free Space 空闲空间 不确定 页中尚未使用的空间   Page Directory 页面目录 不确定 页中的某些记录的相对位置   File Trailer 文件尾部 8 字节 校验页是否完整    记录在页中的存储#我们自己存储的记录会按照我们指定的行格式存储到 User Records 部分。但是在一开始生成页的时候，其实并没有 User Records 这个部分，每当插入 一条记录，都会从 Free Space 部分，也就是尚未使用的存储空间中申请一个记录大小的空间划分到 User Records 部分，当 Free Space 部分的 空间全部被 User Records 部分替代掉之后，也就意味着这个页使用完了，如果还有新的记录插入的话，就需要去申请新的页了。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/mysql/11_innodb-page-structure/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>InnoDB 数据页结构 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/"class=active>InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>InnoDB 数据页结构</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据页结构">数据页结构</a></li>
+    <li><a href="#记录在页中的存储">记录在页中的存储</a>
+      <ul>
+        <li><a href="#记录头信息">记录头信息</a></li>
+      </ul>
+    </li>
+    <li><a href="#page-directory页目录">Page Directory（页目录）</a></li>
+    <li><a href="#page-header页面头部">Page Header（页面头部）</a></li>
+    <li><a href="#file-header文件头部">File Header（文件头部）</a></li>
+    <li><a href="#file-trailer">File Trailer</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="innodb-数据页结构">
+  InnoDB 数据页结构
+  <a class="anchor" href="#innodb-%e6%95%b0%e6%8d%ae%e9%a1%b5%e7%bb%93%e6%9e%84">#</a>
+</h1>
+<p>InnoDB 管理存储空间的基本单位是<strong>页</strong>，一个页的大小一般是 <code>16KB</code>。InnoDB 设计了多种不同类型的页，比如存放表空间头部信息的页，
+存放 Insert Buffer 信息的页等等。我们聚焦的是那些存放我们表中记录的那种类型的页，官方称这种存放记录的页为<strong>索引（<code>INDEX</code>）页</strong>。我们
+暂叫做<strong>数据页</strong>吧。</p>
+<h2 id="数据页结构">
+  数据页结构
+  <a class="anchor" href="#%e6%95%b0%e6%8d%ae%e9%a1%b5%e7%bb%93%e6%9e%84">#</a>
+</h2>
+<p>一个 InnoDB 数据页的存储空间大致被划分成了 7 个部分：</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>中文名</th>
+<th>占用空间</th>
+<th>简单描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>File Header</code></td>
+<td>文件头部</td>
+<td>38 字节</td>
+<td>页的一些通用信息</td>
+</tr>
+<tr>
+<td><code>Page Header</code></td>
+<td>页面头部</td>
+<td>56 字节</td>
+<td>数据页专有的一些信息</td>
+</tr>
+<tr>
+<td><code>Infimum + Supremum</code></td>
+<td>最小记录和最大记录</td>
+<td>26 字节</td>
+<td>两个虚拟的行记录</td>
+</tr>
+<tr>
+<td><code>User Records</code></td>
+<td>用户记录</td>
+<td>不确定</td>
+<td>实际存储的行记录内容</td>
+</tr>
+<tr>
+<td><code>Free Space</code></td>
+<td>空闲空间</td>
+<td>不确定</td>
+<td>页中尚未使用的空间</td>
+</tr>
+<tr>
+<td><code>Page Directory</code></td>
+<td>页面目录</td>
+<td>不确定</td>
+<td>页中的某些记录的相对位置</td>
+</tr>
+<tr>
+<td><code>File Trailer</code></td>
+<td>文件尾部</td>
+<td>8 字节</td>
+<td>校验页是否完整</td>
+</tr>
+</tbody>
+</table>
+<h2 id="记录在页中的存储">
+  记录在页中的存储
+  <a class="anchor" href="#%e8%ae%b0%e5%bd%95%e5%9c%a8%e9%a1%b5%e4%b8%ad%e7%9a%84%e5%ad%98%e5%82%a8">#</a>
+</h2>
+<p>我们自己存储的记录会按照我们指定的行格式存储到 <code>User Records</code> 部分。但是在一开始生成页的时候，其实并没有 <code>User Records</code> 这个部分，每当插入
+一条记录，都会从 <code>Free Space</code> 部分，也就是尚未使用的存储空间中申请一个记录大小的空间划分到 <code>User Records</code> 部分，当 <code>Free Space</code> 部分的
+空间全部被 <code>User Records</code> 部分替代掉之后，也就意味着这个页使用完了，如果还有新的记录插入的话，就需要去申请新的页了。</p>
+<p>
+  <img src="../../../images/user-records-in-page.jpg" alt="user-records-in-page" /></p>
+<h3 id="记录头信息">
+  记录头信息
+  <a class="anchor" href="#%e8%ae%b0%e5%bd%95%e5%a4%b4%e4%bf%a1%e6%81%af">#</a>
+</h3>
+<p>以 <code>compact</code> 格式为例：
+
+  <img src="../../../images/compact-record-head-sample.jpg" alt="compact-record-head-sample" /></p>
+<p>插入四条记录：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mysql&gt; INSERT INTO page_demo VALUES<span style="color:#f92672">(</span>1, 100, <span style="color:#e6db74">&#39;aaaa&#39;</span><span style="color:#f92672">)</span>, <span style="color:#f92672">(</span>2, 200, <span style="color:#e6db74">&#39;bbbb&#39;</span><span style="color:#f92672">)</span>, <span style="color:#f92672">(</span>3, 300, <span style="color:#e6db74">&#39;cccc&#39;</span><span style="color:#f92672">)</span>, <span style="color:#f92672">(</span>4, 400, <span style="color:#e6db74">&#39;dddd&#39;</span><span style="color:#f92672">)</span>;
+Query OK, <span style="color:#ae81ff">4</span> rows affected <span style="color:#f92672">(</span>0.00 sec<span style="color:#f92672">)</span>
+Records: <span style="color:#ae81ff">4</span>  Duplicates: <span style="color:#ae81ff">0</span>  Warnings: <span style="color:#ae81ff">0</span>
+</code></pre></div><p>
+  <img src="../../../images/compact-record-insert-sample.jpg" alt="compact-record-insert-sample" /></p>
+<h4 id="delete_mask">
+  delete_mask
+  <a class="anchor" href="#delete_mask">#</a>
+</h4>
+<p>这个属性标记着当前记录是否被删除，占用 <code>1</code> 个二进制位，为 1 的时候代表记录被删除掉了。</p>
+<p>被删除的记录还在页中么？</p>
+<p>是的，你以为它删除了，可它还在真实的磁盘上。这些被删除的记录之所以不立即从磁盘上移除，是因为移除它们之后把其他的记录在磁盘上重新排列需要性能消耗，
+所以只是打一个删除标记而已，所有被删除掉的记录都会组成一个所谓的<strong>垃圾链表</strong>，在这个链表中的记录占用的空间称之为所谓的<strong>可重用空间</strong>，之后如果有
+新记录插入到表中的话，可以把这些被删除的记录占用的存储空间覆盖掉。</p>
+<h4 id="heap_no">
+  heap_no
+  <a class="anchor" href="#heap_no">#</a>
+</h4>
+<p>表示当前记录在本<strong>页</strong>中的位置。注意上面插入 4 条记录的示意图，4 条记录的位置分别是 2、3、4、5。</p>
+<p>那么 0 和 1 去哪了？</p>
+<p>因为 InnoDB 给每个页都自动添加了两个记录。这两个记录称为<strong>伪记录</strong>或者<strong>虚拟记录</strong>。这两个分别是<strong>最小记录</strong>，<strong>最大记录</strong>。</p>
+<p>两条记录的构造十分简单，都是由 5 字节大小的记录头信息和 8 字节大小的一个固定的部分组成：</p>
+<p>
+  <img src="../../../images/fake-record-struct.jpg" alt="fake-record-struct" /></p>
+<p>它们并不存放在页的 User Records 部分，被单独放在一个称为 Infimum + Supremum 的部分。</p>
+<h4 id="next_record">
+  next_record
+  <a class="anchor" href="#next_record">#</a>
+</h4>
+<p>表示<strong>从当前记录的&quot;真实数据&quot;到下一条记录的&quot;真实数据&quot;的地址偏移量</strong>。如，第一条记录的 <code>next_record</code> 值为 32，意味着从第一条记录的真实数据的
+地址处向后找 32 个字节便是下一条记录的真实数据。这其实是个<strong>链表</strong>。&ldquo;下一条记录&rdquo; 指得<strong>并不是按照我们插入顺序的下一条记录，而是按照主键值由小到
+大的顺序的下一条记录</strong>。下图箭头来替代一下 <code>next_record</code> 中的地址偏移量：</p>
+<p>
+  <img src="../../../images/next-recard-sample.jpg" alt="next-recard-sample" /></p>
+<p>记录按照主键从小到大的顺序形成了一个<strong>单链表</strong>。最大记录的 <code>next_record</code> 的值为 0。</p>
+<p>如果删掉第 2 条记录：</p>
+<p>
+  <img src="../../../images/next-recard-sample2.jpg" alt="next-recard-sample" /></p>
+<ol>
+<li>第 2 条记录的 <code>delete_mask</code> 值设置为 1。</li>
+<li>第 2 条记录的 <code>next_record</code> 值变为了 0，意味着该记录没有下一条记录了。</li>
+<li>第 1 条记录的 <code>next_record</code> 指向了第 3 条记录。</li>
+<li>最大记录的 <code>n_owned</code> 值从 5 变成了 4。</li>
+</ol>
+<p>对页中的记录做任何的增删改操作，InnoDB <strong>始终会维护一条记录的单链表，链表中的各个节点是按照主键值由小到大的顺序连接起来的</strong>。</p>
+<h5 id="next_record-指针为什么要指向记录头信息和真实数据之间的位置">
+  next_record 指针为什么要指向记录头信息和真实数据之间的位置？
+  <a class="anchor" href="#next_record-%e6%8c%87%e9%92%88%e4%b8%ba%e4%bb%80%e4%b9%88%e8%a6%81%e6%8c%87%e5%90%91%e8%ae%b0%e5%bd%95%e5%a4%b4%e4%bf%a1%e6%81%af%e5%92%8c%e7%9c%9f%e5%ae%9e%e6%95%b0%e6%8d%ae%e4%b9%8b%e9%97%b4%e7%9a%84%e4%bd%8d%e7%bd%ae">#</a>
+</h5>
+<p>因为这个位置，<strong>向左读取就是记录头信息，向右读取就是真实数据</strong>。</p>
+<p>并且变长字段长度列表、NULL 值列表中的信息都是逆序存放，这样可以使记录中位置靠前的字段和它们对应的字段长度信息在内存中的距离更近，可能会提高
+高速缓存的命中率。</p>
+<h2 id="page-directory页目录">
+  Page Directory（页目录）
+  <a class="anchor" href="#page-directory%e9%a1%b5%e7%9b%ae%e5%bd%95">#</a>
+</h2>
+<p>如何根据主键值查询<strong>页</strong>中的记录？</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#66d9ef">SELECT</span> <span style="color:#f92672">*</span> <span style="color:#66d9ef">FROM</span> page_demo <span style="color:#66d9ef">WHERE</span> c1 <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;
+</code></pre></div><p>因为记录在页中按照主键值由小到大顺序串联成了一个单链表，那么就可以从 Infimum 记录（最小记录）开始遍历链表，当找到主键值大于你想要查找的主键值时，
+就可以停止了。但是这种方法，如果记录多了，效率及会很差。</p>
+<p>InnoDB 的 Page Directory，是一个类似目录的设计：</p>
+<ol>
+<li>将所有正常的记录（包括最大和最小记录，不包括标记为已删除的记录）划分为几个组。</li>
+<li>每个组的<strong>最后一条记录</strong>（也就是组内最大的那条记录）的头信息中的 <strong><code>n_owned</code> 属性</strong>表示该记录拥有多少条记录，也就是该组内共有几条记录。</li>
+<li>将每个组的最后一条记录的地址偏移量单独提取出来按顺序存储到靠近页的尾部的地方，这个地方就是所谓的 Page Directory，也就是<strong>页目录</strong>。页面目
+录中的这些地址偏移量被称为<strong>槽</strong>（Slot），所以这个页面目录就是由槽组成的。</li>
+</ol>
+<p>比如 <code>page_demo</code> 表中共有 6 条记录，InnoDB 会把它们分成两组，第一组中只有一个最小记录，第二组中是剩余的 5 条记录：</p>
+<p>
+  <img src="../../../images/page-directory-sample.jpg" alt="" /></p>
+<p>注意几点：</p>
+<ul>
+<li>最小记录的 <code>n_owned</code> 值为 1，这个分组中只有 1 条记录，也就是最小记录本身。</li>
+<li>最大记录的 <code>n_owned</code> 值为 5，这个分组中有 5 条记录，包括最大记录本身还有我们自己插入的 4 条记录。</li>
+</ul>
+<p><strong>最小记录所在的分组只能有 1 条记录，最大记录所在的分组拥有的记录条数只能在 1~8 条之间，剩下的分组中记录的条数范围只能在是 4~8 条之间</strong>。
+所以分组是按照下边的步骤进行的：</p>
+<ol>
+<li>初始情况下一个数据页里只有最小记录和最大记录两条记录，它们分属于两个分组。</li>
+<li>之后每插入一条记录，都会从页目录中找到主键值比本记录的主键值大并且差值最小的槽，然后把该槽对应的记录的 <code>n_owned</code> 值加 1，表示本组内又添加
+了一条记录，直到该组中的记录数等于 8 个。</li>
+<li>在一个组中的记录数等于 8 个后再插入一条记录时，会将组中的记录拆分成两个组，一个组中 4 条记录，另一个 5 条记录。这个过程会在页目录中新增一个
+槽来记录这个新增分组中最大的那条记录的偏移量。</li>
+</ol>
+<p>如果现在再往 <code>page_demo</code> 表中添加 12 条记录：</p>
+<p>
+  <img src="../../../images/page-directory-sample2.jpg" alt="" /></p>
+<p>各个槽代表的记录的主键值都是从小到大排序的，所以我们可以使用所谓的<strong>二分法</strong>来进行快速查找。5 个槽的编号分别是：0、1、2、3、4，所以初始情况
+下最低的槽就是 <code>low=0</code>，最高的槽就是 <code>high=4</code>。比如找到主键值为 6 的记录，过程是这样的：</p>
+<ol>
+<li>计算中间槽的位置：<code>(0+4)/2=2</code>，所以查看槽 2 对应记录的主键值为 8，又因为 <code>8 &gt; 6</code>，所以设置 <code>high=2</code>，low 保持不变。</li>
+<li>重新计算中间槽的位置：<code>(0+2)/2=1</code>，所以查看槽 1 对应的主键值为 4，又因为 <code>4 &lt; 6</code>，所以设置 <code>low=1</code>，high 保持不变。</li>
+<li><code>high - low</code> 的值为 1，所以确定主键值为 6 的记录在槽 2 对应的组中。槽 2 对应的记录是主键值为 8 的记录（改组的最大记录），但是槽 1 对
+应的记录（主键值为 4），该条记录的下一条记录就是槽 2 中主键值最小的记录，该记录的主键值为 5。所以可以从这条主键值为 5 的记录出发，遍历槽 2 中的各
+条记录。</li>
+</ol>
+<h2 id="page-header页面头部">
+  Page Header（页面头部）
+  <a class="anchor" href="#page-header%e9%a1%b5%e9%9d%a2%e5%a4%b4%e9%83%a8">#</a>
+</h2>
+<p>Page Header 占用固定的 56 个字节，专门存储各种状态信息，比如本页中已经存储了多少条记录，第一条记录的地址是什么，页目录中存储了多少个槽等等。</p>
+<h2 id="file-header文件头部">
+  File Header（文件头部）
+  <a class="anchor" href="#file-header%e6%96%87%e4%bb%b6%e5%a4%b4%e9%83%a8">#</a>
+</h2>
+<p>不同类型的页都会以 File Header 作为第一个组成部分，描述了一些针对各种页都通用的一些信息，比方说这个页的编号是多少，它的上一个页、下一个页是谁等等。
+File Header 占用固定的 38 个字节。</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>占用空间大小</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FIL_PAGE_SPACE_OR_CHKSUM</td>
+<td>4字节</td>
+<td>页的校验和（checksum值）</td>
+</tr>
+<tr>
+<td>FIL_PAGE_OFFSET</td>
+<td>4字节</td>
+<td>页号</td>
+</tr>
+<tr>
+<td>FIL_PAGE_PREV</td>
+<td>4字节</td>
+<td>上一个页的页号</td>
+</tr>
+<tr>
+<td>FIL_PAGE_NEXT</td>
+<td>4字节</td>
+<td>下一个页的页号</td>
+</tr>
+<tr>
+<td>FIL_PAGE_LSN</td>
+<td>8字节</td>
+<td>页面被最后修改时对应的日志序列位置（英文名是：Log Sequence Number）</td>
+</tr>
+<tr>
+<td>FIL_PAGE_TYPE</td>
+<td>2字节</td>
+<td>该页的类型</td>
+</tr>
+<tr>
+<td>FIL_PAGE_FILE_FLUSH_LSN</td>
+<td>8字节</td>
+<td>仅在系统表空间的一个页中定义，代表文件至少被刷新到了对应的LSN值</td>
+</tr>
+<tr>
+<td>FIL_PAGE_ARCH_LOG_NO_OR_SPACE_ID</td>
+<td>4字节</td>
+<td>页属于哪个表空间</td>
+</tr>
+</tbody>
+</table>
+<p>几个重要的部分：</p>
+<ul>
+<li>FIL_PAGE_SPACE_OR_CHKSUM，当前页面的校验和。在比较两个很长的字节串之前先比较这两个长字节串的校验和，如果校验和都不一样两个长字节串肯
+定是不同的，所以省去了直接比较两个比较长的字节串的时间损耗。</li>
+<li>FIL_PAGE_OFFSET，每一个页都有一个唯一的页号。</li>
+<li>FIL_PAGE_TYPE，页的类型。</li>
+<li>FIL_PAGE_PREV 和 FIL_PAGE_NEXT，代表本页的<strong>上一个和下一个页的页号</strong>。这样通过建立一个双向链表把许许多多的页就都串联起来了，而无需这
+些页在物理上真正连着。<strong>并不是所有类型的页都有上一个和下一个页的属性</strong>，但是**数据页*（也就是类型为 FIL_PAGE_INDEX 的页）是有这两个属性的，所
+以所有的数据页其实是一个双向链表。</li>
+</ul>
+<p>
+  <img src="../../../images/fil-page-index-link.jpg" alt="" /></p>
+<h2 id="file-trailer">
+  File Trailer
+  <a class="anchor" href="#file-trailer">#</a>
+</h2>
+<p>用于检验页是否完整的部分，占用固定的 8 个字节。File Trailer 也是所有类型的页通用的。</p>
+<ul>
+<li>前 4 个字节代表页的校验和，和 File Header 中的校验和相对应的。每当一个页面在内存中修改了，在同步之前就要把它的校验和算出来，因
+为 File Header 在页面的前边，所以校验和会被首先同步到磁盘，当完全写完时，校验和也会被写到页的尾部，如果完全同步成功，则页的首部和尾部的校验和应
+该是一致的。如果写了一半儿断电了，那么在 File Header 中的校验和就代表着已经修改过的页，而在 File Trailer 中的校验和代表着原先的页，二者不同
+则意味着同步中间出了错。</li>
+<li>后 4 个字节代表页面被最后修改时对应的日志序列位置，也是为了校验页的完整性的。</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/mysql/11_innodb-page-structure.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据页结构">数据页结构</a></li>
+    <li><a href="#记录在页中的存储">记录在页中的存储</a>
+      <ul>
+        <li><a href="#记录头信息">记录头信息</a></li>
+      </ul>
+    </li>
+    <li><a href="#page-directory页目录">Page Directory（页目录）</a></li>
+    <li><a href="#page-header页面头部">Page Header（页面头部）</a></li>
+    <li><a href="#file-header文件头部">File Header（文件头部）</a></li>
+    <li><a href="#file-trailer">File Trailer</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

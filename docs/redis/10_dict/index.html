@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="字典#Redis 中除了 hash 结构的数据会用到字典外，整个 Redis 数据库的所有 key 和 value 也组成了一个全局字典，还有带过期时间的 key 集合 也是一个字典。zset 集合中存储 value 和 score 值的映射关系也是通过字典实现的。
+struct RedisDb { dict* dict; // all keys key=&gt;value  dict* expires; // all expired keys key=&gt;long(timestamp)  ... } struct zset { dict *dict; // all values value=&gt;score  zskiplist *zsl; } 字典的结构#dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后 进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新 的 hashtable 取而代之。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="字典" />
+<meta property="og:description" content="字典#Redis 中除了 hash 结构的数据会用到字典外，整个 Redis 数据库的所有 key 和 value 也组成了一个全局字典，还有带过期时间的 key 集合 也是一个字典。zset 集合中存储 value 和 score 值的映射关系也是通过字典实现的。
+struct RedisDb { dict* dict; // all keys key=&gt;value  dict* expires; // all expired keys key=&gt;long(timestamp)  ... } struct zset { dict *dict; // all values value=&gt;score  zskiplist *zsl; } 字典的结构#dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后 进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新 的 hashtable 取而代之。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/10_dict/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>字典 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/"class=active>字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>字典</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#字典的结构">字典的结构</a></li>
+    <li><a href="#渐进式-rehash">渐进式 rehash</a></li>
+    <li><a href="#扩容条件">扩容条件</a></li>
+    <li><a href="#缩容条件">缩容条件</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="字典">
+  字典
+  <a class="anchor" href="#%e5%ad%97%e5%85%b8">#</a>
+</h1>
+<p>Redis 中除了 hash 结构的数据会用到字典外，整个 Redis 数据库的所有 key 和 value 也组成了一个全局字典，还有带过期时间的 key 集合
+也是一个字典。zset 集合中存储 value 和 score 值的映射关系也是通过字典实现的。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">struct</span> RedisDb {
+    dict<span style="color:#f92672">*</span> dict; <span style="color:#75715e">// all keys  key=&gt;value
+</span><span style="color:#75715e"></span>    dict<span style="color:#f92672">*</span> expires; <span style="color:#75715e">// all expired keys key=&gt;long(timestamp)
+</span><span style="color:#75715e"></span>    ...
+}
+
+<span style="color:#66d9ef">struct</span> zset {
+    dict <span style="color:#f92672">*</span>dict; <span style="color:#75715e">// all values  value=&gt;score
+</span><span style="color:#75715e"></span>    zskiplist <span style="color:#f92672">*</span>zsl;
+}
+</code></pre></div><h2 id="字典的结构">
+  字典的结构
+  <a class="anchor" href="#%e5%ad%97%e5%85%b8%e7%9a%84%e7%bb%93%e6%9e%84">#</a>
+</h2>
+<p>
+  <img src="../../../images/dict.jpg" alt="" /></p>
+<p>dict 结构内部包含两个 hashtable，通常情况下只有一个 hashtable 是有值的。但是在 dict 扩容缩容时，需要分配新的 hashtable，然后
+进行渐进式搬迁，这时候两个 hashtable 存储的分别是旧的 hashtable 和新的 hashtable。待搬迁结束后，旧的 hashtable 被删除，新
+的 hashtable 取而代之。</p>
+<p>字典就是基于
+  <a href="https://shipengqi.github.io/algorithm-learn/hash_table.html">散列表</a>的原理实现的。</p>
+<h2 id="渐进式-rehash">
+  渐进式 rehash
+  <a class="anchor" href="#%e6%b8%90%e8%bf%9b%e5%bc%8f-rehash">#</a>
+</h2>
+<p><strong>rehash 动作并不是一次性、集中式地完成的， 而是分多次、渐进式地完成的</strong>。</p>
+<p>原因在于，Redis 是单线程的，如果哈希表里保存的键值对数量非常庞大，一次性 rehash 庞大的计算量会导致服务器一段时间内停止服务。</p>
+<p>渐进式 rehash 的详细步骤：</p>
+<ol>
+<li>为 <code>ht[1]</code> 分配空间，让字典同时持有 <code>ht[0]</code> 和 <code>ht[1]</code> 两个哈希表。</li>
+<li>在字典中维持一个索引计数器变量 <code>rehashidx</code> ，并将它的值设置为 0 ， 表示 rehash 工作正式开始。</li>
+<li>在 rehash 进行期间，每次对字典执行添加、删除、查找或者更新操作时，程序除了执行指定的操作以外，还会顺带将 <code>ht[0]</code> 哈希表
+在 <code>rehashidx</code> 索引上的所有键值对 rehash 到 <code>ht[1]</code> ，当 rehash 工作完成之后，程序将 <code>rehashidx</code> 属性的值增一。</li>
+<li>随着字典操作的不断执行，最终在某个时间点上， <code>ht[0]</code> 的所有键值对都会被 rehash 至 <code>ht[1]</code> ，这时程序将 <code>rehashidx</code> 属性的值
+设为 <code>-1</code>，表示 rehash 操作已完成。</li>
+</ol>
+<p>渐进式 rehash 的过程中，字典会同时使用 <code>ht[0]</code> 和 <code>ht[1]</code> 两个哈希表，所以在<strong>渐进式 rehash 进行期间， 字典的删除（delete）、查
+找（find）、更新（update）等操作会在两个哈希表上进行</strong>。</p>
+<h2 id="扩容条件">
+  扩容条件
+  <a class="anchor" href="#%e6%89%a9%e5%ae%b9%e6%9d%a1%e4%bb%b6">#</a>
+</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">/* Expand the hash table if needed */</span>
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">_dictExpandIfNeeded</span>(dict <span style="color:#f92672">*</span>d)
+{
+    <span style="color:#75715e">/* Incremental rehashing already in progress. Return. */</span>
+    <span style="color:#66d9ef">if</span> (dictIsRehashing(d)) <span style="color:#66d9ef">return</span> DICT_OK;
+
+    <span style="color:#75715e">/* If the hash table is empty expand it to the initial size. */</span>
+    <span style="color:#66d9ef">if</span> (d<span style="color:#f92672">-&gt;</span>ht[<span style="color:#ae81ff">0</span>].size <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) <span style="color:#66d9ef">return</span> dictExpand(d, DICT_HT_INITIAL_SIZE);
+
+    <span style="color:#75715e">/* If we reached the 1:1 ratio, and we are allowed to resize the hash
+</span><span style="color:#75715e">     * table (global setting) or we should avoid it but the ratio between
+</span><span style="color:#75715e">     * elements/buckets is over the &#34;safe&#34; threshold, we resize doubling
+</span><span style="color:#75715e">     * the number of buckets. */</span>
+    <span style="color:#66d9ef">if</span> (d<span style="color:#f92672">-&gt;</span>ht[<span style="color:#ae81ff">0</span>].used <span style="color:#f92672">&gt;=</span> d<span style="color:#f92672">-&gt;</span>ht[<span style="color:#ae81ff">0</span>].size <span style="color:#f92672">&amp;&amp;</span>
+        (dict_can_resize <span style="color:#f92672">||</span>
+         d<span style="color:#f92672">-&gt;</span>ht[<span style="color:#ae81ff">0</span>].used<span style="color:#f92672">/</span>d<span style="color:#f92672">-&gt;</span>ht[<span style="color:#ae81ff">0</span>].size <span style="color:#f92672">&gt;</span> dict_force_resize_ratio))
+    {
+        <span style="color:#66d9ef">return</span> dictExpand(d, d<span style="color:#f92672">-&gt;</span>ht[<span style="color:#ae81ff">0</span>].used<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>);
+    }
+    <span style="color:#66d9ef">return</span> DICT_OK;
+}
+</code></pre></div><p>正常情况下，当 hash 表中元素的个数等于数组的长度时，就会开始扩容，扩容的新数组是原数组大小的 2 倍。不过如果 Redis 正在做 bgsave，为
+了减少内存页的过多分离 (Copy On Write)，Redis 尽量不去扩容 (dict_can_resize)，但是如果 hash 表已经非常满了，元素的个数已经达
+到了数组长度的 5 倍 (dict_force_resize_ratio)，说明 hash 表已经过于拥挤了，这个时候就会强制扩容。</p>
+<h2 id="缩容条件">
+  缩容条件
+  <a class="anchor" href="#%e7%bc%a9%e5%ae%b9%e6%9d%a1%e4%bb%b6">#</a>
+</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">htNeedsResize</span>(dict <span style="color:#f92672">*</span>dict) {
+    <span style="color:#66d9ef">long</span> <span style="color:#66d9ef">long</span> size, used;
+
+    size <span style="color:#f92672">=</span> dictSlots(dict);
+    used <span style="color:#f92672">=</span> dictSize(dict);
+    <span style="color:#66d9ef">return</span> (size <span style="color:#f92672">&gt;</span> DICT_HT_INITIAL_SIZE <span style="color:#f92672">&amp;&amp;</span>
+            (used<span style="color:#f92672">*</span><span style="color:#ae81ff">100</span><span style="color:#f92672">/</span>size <span style="color:#f92672">&lt;</span> HASHTABLE_MIN_FILL));
+}
+</code></pre></div><p>当 hash 表因为元素的逐渐删除变得越来越稀疏时，Redis 会对 hash 表进行缩容来减少 hash 表的数组空间占用。缩容的条件是元素个数
+低于数组长度的 10%。缩容不会考虑 Redis 是否正在做 bgsave。</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/10_dict.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#字典的结构">字典的结构</a></li>
+    <li><a href="#渐进式-rehash">渐进式 rehash</a></li>
+    <li><a href="#扩容条件">扩容条件</a></li>
+    <li><a href="#缩容条件">缩容条件</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

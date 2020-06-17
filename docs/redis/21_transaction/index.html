@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="事务#为了确保连续多个操作的原子性，一个成熟的数据库通常都会有事务支持，Redis 也支持简单的事务模型。
+使用#每个事务的操作都有 begin、commit 和 rollback 三个指令：
+ begin 事务的开始 commit 事务的提交 rollback 事务的回滚  begin(); try { command1(); command2(); .... commit(); } catch(Exception e) { rollback(); } Redis 在形式上看起来也差不多，分别是 multi/exec/discard。
+ multi 事务的开始 exec 事务的执行 discard 事务的丢弃  &gt; multi OK &gt; incr books QUEUED &gt; incr books QUEUED &gt; exec (integer) 1 (integer) 2 上面的指令演示了一个完整的事务过程，所有的指令在 exec 之前不执行，而是缓存在服务器的一个事务队列中，服务器一旦收到 exec 指令，才 开执行整个事务队列，执行完毕后一次性返回所有指令的运行结果。因为 Redis 的单线程特性，它不用担心自己在执行队列的时候被其它指令打搅，可 以保证他们能得到的原子性执行。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="事务" />
+<meta property="og:description" content="事务#为了确保连续多个操作的原子性，一个成熟的数据库通常都会有事务支持，Redis 也支持简单的事务模型。
+使用#每个事务的操作都有 begin、commit 和 rollback 三个指令：
+ begin 事务的开始 commit 事务的提交 rollback 事务的回滚  begin(); try { command1(); command2(); .... commit(); } catch(Exception e) { rollback(); } Redis 在形式上看起来也差不多，分别是 multi/exec/discard。
+ multi 事务的开始 exec 事务的执行 discard 事务的丢弃  &gt; multi OK &gt; incr books QUEUED &gt; incr books QUEUED &gt; exec (integer) 1 (integer) 2 上面的指令演示了一个完整的事务过程，所有的指令在 exec 之前不执行，而是缓存在服务器的一个事务队列中，服务器一旦收到 exec 指令，才 开执行整个事务队列，执行完毕后一次性返回所有指令的运行结果。因为 Redis 的单线程特性，它不用担心自己在执行队列的时候被其它指令打搅，可 以保证他们能得到的原子性执行。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/21_transaction/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>事务 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/"class=active>事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>事务</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#使用">使用</a></li>
+    <li><a href="#原子性">原子性</a></li>
+    <li><a href="#discard丢弃">discard(丢弃)</a></li>
+    <li><a href="#优化">优化</a></li>
+    <li><a href="#watch">Watch</a></li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="事务">
+  事务
+  <a class="anchor" href="#%e4%ba%8b%e5%8a%a1">#</a>
+</h1>
+<p>为了确保连续多个操作的原子性，一个成熟的数据库通常都会有事务支持，Redis 也支持简单的事务模型。</p>
+<h2 id="使用">
+  使用
+  <a class="anchor" href="#%e4%bd%bf%e7%94%a8">#</a>
+</h2>
+<p>每个事务的操作都有 <code>begin</code>、<code>commit</code> 和 <code>rollback</code> 三个指令：</p>
+<ul>
+<li><code>begin</code> 事务的开始</li>
+<li><code>commit</code> 事务的提交</li>
+<li><code>rollback</code> 事务的回滚</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">begin<span style="color:#f92672">();</span>
+<span style="color:#66d9ef">try</span> <span style="color:#f92672">{</span>
+    command1<span style="color:#f92672">();</span>
+    command2<span style="color:#f92672">();</span>
+    <span style="color:#f92672">....</span>
+    commit<span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span> <span style="color:#66d9ef">catch</span><span style="color:#f92672">(</span>Exception e<span style="color:#f92672">)</span> <span style="color:#f92672">{</span>
+    rollback<span style="color:#f92672">();</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>Redis 在形式上看起来也差不多，分别是 <code>multi/exec/discard</code>。</p>
+<ul>
+<li><code>multi</code> 事务的开始</li>
+<li><code>exec</code> 事务的执行</li>
+<li><code>discard</code> 事务的丢弃</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">&gt; multi
+OK
+&gt; incr books
+QUEUED
+&gt; incr books
+QUEUED
+&gt; exec
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+</code></pre></div><p>上面的指令演示了一个完整的事务过程，所有的指令在 <code>exec</code> 之前不执行，而是缓存在服务器的一个事务队列中，服务器一旦收到 <code>exec</code> 指令，才
+开执行整个事务队列，执行完毕后一次性返回所有指令的运行结果。因为 Redis 的单线程特性，它不用担心自己在执行队列的时候被其它指令打搅，可
+以保证他们能得到的<strong>原子性</strong>执行。</p>
+<h2 id="原子性">
+  原子性
+  <a class="anchor" href="#%e5%8e%9f%e5%ad%90%e6%80%a7">#</a>
+</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">&gt; multi
+OK
+&gt; set books iamastring
+QUEUED
+&gt; incr books
+QUEUED
+&gt; set poorman iamdesperate
+QUEUED
+&gt; exec
+1<span style="color:#f92672">)</span> OK
+2<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>error<span style="color:#f92672">)</span> ERR value is not an integer or out of range
+3<span style="color:#f92672">)</span> OK
+&gt; get books
+<span style="color:#e6db74">&#34;iamastring&#34;</span>
+&gt;  get poorman
+<span style="color:#e6db74">&#34;iamdesperate
+</span></code></pre></div><p><code>QUEUED</code> 是一个简单字符串，同 OK 是一个形式，它表示指令已经被服务器缓存到队列里了。</p>
+<p>上面的例子是事务执行到中间遇到失败了，因为不能对一个字符串进行数学运算，事务在遇到指令执行失败后，后面的指令还继续执行，
+所以 <code>poorman</code> 的值能继续得到设置。</p>
+<p>到这里，应该明白 <strong>Redis 的事务根本不能算&quot;原子性&rdquo;，而仅仅是满足了事务的&quot;隔离性&rdquo;，隔离性中的串行化 —— 当前执行的事务有着不被其
+它事务打断的权利</strong>。</p>
+<h2 id="discard丢弃">
+  discard(丢弃)
+  <a class="anchor" href="#discard%e4%b8%a2%e5%bc%83">#</a>
+</h2>
+<p><strong><code>discard</code> 指令，用于丢弃事务缓存队列中的所有指令，在 <code>exec</code> 执行之前</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">&gt; get books
+<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>
+&gt; multi
+OK
+&gt; incr books
+QUEUED
+&gt; incr books
+QUEUED
+&gt; discard
+OK
+&gt; get books
+<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>
+</code></pre></div><h2 id="优化">
+  优化
+  <a class="anchor" href="#%e4%bc%98%e5%8c%96">#</a>
+</h2>
+<p>上面的 Redis 事务在发送每个指令到事务缓存队列时都要经过一次网络读写，当一个事务内部的指令较多时，需要的网络 IO 时间也会线性增长。所以
+通常 Redis 的客户端在执行事务时都会结合 <code>pipeline</code> 一起使用，这样可以将多次 IO 操作压缩为单次 IO 操作。比如 Python 的 Redis 客
+户端时执行事务时是要强制使用 <code>pipeline</code> 的。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py">pipe <span style="color:#f92672">=</span> redis<span style="color:#f92672">.</span>pipeline(transaction<span style="color:#f92672">=</span>true)
+pipe<span style="color:#f92672">.</span>multi()
+pipe<span style="color:#f92672">.</span>incr(<span style="color:#e6db74">&#34;books&#34;</span>)
+pipe<span style="color:#f92672">.</span>incr(<span style="color:#e6db74">&#34;books&#34;</span>)
+values <span style="color:#f92672">=</span> pipe<span style="color:#f92672">.</span>execute()
+</code></pre></div><h2 id="watch">
+  Watch
+  <a class="anchor" href="#watch">#</a>
+</h2>
+<p>考虑到一个业务场景，Redis 存储了我们的账户余额数据，它是一个整数。现在有两个并发的客户端要对账户余额进行修改操作，这个修改不是一个
+简单的 incrby 指令，而是要对余额乘以一个倍数。Redis 可没有提供 multiplyby 这样的指令。我们需要先取出余额然后在内存里乘以倍数，再将
+结果写回 Redis。</p>
+<p>这就会出现并发问题，因为有多个客户端会并发进行操作。我们可以通过 Redis 的分布式锁来避免冲突，这是一个很好的解决方案。<strong>分布式锁是一
+种悲观锁，那是不是可以使用乐观锁的方式来解决冲突</strong>？</p>
+<p>Redis 提供了这种 <code>watch</code> 的机制，它就是一种乐观锁。有了 <code>watch</code> 又多了一种可以用来解决并发修改的方法。 <code>watch</code> 的使用方式如下：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-py" data-lang="py"><span style="color:#66d9ef">while</span> True:
+    do_watch()
+    commands()
+    multi()
+    send_commands()
+    <span style="color:#66d9ef">try</span>:
+        <span style="color:#66d9ef">exec</span>()
+        <span style="color:#66d9ef">break</span>
+    <span style="color:#66d9ef">except</span> WatchError:
+        <span style="color:#66d9ef">continue</span>
+</code></pre></div><p><strong><code>watch</code> 会在事务开始之前盯住 1 个或多个关键变量，当事务执行时，也就是服务器收到了 <code>exec</code> 指令要顺序执行缓存的事务队列时，Redis 会
+检查关键变量自 <code>watch</code> 之后，是否被修改了 (包括当前事务所在的客户端)</strong>。如果关键变量被人动过了，<code>exec</code> 指令就会返回 <code>null</code> 回复告知
+客户端事务执行失败，这个时候客户端一般会选择重试。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">&gt; watch books
+OK
+&gt; incr books  <span style="color:#75715e"># 被修改了</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+&gt; multi
+OK
+&gt; incr books
+QUEUED
+&gt; exec  <span style="color:#75715e"># 事务执行失败</span>
+<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>
+</code></pre></div><blockquote>
+<p><strong>Redis 禁止在 <code>multi</code> 和 <code>exec</code> 之间执行 <code>watch</code> 指令，而必须在 <code>multi</code> 之前做好盯住关键变量，否则会出错</strong>。</p>
+</blockquote>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/21_transaction.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#使用">使用</a></li>
+    <li><a href="#原子性">原子性</a></li>
+    <li><a href="#discard丢弃">discard(丢弃)</a></li>
+    <li><a href="#优化">优化</a></li>
+    <li><a href="#watch">Watch</a></li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

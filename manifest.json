@@ -1,0 +1,15 @@
+{
+  "name": "Database Learning",
+  "short_name": "Database Learning",
+  "start_url": "/db-learn/",
+  "scope": "/db-learn/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/db-learn/favicon.svg",
+      "sizes": "512x512"
+    }
+  ]
+}

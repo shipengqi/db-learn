@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="简单动态字符串#Redis 没有直接使用 C 语言传统的字符串表示（以空字符结尾的字符数组，以下简称 C 字符串），而是自己构建了一种名为简单 动态字符串（simple dynamic string，SDS）的抽象类型， 并将 SDS 用作 Redis 的默认字符串表示。内部结构实现上类 似于 Java 的 ArrayList。
+Redis 中， C 字符串只会作为字符串字面量（string literal），用在一些无须对字符串值进行修改的地方，比如打印日志：
+redisLog(REDIS_WARNING,&#34;Redis is now ready to exit, bye bye...&#34;); 一个可以被修改的字符串值时，Redis 就会使用 SDS 来表示字符串值：比如在 Redis 的数据库里面，包含字符串值的键值对在底层都是由 SDS 实现的。
+redis&gt; SET msg &#34;hello world&#34; OK 其中：
+ 键值对的键是一个字符串对象，对象的底层实现是一个保存着字符串 &ldquo;msg&rdquo; 的 SDS 。 键值对的值也是一个字符串对象，对象的底层实现是一个保存着字符串 &ldquo;hello world&rdquo; 的 SDS。  又比如：
+redis&gt; RPUSH fruits &#34;apple&#34; &#34;banana&#34; &#34;cherry&#34; (integer) 3 其中：">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="简单动态字符串" />
+<meta property="og:description" content="简单动态字符串#Redis 没有直接使用 C 语言传统的字符串表示（以空字符结尾的字符数组，以下简称 C 字符串），而是自己构建了一种名为简单 动态字符串（simple dynamic string，SDS）的抽象类型， 并将 SDS 用作 Redis 的默认字符串表示。内部结构实现上类 似于 Java 的 ArrayList。
+Redis 中， C 字符串只会作为字符串字面量（string literal），用在一些无须对字符串值进行修改的地方，比如打印日志：
+redisLog(REDIS_WARNING,&#34;Redis is now ready to exit, bye bye...&#34;); 一个可以被修改的字符串值时，Redis 就会使用 SDS 来表示字符串值：比如在 Redis 的数据库里面，包含字符串值的键值对在底层都是由 SDS 实现的。
+redis&gt; SET msg &#34;hello world&#34; OK 其中：
+ 键值对的键是一个字符串对象，对象的底层实现是一个保存着字符串 &ldquo;msg&rdquo; 的 SDS 。 键值对的值也是一个字符串对象，对象的底层实现是一个保存着字符串 &ldquo;hello world&rdquo; 的 SDS。  又比如：
+redis&gt; RPUSH fruits &#34;apple&#34; &#34;banana&#34; &#34;cherry&#34; (integer) 3 其中：" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/09_sds/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>简单动态字符串 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/"class=active>简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>简单动态字符串</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#sds-与-c-字符串的区别">SDS 与 C 字符串的区别</a>
+      <ul>
+        <li><a href="#常数复杂度获取字符串长度">常数复杂度获取字符串长度</a></li>
+        <li><a href="#杜绝缓冲区溢出">杜绝缓冲区溢出</a></li>
+        <li><a href="#减少修改字符串时带来的内存重分配次数">减少修改字符串时带来的内存重分配次数</a></li>
+        <li><a href="#二进制安全">二进制安全</a></li>
+        <li><a href="#兼容部分-c-字符串函数">兼容部分 C 字符串函数</a></li>
+      </ul>
+    </li>
+    <li><a href="#embstr-vs-raw">embstr vs raw</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="简单动态字符串">
+  简单动态字符串
+  <a class="anchor" href="#%e7%ae%80%e5%8d%95%e5%8a%a8%e6%80%81%e5%ad%97%e7%ac%a6%e4%b8%b2">#</a>
+</h1>
+<p>Redis 没有直接使用 C 语言传统的字符串表示（以空字符结尾的字符数组，以下简称 C 字符串），而是自己构建了一种名为<strong>简单
+动态字符串</strong>（simple dynamic string，SDS）的抽象类型， 并将 <strong>SDS</strong> 用作 Redis 的默认字符串表示。内部结构实现上类
+似于 Java 的 ArrayList。</p>
+<p>Redis 中， C 字符串只会作为字符串字面量（string literal），用在一些无须对字符串值进行修改的地方，比如打印日志：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">redisLog(REDIS_WARNING,<span style="color:#e6db74">&#34;Redis is now ready to exit, bye bye...&#34;</span>);
+</code></pre></div><p>一个可以被修改的字符串值时，Redis 就会使用 SDS 来表示字符串值：比如在 Redis 的数据库里面，包含字符串值的键值对在底层都是由 SDS 实现的。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">redis&gt; SET msg <span style="color:#e6db74">&#34;hello world&#34;</span>
+OK
+</code></pre></div><p>其中：</p>
+<ul>
+<li>键值对的<strong>键是一个字符串对象</strong>，对象的底层实现是一个保存着字符串 &ldquo;msg&rdquo; 的 SDS 。</li>
+<li>键值对的<strong>值也是一个字符串对象</strong>，对象的底层实现是一个保存着字符串 &ldquo;hello world&rdquo; 的 SDS。</li>
+</ul>
+<p>又比如：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">redis&gt; RPUSH fruits <span style="color:#e6db74">&#34;apple&#34;</span> <span style="color:#e6db74">&#34;banana&#34;</span> <span style="color:#e6db74">&#34;cherry&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+</code></pre></div><p>其中：</p>
+<ul>
+<li>键值对的键是一个字符串对象，对象的底层实现是一个保存了字符串 &ldquo;fruits&rdquo; 的 SDS 。</li>
+<li>键值对的值是一个列表对象，列表对象包含了三个字符串对象，这三个字符串对象分别由三个 SDS 实现：
+第一个 SDS 保存着字符串 &ldquo;apple&rdquo; ， 第二个 SDS 保存着字符串 &ldquo;banana&rdquo; ， 第三个 SDS 保存着字符串 &ldquo;cherry&rdquo;。</li>
+</ul>
+<p><strong>AOF 模块中的 AOF 缓冲区， 以及客户端状态中的输入缓冲区， 都是由 SDS 实现的</strong>。</p>
+<h2 id="sds-与-c-字符串的区别">
+  SDS 与 C 字符串的区别
+  <a class="anchor" href="#sds-%e4%b8%8e-c-%e5%ad%97%e7%ac%a6%e4%b8%b2%e7%9a%84%e5%8c%ba%e5%88%ab">#</a>
+</h2>
+<h3 id="常数复杂度获取字符串长度">
+  常数复杂度获取字符串长度
+  <a class="anchor" href="#%e5%b8%b8%e6%95%b0%e5%a4%8d%e6%9d%82%e5%ba%a6%e8%8e%b7%e5%8f%96%e5%ad%97%e7%ac%a6%e4%b8%b2%e9%95%bf%e5%ba%a6">#</a>
+</h3>
+<p>C 字符串并不记录自身的长度信息，所以为了获取一个 C 字符串的长度，程序必须遍历整个字符串，对遇到的每个字符进行计数，直到遇到代表字符串
+结尾的空字符为止，这个操作的复杂度为 <code>O(N)</code>。</p>
+<p>SDS 在 <code>len</code> 属性中记录了 SDS 本身的长度，所以获取一个 SDS 长度的复杂度仅为 <code>O(1)</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">struct SDS<span style="color:#f92672">&lt;</span>T<span style="color:#f92672">&gt;</span> <span style="color:#f92672">{</span>
+  T capacity<span style="color:#f92672">;</span> <span style="color:#75715e">// 数组容量
+</span><span style="color:#75715e"></span>  T len<span style="color:#f92672">;</span> <span style="color:#75715e">// 数组长度
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">byte</span> flags<span style="color:#f92672">;</span> <span style="color:#75715e">// 特殊标识位，不理睬它
+</span><span style="color:#75715e"></span>  <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]</span> content<span style="color:#f92672">;</span> <span style="color:#75715e">// 数组内容
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div><p>使用 SDS 确保了获取字符串长度的工作不会成为 Redis 的性能瓶颈。</p>
+<p>比如说，对一个非常长的字符串键反复执行 <code>STRLEN</code> 命令，也不会对系统性能造成任何影响，因为 <code>STRLEN</code> 命令的复杂度仅为 <code>O(1)</code>。</p>
+<h3 id="杜绝缓冲区溢出">
+  杜绝缓冲区溢出
+  <a class="anchor" href="#%e6%9d%9c%e7%bb%9d%e7%bc%93%e5%86%b2%e5%8c%ba%e6%ba%a2%e5%87%ba">#</a>
+</h3>
+<p><strong>C 字符串不记录自身长度带来的另一个问题是容易造成缓冲区溢出</strong>（buffer overflow）。</p>
+<p>例如，<code>&lt;string.h&gt;/strcat</code> 函数可以将 <code>src</code> 字符串中的内容拼接到 <code>dest</code> 字符串的末尾：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">strcat</span>(<span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>dest, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>src);
+</code></pre></div><p>因为 C 字符串不记录自身的长度，所以 <code>strcat</code> 假定用户在执行这个函数时，已经为 <code>dest</code> 分配了足够多的内存， 可以容纳 <code>src</code> 字符串中的
+所有内容，而一旦这个假定不成立时，就会产生缓冲区溢出。</p>
+<p>SDS 的空间分配策略完全杜绝了发生缓冲区溢出的可能性：当 SDS API 需要对 SDS 进行修改时， API 会先检查 SDS 的空间是否满足修改所需的要求，
+如果不满足的话，API 会自动将 SDS 的空间扩展至执行修改所需的大小，然后才执行实际的修改操作，所以使用 SDS 既不需要手动修改 SDS 的空间
+大小，也不会出现前面所说的缓冲区溢出问题。</p>
+<p>比如 SDS 的 API 中的 <code>sdscat</code> 函数，它可以将一个 C 字符串拼接到给定 SDS 所保存的字符串的后面，但是在执行拼接操作之前，<code>sdscat</code> 会
+先检查给定 SDS 的空间是否足够，如果不够的话，<code>sdscat</code> 就会先扩展 SDS 的空间， 然后才执行拼接操作。</p>
+<h3 id="减少修改字符串时带来的内存重分配次数">
+  减少修改字符串时带来的内存重分配次数
+  <a class="anchor" href="#%e5%87%8f%e5%b0%91%e4%bf%ae%e6%94%b9%e5%ad%97%e7%ac%a6%e4%b8%b2%e6%97%b6%e5%b8%a6%e6%9d%a5%e7%9a%84%e5%86%85%e5%ad%98%e9%87%8d%e5%88%86%e9%85%8d%e6%ac%a1%e6%95%b0">#</a>
+</h3>
+<p>C 字符串并不记录自身的长度，所以对于一个包含了 N 个字符的 C 字符串来说，这个 C 字符串的底层实现总是一个 <code>N+1</code> 个字符长的数
+组（额外的一个字符空间用于保存空字符）。</p>
+<p>因为 C 字符串的长度和底层数组的长度之间存在着这种关联性，所以每次增长或者缩短一个 C 字符串，程序都总要对保存这个 C 字符串的数组进行
+一次内存重分配操作：</p>
+<ul>
+<li>如果程序执行的是增长字符串的操作，比如拼接操作（append），那么在执行这个操作之前，程序需要先通过内存重分配来扩展底层数组的空
+间大小 —— 如果忘了这一步就会产生缓冲区溢出。</li>
+<li>如果程序执行的是缩短字符串的操作，比如截断操作（trim），那么在执行这个操作之后，程序需要通过内存重分配来释放字符串不再使用的那部
+分空间 —— 如果忘了这一步就会产生内存泄漏。</li>
+</ul>
+<p><strong>在 SDS 中，byte 数组的长度不一定就是字符数量加一，数组里面可以包含未使用的字节，数组的容量由 SDS 的 <code>capacity</code> 属性记录</strong>。</p>
+<p>
+  <img src="../../../images/redis-sds.jpg" alt="" /></p>
+<p>SDS 实现了空间预分配和惰性空间释放两种优化策略。</p>
+<h4 id="空间预分配">
+  空间预分配
+  <a class="anchor" href="#%e7%a9%ba%e9%97%b4%e9%a2%84%e5%88%86%e9%85%8d">#</a>
+</h4>
+<p>空间预分配用于优化 SDS 的字符串增长操作：当 SDS 的 API 对一个 SDS 进行修改，并且需要对 SDS 进行空间扩展的时候，程序不仅会为 SDS 分配
+修改所必须要的空间，还会为 SDS 分配额外的未使用空间。</p>
+<blockquote>
+<p>注意，<strong>创建字符串时 len 和 capacity 一样长，不会额外分配的未使用空间，因为绝大多数场景下我们不会使用 append 操作来修改字符串</strong>。</p>
+</blockquote>
+<p>额外分配的未使用空间数量由以下公式决定：</p>
+<ul>
+<li>如果对 SDS 进行修改之后， SDS 的长度（也即是 <code>len</code> 属性的值）将小于 <code>1 MB</code> ，那么程序分配和 <code>len</code> 属性同样大小的未使用空间，
+举个例子，如果进行修改之后， SDS 的 <code>len</code> 将变成 13 字节，那么程序也会分配 13 字节的未使用空间， SDS 的 byte 数组的实际长度
+将变成 <code>13 + 13 + 1 = 27</code> 字节（额外的一字节用于保存空字符）。</li>
+<li>如果对 SDS 进行修改之后， SDS 的长度将大于等于 <code>1 MB</code> ，那么程序会分配 <code>1 MB</code> 的未使用空间。例如，如果进行修改之后， SDS 
+的 <code>len</code> 将变成 <code>30 MB</code>，那么程序会分配 <code>1 MB</code> 的未使用空间， SDS 的 byte 数组的实际长度将为 <code>30 MB + 1 MB + 1 byte</code>。</li>
+</ul>
+<p>在扩展 SDS 空间之前，SDS API 会先检查未使用空间是否足够，如果足够的话，API 就会直接使用未使用空间，而无须执行内存重分配。</p>
+<p>通过这种<strong>预分配策略，SDS 将连续增长 N 次字符串所需的内存重分配次数从必定 N 次降低为最多 N 次</strong>。</p>
+<h4 id="惰性空间释放">
+  惰性空间释放
+  <a class="anchor" href="#%e6%83%b0%e6%80%a7%e7%a9%ba%e9%97%b4%e9%87%8a%e6%94%be">#</a>
+</h4>
+<p>惰性空间释放用于优化 SDS 的字符串缩短操作：当 SDS 的 API 需要缩短 SDS 保存的字符串时，程序并不立即使用内存重分配来回收缩短后多出
+来的字节，而是使用 <code>free</code> 属性将这些字节的数量记录起来，并等待将来使用。</p>
+<p>通过惰性空间释放策略， SDS 避免了缩短字符串时所需的内存重分配操作，并为将来可能有的增长操作提供了优化。</p>
+<p>SDS 也提供了相应的 API ，让我们可以在有需要时，真正地释放 SDS 里面的未使用空间，所以不用担心惰性空间释放策略会造成内存浪费。</p>
+<h3 id="二进制安全">
+  二进制安全
+  <a class="anchor" href="#%e4%ba%8c%e8%bf%9b%e5%88%b6%e5%ae%89%e5%85%a8">#</a>
+</h3>
+<p>C 字符串中的字符必须符合某种编码（比如 ASCII），并且除了字符串的末尾之外，字符串里面不能包含空字符，否则最先被程序读入的
+空字符将被误认为是字符串结尾 —— 这些限制使得 C 字符串只能保存文本数据， 而不能保存像图片、音频、视频、压缩文件这样的二进制数据。</p>
+<p>为了确保 Redis 可以适用于各种不同的使用场景， SDS 的 API 都是<strong>二进制安全</strong>的（binary-safe）：所有 SDS API 都会以处理二进制的方
+式来处理 SDS 存放在 <code>buf</code> 数组里的数据，程序不会对其中的数据做任何限制、过滤、或者假设 —— <strong>数据在写入时是什么样的，它被读取时就是
+什么样</strong>。</p>
+<p>这也是我们将 SDS 的 <code>buf</code> 属性称为字节数组的原因 —— <strong>Redis 不是用这个数组来保存字符，而是用它来保存一系列二进制数据</strong>。</p>
+<h3 id="兼容部分-c-字符串函数">
+  兼容部分 C 字符串函数
+  <a class="anchor" href="#%e5%85%bc%e5%ae%b9%e9%83%a8%e5%88%86-c-%e5%ad%97%e7%ac%a6%e4%b8%b2%e5%87%bd%e6%95%b0">#</a>
+</h3>
+<p>SDS 的 API 都是二进制安全的，但它们一样遵循 C 字符串以空字符结尾的惯例：这些 API 总会将 SDS 保存的数据的末尾设置为空字符，并且总会在
+为 <code>buf</code> 数组分配空间时多分配一个字节来容纳这个空字符，这是为了让那些保存文本数据的 SDS 可以重用一部分 <code>&lt;string.h&gt;</code> 库定义的函数。</p>
+<h2 id="embstr-vs-raw">
+  embstr vs raw
+  <a class="anchor" href="#embstr-vs-raw">#</a>
+</h2>
+<p>Redis 的字符串有两种存储方式，在<strong>长度特别短时，使用 emb 形式存储 (embeded)，当长度超过 44 时，使用 raw 形式存储</strong>。
+这两种类型有什么区别呢？为什么分界线是 44 呢？</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">&gt; set codehole abcdefghijklmnopqrstuvwxyz012345678912345678
+OK
+&gt; debug object codehole
+Value at:0x7fec2de00370 refcount:1 encoding:embstr serializedlength:45 lru:5958906 lru_seconds_idle:1
+&gt; set codehole abcdefghijklmnopqrstuvwxyz0123456789123456789
+OK
+&gt; debug object codehole
+Value at:0x7fec2dd0b750 refcount:1 encoding:raw serializedlength:46 lru:5958911 lru_seconds_idle:1
+</code></pre></div><p>注意上面 debug object 输出中的 encoding 字段，一个字符的差别，存储形式就发生了变化。</p>
+<p>来了解一下 Redis 对象头结构体：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">struct RedisObject <span style="color:#f92672">{</span>
+    int4 type<span style="color:#f92672">;</span> <span style="color:#75715e">// 4bits
+</span><span style="color:#75715e"></span>    int4 encoding<span style="color:#f92672">;</span> <span style="color:#75715e">// 4bits
+</span><span style="color:#75715e"></span>    int24 lru<span style="color:#f92672">;</span> <span style="color:#75715e">// 24bits
+</span><span style="color:#75715e"></span>    int32 refcount<span style="color:#f92672">;</span> <span style="color:#75715e">// 4bytes
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>ptr<span style="color:#f92672">;</span> <span style="color:#75715e">// 8bytes，64-bit system
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span> robj<span style="color:#f92672">;</span>
+</code></pre></div><ul>
+<li>type(4bit) 对象类型 ，</li>
+<li>encoding(4bit) 同一个类型的 type 会有不同的存储形式</li>
+<li>lru(24bit) 记录对象的 LRU 信息</li>
+<li>refcount 每个对象都有个引用计数，当引用计数为零时，对象就会被销毁，内存被回收。</li>
+<li>ptr 指针将指向对象内容 (body) 的具体存储位置。</li>
+</ul>
+<p>一个 RedisObject 对象头需要占据 16 字节的存储空间。</p>
+<p>SDS 对象头的大小是 <code>capacity+3</code>，至少是 3。意味着分配一个字符串的最小空间占用为 19 字节 (16+3)。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">struct SDS <span style="color:#f92672">{</span>
+    int8 capacity<span style="color:#f92672">;</span> <span style="color:#75715e">// 1byte
+</span><span style="color:#75715e"></span>    int8 len<span style="color:#f92672">;</span> <span style="color:#75715e">// 1byte
+</span><span style="color:#75715e"></span>    int8 flags<span style="color:#f92672">;</span> <span style="color:#75715e">// 1byte
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">byte</span><span style="color:#f92672">[]</span> content<span style="color:#f92672">;</span> <span style="color:#75715e">// 内联数组，长度为 capacity
+</span><span style="color:#75715e"></span><span style="color:#f92672">}</span>
+</code></pre></div><p>
+  <img src="../../../images/redis-object-sds.jpg" alt="" /></p>
+<ul>
+<li>embstr 存储形式是将 RedisObject 对象头和 SDS 对象连续存在一起，使用 malloc 方法<strong>一次分配</strong>。</li>
+<li>raw 存储需要两次 malloc，两个对象头在内存地址上一般是不连续的。</li>
+</ul>
+<p>内存分配器 jemalloc/tcmalloc 等分配内存大小的单位都是 2、4、8、16、32、64 等等，为了能容纳一个完整的 embstr 对象，jemalloc 最少
+会分配 32 字节的空间，如果字符串再稍微长一点，那就是 64 字节的空间。如果<strong>总体超出了 64 字节，Redis 认为它是一个大字符串，不再
+使用 emdstr 形式存储，而该用 raw 形式</strong>。</p>
+<p><strong>当内存分配器分配了 64 空间时，那这个字符串的长度最大就是 44</strong>。</p>
+<h4 id="为什么是-44-字节">
+  为什么是 44 字节？
+  <a class="anchor" href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e6%98%af-44-%e5%ad%97%e8%8a%82">#</a>
+</h4>
+<p>SDS 结构体中的 content 中的字符串是以字节 <code>\0</code> 结尾的字符串，之所以多这 1 个字节，是为了便于直接使用 glibc 的字符串处理函数，以及
+为了便于字符串的调试打印输出。</p>
+<p>
+  <img src="../../../images/sds-44.jpg" alt="" /></p>
+<p>上图中可以看出，内存分配器分配的 64 个字节中，content 的长度最多只有 45(64-19) 字节了。再减去 <code>\0</code> 结尾的一个字节，就是 44 字节。</p>
+<blockquote>
+<p>注意，不同版本的 redis，SDS 的结构可能不一样，可能不是 44 字节。</p>
+</blockquote>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/09_sds.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#sds-与-c-字符串的区别">SDS 与 C 字符串的区别</a>
+      <ul>
+        <li><a href="#常数复杂度获取字符串长度">常数复杂度获取字符串长度</a></li>
+        <li><a href="#杜绝缓冲区溢出">杜绝缓冲区溢出</a></li>
+        <li><a href="#减少修改字符串时带来的内存重分配次数">减少修改字符串时带来的内存重分配次数</a></li>
+        <li><a href="#二进制安全">二进制安全</a></li>
+        <li><a href="#兼容部分-c-字符串函数">兼容部分 C 字符串函数</a></li>
+      </ul>
+    </li>
+    <li><a href="#embstr-vs-raw">embstr vs raw</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

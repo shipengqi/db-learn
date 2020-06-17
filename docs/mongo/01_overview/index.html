@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="MongoDB 有各种语言的 官方驱动。
+MongoDB 相比 RDBMS 的优势# 模式较少：MongoDB 是一种文档数据库，一个集合可以包含各种不同的文档。每个文档的字段数、内容以及文档大小都可以各不相同。 采用单个对象的模式，清晰简洁。 没有复杂的连接功能。 深度查询功能。MongoDB 支持对文档执行动态查询，使用的是一种不逊色于 SQL 语言的基于文档的查询语言。 具有调优功能。 易于扩展。MongoDB 非常易于扩展。 不需要从应用对象到数据库对象的转换/映射。 使用内部存储存储（窗口化）工作集，能够更快地访问数据。  为何选择使用 MongoDB# 面向文档的存储：以 JSON 格式的文档保存数据。 任何属性都可以建立索引。 复制以及高可扩展性。 自动分片。 丰富的查询功能。 快速的即时更新。  适用场景#无模式 (Flexible Schema)#面向文档数据库经常吹嘘的一个好处就是，它不需要一个固定的模式。这使得他们比传统的数据库表要灵活得多。无模式是酷，可是大多数情况下你的数据结构还 是应当好好设计的。
+写操作#MongoDB 可以胜任的一个特殊角色是在日志领域。有两点使得 MongoDB 的写操作非常快。
+ 发送了写操作命令之后立刻返回，而无须等到操作完成。 可以控制数据持久性的写行为。  受限集合#MongoDB 还提供了 受限集合(capped collection)。可以通 过 db.createCollection 命令来创建一个受限集合并标记它的限制:
+//limit our capped collection to 1 megabyte db.">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="MongoDB 介绍" />
+<meta property="og:description" content="MongoDB 有各种语言的 官方驱动。
+MongoDB 相比 RDBMS 的优势# 模式较少：MongoDB 是一种文档数据库，一个集合可以包含各种不同的文档。每个文档的字段数、内容以及文档大小都可以各不相同。 采用单个对象的模式，清晰简洁。 没有复杂的连接功能。 深度查询功能。MongoDB 支持对文档执行动态查询，使用的是一种不逊色于 SQL 语言的基于文档的查询语言。 具有调优功能。 易于扩展。MongoDB 非常易于扩展。 不需要从应用对象到数据库对象的转换/映射。 使用内部存储存储（窗口化）工作集，能够更快地访问数据。  为何选择使用 MongoDB# 面向文档的存储：以 JSON 格式的文档保存数据。 任何属性都可以建立索引。 复制以及高可扩展性。 自动分片。 丰富的查询功能。 快速的即时更新。  适用场景#无模式 (Flexible Schema)#面向文档数据库经常吹嘘的一个好处就是，它不需要一个固定的模式。这使得他们比传统的数据库表要灵活得多。无模式是酷，可是大多数情况下你的数据结构还 是应当好好设计的。
+写操作#MongoDB 可以胜任的一个特殊角色是在日志领域。有两点使得 MongoDB 的写操作非常快。
+ 发送了写操作命令之后立刻返回，而无须等到操作完成。 可以控制数据持久性的写行为。  受限集合#MongoDB 还提供了 受限集合(capped collection)。可以通 过 db.createCollection 命令来创建一个受限集合并标记它的限制:
+//limit our capped collection to 1 megabyte db." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/mongo/01_overview/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>MongoDB 介绍 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/"class=active>介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>MongoDB 介绍</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#mongodb-相比-rdbms-的优势">MongoDB 相比 RDBMS 的优势</a></li>
+    <li><a href="#为何选择使用-mongodb">为何选择使用 MongoDB</a></li>
+    <li><a href="#适用场景">适用场景</a>
+      <ul>
+        <li><a href="#无模式-flexible-schema">无模式 (Flexible Schema)</a></li>
+        <li><a href="#写操作">写操作</a></li>
+        <li><a href="#持久性-durability">持久性 (Durability)</a></li>
+        <li><a href="#全文检索-full-text-search">全文检索 (Full Text Search)</a></li>
+        <li><a href="#事务-transactions">事务 (Transactions)</a></li>
+        <li><a href="#数据处理data-processing">数据处理(Data Processing)</a></li>
+        <li><a href="#地理空间查询geospatial">地理空间查询(Geospatial)</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><p>MongoDB 有各种语言的 
+  <a href="https://docs.mongodb.com/ecosystem/drivers/">官方驱动</a>。</p>
+<h2 id="mongodb-相比-rdbms-的优势">
+  MongoDB 相比 RDBMS 的优势
+  <a class="anchor" href="#mongodb-%e7%9b%b8%e6%af%94-rdbms-%e7%9a%84%e4%bc%98%e5%8a%bf">#</a>
+</h2>
+<ul>
+<li>模式较少：MongoDB 是一种文档数据库，一个集合可以包含各种不同的文档。每个文档的字段数、内容以及文档大小都可以各不相同。</li>
+<li>采用单个对象的模式，清晰简洁。</li>
+<li>没有复杂的连接功能。</li>
+<li>深度查询功能。MongoDB 支持对文档执行动态查询，使用的是一种不逊色于 SQL 语言的基于文档的查询语言。</li>
+<li>具有调优功能。</li>
+<li>易于扩展。MongoDB 非常易于扩展。</li>
+<li>不需要从应用对象到数据库对象的转换/映射。</li>
+<li>使用内部存储存储（窗口化）工作集，能够更快地访问数据。</li>
+</ul>
+<h2 id="为何选择使用-mongodb">
+  为何选择使用 MongoDB
+  <a class="anchor" href="#%e4%b8%ba%e4%bd%95%e9%80%89%e6%8b%a9%e4%bd%bf%e7%94%a8-mongodb">#</a>
+</h2>
+<ul>
+<li>面向文档的存储：以 JSON 格式的文档保存数据。</li>
+<li>任何属性都可以建立索引。</li>
+<li>复制以及高可扩展性。</li>
+<li>自动分片。</li>
+<li>丰富的查询功能。</li>
+<li>快速的即时更新。</li>
+</ul>
+<h2 id="适用场景">
+  适用场景
+  <a class="anchor" href="#%e9%80%82%e7%94%a8%e5%9c%ba%e6%99%af">#</a>
+</h2>
+<h3 id="无模式-flexible-schema">
+  无模式 (Flexible Schema)
+  <a class="anchor" href="#%e6%97%a0%e6%a8%a1%e5%bc%8f-flexible-schema">#</a>
+</h3>
+<p>面向文档数据库经常吹嘘的一个好处就是，它不需要一个固定的模式。这使得他们比传统的数据库表要灵活得多。无模式是酷，可是大多数情况下你的数据结构还
+是应当好好设计的。</p>
+<h3 id="写操作">
+  写操作
+  <a class="anchor" href="#%e5%86%99%e6%93%8d%e4%bd%9c">#</a>
+</h3>
+<p>MongoDB 可以胜任的一个特殊角色是在日志领域。有两点使得 MongoDB 的写操作非常快。</p>
+<ul>
+<li>发送了写操作命令之后立刻返回，而无须等到操作完成。</li>
+<li>可以控制数据持久性的写行为。</li>
+</ul>
+<h4 id="受限集合">
+  受限集合
+  <a class="anchor" href="#%e5%8f%97%e9%99%90%e9%9b%86%e5%90%88">#</a>
+</h4>
+<p>MongoDB 还提供了 
+  <a href="https://docs.mongodb.com/manual/core/capped-collections/">受限集合(capped collection)</a>。可以通
+过 <code>db.createCollection</code> 命令来创建一个受限集合并标记它的限制:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">//limit our capped collection to 1 megabyte
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">createCollection</span>(<span style="color:#e6db74">&#39;logs&#39;</span>, {<span style="color:#a6e22e">capped</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>, <span style="color:#a6e22e">size</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">1048576</span>})
+</code></pre></div><p>另外一种限制可以基于文档个数，而不是大小，用 <code>max</code> 标记。</p>
+<h4 id="ttl索引">
+  TTL索引
+  <a class="anchor" href="#ttl%e7%b4%a2%e5%bc%95">#</a>
+</h4>
+<p>如果想让你的数据 &ldquo;过期&rdquo; ，基于时间而不是整个集合的大小，可以用 
+  <a href="https://docs.mongodb.com/manual/tutorial/expire-data/">TTL 索引</a> ，
+所谓 TTL 是 &ldquo;time-to-live&rdquo; 的缩写。</p>
+<h3 id="持久性-durability">
+  持久性 (Durability)
+  <a class="anchor" href="#%e6%8c%81%e4%b9%85%e6%80%a7-durability">#</a>
+</h3>
+<p>从 2.0 版的 MongoDB 开始，日志是默认启动的，该功能允许快速恢复服务器，比如遭遇到了服务器崩溃或者停电的情况。</p>
+<h3 id="全文检索-full-text-search">
+  全文检索 (Full Text Search)
+  <a class="anchor" href="#%e5%85%a8%e6%96%87%e6%a3%80%e7%b4%a2-full-text-search">#</a>
+</h3>
+<p>全文检索是在最近加入到 MongoDB 中的。它支持十五国语言，支持词形变化(stemming)和干扰字(stop words)。除了原生的 MongoDB 的全文检索支持，如果你
+需要一个更强大更全面的全文检索引擎的话，你需要另找方案。</p>
+<h3 id="事务-transactions">
+  事务 (Transactions)
+  <a class="anchor" href="#%e4%ba%8b%e5%8a%a1-transactions">#</a>
+</h3>
+<p>MongoDB 不支持事务。这有两个代替案，一个很好用但有限制，另外一个比较麻烦但灵活。</p>
+<h4 id="原子更新操作">
+  原子更新操作
+  <a class="anchor" href="#%e5%8e%9f%e5%ad%90%e6%9b%b4%e6%96%b0%e6%93%8d%e4%bd%9c">#</a>
+</h4>
+<p>MongoDB 提供了针对单个文档的原子操作。比如 <code>$inc</code> 和 <code>$set</code>。还有像 <code>findAndModify</code> 命令，可以更新或删除文档之后，自动返回修改过的文档。</p>
+<p>维持原子性的建议方法是利用<strong>内嵌文档</strong>（embedded document）将所有经常更新的相关信息都保存在一个文档中。这能确保所有针对单一文档的更新具有
+原子性。</p>
+<h4 id="两段提交">
+  两段提交
+  <a class="anchor" href="#%e4%b8%a4%e6%ae%b5%e6%8f%90%e4%ba%a4">#</a>
+</h4>
+<p>两段提交实际上在关系型数据库世界中非常常用，用来实现多数据库之间的事务。 MongoDB 网站 
+  <a href="https://docs.mongodb.com/manual/core/transactions/">有个例子</a>
+演示了最典型的场合 (资金转账)。通常的想法是，把事务的状态保存到实际的原子更新的文档中，然后手工的进行 <code>init-pending-commit/rollback</code> 处理。</p>
+<p>MongoDB 支持内嵌文档以及它灵活的 schema 设计，让两步提交没那么痛苦，但是它仍然不是一个好处理。</p>
+<h3 id="数据处理data-processing">
+  数据处理(Data Processing)
+  <a class="anchor" href="#%e6%95%b0%e6%8d%ae%e5%a4%84%e7%90%86data-processing">#</a>
+</h3>
+<p>MongoDB 依赖 MapReduce 来解决大部分数据处理工作。</p>
+<p>在 2.2 版本，它追加了一个强力的功能，叫做 
+  <a href="https://docs.mongodb.com/manual/core/aggregation-pipeline/">aggregation framework or pipeline</a>，
+因此你只要对那些尚未支持管道的，需要使用复杂方法的，不常见的聚合使用 MapReduce。</p>
+<h3 id="地理空间查询geospatial">
+  地理空间查询(Geospatial)
+  <a class="anchor" href="#%e5%9c%b0%e7%90%86%e7%a9%ba%e9%97%b4%e6%9f%a5%e8%af%a2geospatial">#</a>
+</h3>
+<p>MongoDB 支持 
+  <a href="https://docs.mongodb.com/manual/geospatial-queries/">geospatial 索引</a>。这允许你保存 <code>geoJSON</code> 或者 <code>x</code> 和 <code>y</code> 坐
+标到文档，并查询文档，用如 <code>$near</code> 来获取坐标集，或者 <code>$within</code> 来获取一个矩形或圆中的点。</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/mongo/01_overview.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#mongodb-相比-rdbms-的优势">MongoDB 相比 RDBMS 的优势</a></li>
+    <li><a href="#为何选择使用-mongodb">为何选择使用 MongoDB</a></li>
+    <li><a href="#适用场景">适用场景</a>
+      <ul>
+        <li><a href="#无模式-flexible-schema">无模式 (Flexible Schema)</a></li>
+        <li><a href="#写操作">写操作</a></li>
+        <li><a href="#持久性-durability">持久性 (Durability)</a></li>
+        <li><a href="#全文检索-full-text-search">全文检索 (Full Text Search)</a></li>
+        <li><a href="#事务-transactions">事务 (Transactions)</a></li>
+        <li><a href="#数据处理data-processing">数据处理(Data Processing)</a></li>
+        <li><a href="#地理空间查询geospatial">地理空间查询(Geospatial)</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

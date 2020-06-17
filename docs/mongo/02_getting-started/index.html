@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="database，和&quot;数据库&quot;一样的概念 (对 Oracle 来说就是 schema)。一个 MongoDB 实例中，可以有零个或多个数据库 collections，数据库中可以有零个或多个 collections (集合)。和传统意义上的table基本一致。 documents，集合是由零个或多个 documents (文档)组成。一个文档可以看成是一 row。 fields，文档是由零个或多个 fields (字段)组成。可以看成是 columns。 Indexes (索引)在 MongoDB 中扮演着和它们在 RDBMS(Relational Database Management System 关系数据库管理系统) 中一样的角色。 Cursors (游标)，游标是，当你问 MongoDB 拿数据的时候，它会给你返回一个结果集的指针而不是真正的数据，这个指针我们叫它游标， 我们可以拿游标做我们想做的任何事情，比如说计数或者跨行之类的，而无需把真正的数据拖下来，在真正的数据上操作。  这些概念和关系型数据中的概念类似，但是还是有差异的。
+核心差异在于，关系型数据库是在 table 上定义的 columns，而面向文档数据库是在 document 上定义的 fields。 也就是说，在 collection 中的每个 document 都可以有它自己独立的 fields。
+要点就是，集合不对存储内容严格限制 (所谓的无模式(schema-less))。
+mongo shell#mongo shell 是一个完整的 JavaScript 解释器。可以运行任意的 JavaScript 程序。比如 db.help() 或者 db.stats()。大多数情况下我们会操作集合而不是数据库， 用 db.COLLECTION_NAME ，比如 db.unicorns.help() 或者 db.">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="入门" />
+<meta property="og:description" content="database，和&quot;数据库&quot;一样的概念 (对 Oracle 来说就是 schema)。一个 MongoDB 实例中，可以有零个或多个数据库 collections，数据库中可以有零个或多个 collections (集合)。和传统意义上的table基本一致。 documents，集合是由零个或多个 documents (文档)组成。一个文档可以看成是一 row。 fields，文档是由零个或多个 fields (字段)组成。可以看成是 columns。 Indexes (索引)在 MongoDB 中扮演着和它们在 RDBMS(Relational Database Management System 关系数据库管理系统) 中一样的角色。 Cursors (游标)，游标是，当你问 MongoDB 拿数据的时候，它会给你返回一个结果集的指针而不是真正的数据，这个指针我们叫它游标， 我们可以拿游标做我们想做的任何事情，比如说计数或者跨行之类的，而无需把真正的数据拖下来，在真正的数据上操作。  这些概念和关系型数据中的概念类似，但是还是有差异的。
+核心差异在于，关系型数据库是在 table 上定义的 columns，而面向文档数据库是在 document 上定义的 fields。 也就是说，在 collection 中的每个 document 都可以有它自己独立的 fields。
+要点就是，集合不对存储内容严格限制 (所谓的无模式(schema-less))。
+mongo shell#mongo shell 是一个完整的 JavaScript 解释器。可以运行任意的 JavaScript 程序。比如 db.help() 或者 db.stats()。大多数情况下我们会操作集合而不是数据库， 用 db.COLLECTION_NAME ，比如 db.unicorns.help() 或者 db." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/mongo/02_getting-started/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>入门 | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/"class=active>入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>入门</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#mongo-shell">mongo shell</a>
+      <ul>
+        <li><a href="#mongorcjs">.mongorc.js</a></li>
+        <li><a href="#禁用-mongorcjs">禁用 .mongorc.js</a></li>
+      </ul>
+    </li>
+    <li><a href="#_id"><code>_id</code></a></li>
+    <li><a href="#数据类型">数据类型</a></li>
+    <li><a href="#常用命令">常用命令</a>
+      <ul>
+        <li><a href="#use"><code>use</code></a></li>
+        <li><a href="#删除数据库">删除数据库</a></li>
+        <li><a href="#创建集合">创建集合</a></li>
+        <li><a href="#删除集合">删除集合</a></li>
+        <li><a href="#插入文档">插入文档</a></li>
+        <li><a href="#查询">查询</a></li>
+        <li><a href="#更新">更新</a></li>
+        <li><a href="#删除">删除</a></li>
+      </ul>
+    </li>
+    <li><a href="#索引">索引</a>
+      <ul>
+        <li><a href="#唯一索引">唯一索引</a></li>
+        <li><a href="#ttl-索引">TTL 索引</a></li>
+        <li><a href="#索引管理">索引管理</a></li>
+        <li><a href="#文本索引">文本索引</a></li>
+        <li><a href="#覆盖索引查询">覆盖索引查询</a></li>
+        <li><a href="#高级索引">高级索引</a></li>
+        <li><a href="#索引限制">索引限制</a></li>
+      </ul>
+    </li>
+    <li><a href="#聚合">聚合</a>
+      <ul>
+        <li><a href="#管道">管道</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><ul>
+<li><code>database</code>，和&quot;数据库&quot;一样的概念 (对 Oracle 来说就是 <code>schema</code>)。一个 MongoDB 实例中，可以有零个或多个数据库</li>
+<li><code>collections</code>，数据库中可以有零个或多个 collections (集合)。和传统意义上的<code>table</code>基本一致。</li>
+<li><code>documents</code>，集合是由零个或多个 <code>documents</code> (文档)组成。一个文档可以看成是一 <code>row</code>。</li>
+<li><code>fields</code>，文档是由零个或多个 <code>fields</code> (字段)组成。可以看成是 <code>columns</code>。</li>
+<li><code>Indexes</code> (索引)在 MongoDB 中扮演着和它们在 RDBMS(Relational Database Management System 关系数据库管理系统) 中一样的角色。</li>
+<li><code>Cursors</code> (游标)，游标是，当你问 MongoDB 拿数据的时候，它会给你返回一个结果集的指针而不是真正的数据，这个指针我们叫它<strong>游标</strong>，
+我们可以拿游标做我们想做的任何事情，比如说计数或者跨行之类的，而无需把真正的数据拖下来，在真正的数据上操作。</li>
+</ul>
+<p>这些概念和关系型数据中的概念类似，但是还是有差异的。</p>
+<p><strong>核心差异在于，关系型数据库是在 <code>table</code> 上定义的 <code>columns</code>，而面向文档数据库是在 <code>document</code> 上定义的 <code>fields</code>。
+也就是说，在 <code>collection</code> 中的每个 <code>document</code> 都可以有它自己独立的 <code>fields</code></strong>。</p>
+<p>要点就是，集合不对存储内容严格限制 (所谓的<strong>无模式</strong>(<code>schema-less</code>))。</p>
+<h2 id="mongo-shell">
+  mongo shell
+  <a class="anchor" href="#mongo-shell">#</a>
+</h2>
+<p>mongo shell 是一个完整的 JavaScript 解释器。可以运行任意的 JavaScript 程序。比如 <code>db.help()</code> 或者 <code>db.stats()</code>。大多数情况下我们会操作集合而不是数据库，
+用 <code>db.COLLECTION_NAME</code> ，比如 <code>db.unicorns.help()</code> 或者 <code>db.unicorns.count()</code>。<strong>如果输入 <code>db.help</code> (不带括号), 你会看到 <code>help</code> 方法的内部实现</strong>。</p>
+<h3 id="mongorcjs">
+  .mongorc.js
+  <a class="anchor" href="#mongorcjs">#</a>
+</h3>
+<p>如果某些脚本会被频繁加载，可以将它添加到 <code>.mongorc.js</code> 文件中，文件会在启动 shell 时自动运行。</p>
+<p><code>.mongorc.js</code> 常见的用途是移除那些比较危险的 shell 辅助函数。可以在这个文件中重写那些方法，比如：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">no</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">function</span>() {
+  <span style="color:#a6e22e">print</span>(<span style="color:#e6db74">&#34;Not on my watch.&#34;</span>)
+}
+
+<span style="color:#75715e">// 禁止删除数据库
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">droopDatabase</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">DB</span>.<span style="color:#a6e22e">prototype</span>.<span style="color:#a6e22e">dropDatabase</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">no</span>;
+
+<span style="color:#75715e">// 禁止删除集合
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">DBCollection</span>.<span style="color:#a6e22e">prototype</span>.<span style="color:#a6e22e">drop</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">no</span>;
+
+<span style="color:#75715e">// 禁止删除索引
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">DBCollection</span>.<span style="color:#a6e22e">prototype</span>.<span style="color:#a6e22e">dropIndex</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">no</span>;
+</code></pre></div><h3 id="禁用-mongorcjs">
+  禁用 .mongorc.js
+  <a class="anchor" href="#%e7%a6%81%e7%94%a8-mongorcjs">#</a>
+</h3>
+<p>启动 shell 时指定 <code>--norc</code>，就可以禁止加载 <code>.mongorc.js</code> 了。</p>
+<h2 id="_id">
+  <code>_id</code>
+  <a class="anchor" href="#_id">#</a>
+</h2>
+<p>每个文档都会有一个唯一 <code>_id</code> 字段。你可以自己生成一个，或者让 MongoDB 帮你生成一个 <code>ObjectId</code> 类型的。默认的 <code>_id</code> 字段是已被索引的。
+<code>_id</code> 是一个 12 字节长的十六进制数，头 4 个字节代表的是当前的时间戳，接着的后 3 个字节表示的是机器 id 号，接着的 2 个字节表示 MongoDB 服务器进程 id，最后的 3 个字节代表递增值。</p>
+<p><code>ObjectId</code> 是轻量的，不同机器都能用全局的唯一的方法生成，MongoDB 没有采用比较常规的做法（比如自增的主键），因为在多个服务器上同步自增主键费力费时。能够在分片环境中生成唯一的标识符
+很重要。</p>
+<h2 id="数据类型">
+  数据类型
+  <a class="anchor" href="#%e6%95%b0%e6%8d%ae%e7%b1%bb%e5%9e%8b">#</a>
+</h2>
+<ul>
+<li><strong>String</strong>：字符串。存储数据常用的数据类型。在 MongoDB 中，UTF-8 编码的字符串才是合法的。</li>
+<li><strong>Integer</strong>：整型数值。用于存储数值。根据你所采用的服务器，可分为 32 位或 64 位。</li>
+<li><strong>Boolean</strong>：布尔值。用于存储布尔值（真/假）。</li>
+<li><strong>Double</strong>：双精度浮点值。用于存储浮点值。</li>
+<li><strong>Min/Max keys</strong>：将一个值与 BSON（二进制的 JSON）元素的最低值和最高值相对比。</li>
+<li><strong>Arrays</strong>：用于将数组或列表或多个值存储为一个键。</li>
+<li><strong>Timestamp</strong>：时间戳。记录文档修改或添加的具体时间。</li>
+<li><strong>Object</strong>：用于内嵌文档。</li>
+<li><strong>Null</strong>：用于创建空值。</li>
+<li><strong>Symbol</strong>：符号。该数据类型基本上等同于字符串类型，但不同的是，它一般用于采用特殊符号类型的语言。</li>
+<li><strong>Date</strong>：日期时间。用 UNIX 时间格式来存储当前日期或时间。你可以指定自己的日期时间：创建 Date 对象，传入年月日信息。</li>
+<li><strong>Object ID</strong>：对象 ID。用于创建文档的 ID。</li>
+<li><strong>Binary Data</strong>：二进制数据。用于存储二进制数据。</li>
+<li><strong>Code</strong>：代码类型。用于在文档中存储 JavaScript 代码。</li>
+<li><strong>Regular expression</strong>：正则表达式类型。用于存储正则表达式。</li>
+</ul>
+<h2 id="常用命令">
+  常用命令
+  <a class="anchor" href="#%e5%b8%b8%e7%94%a8%e5%91%bd%e4%bb%a4">#</a>
+</h2>
+<h3 id="use">
+  <code>use</code>
+  <a class="anchor" href="#use">#</a>
+</h3>
+<p><code>use</code> 会创建一个新的数据库，如果该数据库存在，则返回这个数据库。格式 <code>use DATABASE_NAME</code>。</p>
+<h3 id="删除数据库">
+  删除数据库
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4%e6%95%b0%e6%8d%ae%e5%ba%93">#</a>
+</h3>
+<p><code>dropDatabase()</code>用于删除已有数据库。格式 <code>db.dropDatabase()</code>。
+它将删除选定的数据库。如果没有选定要删除的数据库，则它会将默认的 <code>test</code> 数据库删除。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">&gt;use mydb
+switched to db mydb
+&gt;db.dropDatabase<span style="color:#f92672">()</span>
+&gt;<span style="color:#f92672">{</span> <span style="color:#e6db74">&#34;dropped&#34;</span> : <span style="color:#e6db74">&#34;mydb&#34;</span>, <span style="color:#e6db74">&#34;ok&#34;</span> : <span style="color:#ae81ff">1</span> <span style="color:#f92672">}</span>
+</code></pre></div><h3 id="创建集合">
+  创建集合
+  <a class="anchor" href="#%e5%88%9b%e5%bb%ba%e9%9b%86%e5%90%88">#</a>
+</h3>
+<p><code>db.createCollection(name, options)</code> 创建集合。<code>name</code> 是所要创建的集合名称。<code>options</code> 是一个用来指定集合配置的文档。</p>
+<p>参数 <code>options</code> 是可选的，可用选项：</p>
+<ul>
+<li><code>capped</code>，（可选）如果为 <code>true</code>，则创建固定集合。固定集合是指有着固定大小的集合，当达到最大值时，它会自动覆盖最早的文档。当该值为 <code>true</code> 时，必须指定 <code>size</code> 参数。</li>
+<li><code>autoIndexID</code>，（可选）如为 <code>true</code>，自动在 <code>_id</code> 字段创建索引。默认为 <code>false</code>。</li>
+<li><code>size</code>，（可选）为固定集合指定一个最大值（以字节计）。如果 <code>capped</code> 为 <code>true</code>，也需要指定该字段。</li>
+<li><code>max</code>，（可选）指定固定集合中包含文档的最大数量。</li>
+</ul>
+<p><strong>在插入文档时，MongoDB 首先检查固定集合的 <code>size</code> 字段，然后检查 <code>max</code> 字段</strong>。</p>
+<h4 id="固定集合">
+  固定集合
+  <a class="anchor" href="#%e5%9b%ba%e5%ae%9a%e9%9b%86%e5%90%88">#</a>
+</h4>
+<h5 id="iscapped">
+  isCapped()
+  <a class="anchor" href="#iscapped">#</a>
+</h5>
+<p><code>isCapped()</code>检查集合是否是固定集合。格式 <code>db.COLLECTION_NAME.isCapped()</code></p>
+<h5 id="将现有集合转化为固定集合">
+  将现有集合转化为固定集合
+  <a class="anchor" href="#%e5%b0%86%e7%8e%b0%e6%9c%89%e9%9b%86%e5%90%88%e8%bd%ac%e5%8c%96%e4%b8%ba%e5%9b%ba%e5%ae%9a%e9%9b%86%e5%90%88">#</a>
+</h5>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">runCommand</span>({<span style="color:#e6db74">&#34;convertToCapped&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;posts&#34;</span>,<span style="color:#a6e22e">size</span><span style="color:#f92672">:</span><span style="color:#ae81ff">10000</span>})
+</code></pre></div><p>将现有的 <code>posts</code> 集合转化为固定集合。</p>
+<h5 id="值得注意的点">
+  值得注意的点
+  <a class="anchor" href="#%e5%80%bc%e5%be%97%e6%b3%a8%e6%84%8f%e7%9a%84%e7%82%b9">#</a>
+</h5>
+<ul>
+<li>无法从固定集合中删除文档。</li>
+<li>固定集合没有默认索引，甚至在 <code>_id</code> 字段中也没有，可以使用<code>autoIndexID</code>创建索引。</li>
+<li>在插入新的文档时，MongoDB 并不需要寻找磁盘空间来容纳新文档。它只是盲目地将新文档插入到集合末尾。这使得固定集合中的插入操作是非常快速的。</li>
+<li>同样的，在读取文档时，MongoDB 会按照插入磁盘的顺序来读取文档，从而使读取操作也非常快。</li>
+<li>如果要把已有的集合变为固定集合，先执行<code>db.runCommand({&quot;convertToCapped&quot;:&quot;posts&quot;,size:10000})</code>转化，否则程序可能会连接数据库失败。</li>
+</ul>
+<h3 id="删除集合">
+  删除集合
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4%e9%9b%86%e5%90%88">#</a>
+</h3>
+<p><code>db.collection.drop()</code> 来删除数据库中的集合。格式 <code>db.COLLECTION_NAME.drop()</code>。</p>
+<h3 id="插入文档">
+  插入文档
+  <a class="anchor" href="#%e6%8f%92%e5%85%a5%e6%96%87%e6%a1%a3">#</a>
+</h3>
+<p>使用 <code>insert()</code> 或 <code>save()</code> 方法。格式 <code>db.COLLECTION_NAME.insert(document)</code>。</p>
+<h3 id="查询">
+  查询
+  <a class="anchor" href="#%e6%9f%a5%e8%af%a2">#</a>
+</h3>
+<p>使用 <code>find()</code> 方法。格式 <code>db.COLLECTION_NAME.find()</code>。</p>
+<h4 id="pretty-方法">
+  <code>pretty()</code> 方法
+  <a class="anchor" href="#pretty-%e6%96%b9%e6%b3%95">#</a>
+</h4>
+<p>用格式化方式显示结果，使用的是 <code>pretty()</code> 方法。</p>
+<h4 id="findone">
+  <code>findOne()</code>
+  <a class="anchor" href="#findone">#</a>
+</h4>
+<p><code>findOne()</code> 方法，它只返回一个文档。</p>
+<h4 id="类似于-where-子句的语句">
+  类似于 WHERE 子句的语句
+  <a class="anchor" href="#%e7%b1%bb%e4%bc%bc%e4%ba%8e-where-%e5%ad%90%e5%8f%a5%e7%9a%84%e8%af%ad%e5%8f%a5">#</a>
+</h4>
+<p><code>$lt</code>小于，<code>$lte</code>小于等于，<code>$gt</code>大于，<code>$gte</code>大于等于，<code>$ne</code>不等于。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">find</span>({<span style="color:#e6db74">&#34;likes&#34;</span><span style="color:#f92672">:</span>{<span style="color:#a6e22e">$lt</span><span style="color:#f92672">:</span><span style="color:#ae81ff">50</span>}}).<span style="color:#a6e22e">pretty</span>()
+</code></pre></div><h4 id="and-和-or">
+  AND 和 OR
+  <a class="anchor" href="#and-%e5%92%8c-or">#</a>
+</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">// 逗号分隔看成是 AND 条件
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">find</span>({<span style="color:#a6e22e">key1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">value1</span>, <span style="color:#a6e22e">key2</span><span style="color:#f92672">:</span><span style="color:#a6e22e">value2</span>}).<span style="color:#a6e22e">pretty</span>()
+</code></pre></div><p>基于 <code>OR</code> 条件来查询文档，可以使用关键字 <code>$or</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">find</span>({<span style="color:#a6e22e">$or</span><span style="color:#f92672">:</span> [{<span style="color:#a6e22e">key1</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">value1</span>}, {<span style="color:#a6e22e">key2</span><span style="color:#f92672">:</span><span style="color:#a6e22e">value2</span>}]}).<span style="color:#a6e22e">pretty</span>()
+</code></pre></div><h4 id="查询数组">
+  查询数组
+  <a class="anchor" href="#%e6%9f%a5%e8%af%a2%e6%95%b0%e7%bb%84">#</a>
+</h4>
+<p>比如：<code>db.food.insert({&quot;fruit&quot;: [&quot;apple&quot;, &quot;banana&quot;, &quot;peach&quot;]})</code>。</p>
+<p>要查询数组使用：<code>db.food.find({&quot;fruit&quot;: &quot;banana&quot;})</code>。</p>
+<h5 id="all">
+  $all
+  <a class="anchor" href="#all">#</a>
+</h5>
+<p>如果需要通过多个元素来匹配数组，可以使用<code>$all</code>。比如：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">food</span>.<span style="color:#a6e22e">insert</span>({<span style="color:#e6db74">&#34;fruit&#34;</span><span style="color:#f92672">:</span> [<span style="color:#e6db74">&#34;apple&#34;</span>, <span style="color:#e6db74">&#34;banana&#34;</span>, <span style="color:#e6db74">&#34;peach&#34;</span>]})
+<span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">food</span>.<span style="color:#a6e22e">insert</span>({<span style="color:#e6db74">&#34;fruit&#34;</span><span style="color:#f92672">:</span> [<span style="color:#e6db74">&#34;apple&#34;</span>, <span style="color:#e6db74">&#34;orange&#34;</span>, <span style="color:#e6db74">&#34;kumquat&#34;</span>]})
+<span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">food</span>.<span style="color:#a6e22e">insert</span>({<span style="color:#e6db74">&#34;fruit&#34;</span><span style="color:#f92672">:</span> [<span style="color:#e6db74">&#34;cherry&#34;</span>, <span style="color:#e6db74">&#34;banana&#34;</span>, <span style="color:#e6db74">&#34;apple&#34;</span>]})
+</code></pre></div><p>要匹配含有 <code>apple</code> 和 <code>banana</code> 的文档：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">food</span>.<span style="color:#a6e22e">find</span>({<span style="color:#e6db74">&#34;fruit&#34;</span><span style="color:#f92672">:</span> {<span style="color:#a6e22e">$all</span><span style="color:#f92672">:</span> [<span style="color:#e6db74">&#34;apple&#34;</span>, <span style="color:#e6db74">&#34;banana&#34;</span>]}})
+</code></pre></div><h5 id="size">
+  $size
+  <a class="anchor" href="#size">#</a>
+</h5>
+<p><code>$size</code>可以用它查询特定长度的数组。比如：<code>db.food.find({&quot;fruit&quot;: {$size: 3}})</code>。<code>$size</code> 不能与其他查询条件一起使用（比如 <code>$gt</code>）。</p>
+<h5 id="slice">
+  $slice
+  <a class="anchor" href="#slice">#</a>
+</h5>
+<p><code>find()</code> 的第二个参数是可选的，可以指定需要返回的键。<code>$slice</code>操作符可以返回某个键匹配的数组元素的一个自己。比如：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">posts</span>.<span style="color:#a6e22e">findOne</span>(<span style="color:#a6e22e">criteria</span>, {<span style="color:#e6db74">&#34;comments&#34;</span><span style="color:#f92672">:</span> {<span style="color:#a6e22e">$slice</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">10</span>}})
+</code></pre></div><p>返回前 10 条评论，后 10 条的话使用 <code>-10</code>。</p>
+<p>指定偏移量得到返回的元素：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">posts</span>.<span style="color:#a6e22e">findOne</span>(<span style="color:#a6e22e">criteria</span>, {<span style="color:#e6db74">&#34;comments&#34;</span><span style="color:#f92672">:</span> {<span style="color:#a6e22e">$slice</span><span style="color:#f92672">:</span> [<span style="color:#ae81ff">23</span>, <span style="color:#ae81ff">10</span>]}})
+</code></pre></div><p>这里的<code>$slice</code>和 Javascript 中的 <code>slice</code> 函数用法类似。</p>
+<h4 id="查询子文档">
+  查询子文档
+  <a class="anchor" href="#%e6%9f%a5%e8%af%a2%e5%ad%90%e6%96%87%e6%a1%a3">#</a>
+</h4>
+<p>比如下面的文档：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js">{
+   <span style="color:#e6db74">&#34;address&#34;</span><span style="color:#f92672">:</span> {
+      <span style="color:#e6db74">&#34;city&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Los Angeles&#34;</span>,
+      <span style="color:#e6db74">&#34;state&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;California&#34;</span>,
+      <span style="color:#e6db74">&#34;pincode&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;123&#34;</span>
+   },
+   <span style="color:#e6db74">&#34;name&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Tom Benzamin&#34;</span>
+}
+</code></pre></div><p>要查询地址为 <code>Los Angeles</code> 的人可以<code>db.users.find({&quot;address&quot;: {&quot;city&quot;: &quot;Los Angeles&quot;}})</code>。</p>
+<h4 id="where">
+  $where
+  <a class="anchor" href="#where">#</a>
+</h4>
+<p>在一些场景下，可能一般的键值对查询无法满足，这是可以使用 <code>$where</code> 子句。但是这种方式应该禁止使用，很不安全。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">food</span>.<span style="color:#a6e22e">find</span>({<span style="color:#a6e22e">$where</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">function</span> () {
+  <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">current</span> <span style="color:#66d9ef">in</span> <span style="color:#66d9ef">this</span>) {
+    <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">var</span> <span style="color:#a6e22e">other</span> <span style="color:#66d9ef">in</span> <span style="color:#66d9ef">this</span>) {
+      <span style="color:#66d9ef">if</span> (<span style="color:#a6e22e">current</span> <span style="color:#f92672">!=</span> <span style="color:#a6e22e">other</span> <span style="color:#f92672">&amp;&amp;</span> <span style="color:#66d9ef">this</span>[<span style="color:#a6e22e">current</span>] <span style="color:#f92672">==</span> <span style="color:#66d9ef">this</span>[<span style="color:#a6e22e">other</span>]) {
+        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>;
+      }
+    }
+  }
+  <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">false</span>;
+}})
+</code></pre></div><p>如果函数返回 <code>true</code>，那么文档会作为结果集中的一部分返回。</p>
+<p><strong><code>$where</code> 子句查询很慢，而且不能使用索引。</strong></p>
+<h4 id="映射projection">
+  映射（Projection）
+  <a class="anchor" href="#%e6%98%a0%e5%b0%84projection">#</a>
+</h4>
+<p>映射（Projection）指的是只选择文档中的必要数据，而非全部数据。如果文档有 5 个字段，而你只需要显示 3 个，则只需选择 3 个字段即可。
+执行 find() 方法时，可以利用 0 或 1 来设置字段列表。<strong>1 用于显示字段，0 用于隐藏字段</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">find</span>({},{<span style="color:#e6db74">&#34;title&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>, <span style="color:#a6e22e">_id</span><span style="color:#f92672">:</span><span style="color:#ae81ff">0</span>})
+</code></pre></div><p><code>_id</code> 字段是一直显示的。如果不想显示该字段，则可以将其设为 0。</p>
+<h4 id="limit">
+  limit()
+  <a class="anchor" href="#limit">#</a>
+</h4>
+<p><code>limit()</code> 方法接受一个数值类型的参数，其值为想要显示的文档数。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">find</span>({},{<span style="color:#e6db74">&#34;title&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>, <span style="color:#a6e22e">_id</span><span style="color:#f92672">:</span><span style="color:#ae81ff">0</span>}).<span style="color:#a6e22e">limit</span>(<span style="color:#ae81ff">2</span>)
+</code></pre></div><h4 id="skip">
+  skip()
+  <a class="anchor" href="#skip">#</a>
+</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">find</span>({},{<span style="color:#e6db74">&#34;title&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>,<span style="color:#a6e22e">_id</span><span style="color:#f92672">:</span><span style="color:#ae81ff">0</span>}).<span style="color:#a6e22e">skip</span>(<span style="color:#ae81ff">1</span>).<span style="color:#a6e22e">limit</span>(<span style="color:#ae81ff">1</span>)
+</code></pre></div><h5 id="避免使用-skip-略过大量结果">
+  避免使用 skip 略过大量结果
+  <a class="anchor" href="#%e9%81%bf%e5%85%8d%e4%bd%bf%e7%94%a8-skip-%e7%95%a5%e8%bf%87%e5%a4%a7%e9%87%8f%e7%bb%93%e6%9e%9c">#</a>
+</h5>
+<p>skip 如果略过大量结果，会变得很慢，因为要找到需要被略过的数据，然后抛弃。<strong>可以利用上次的查询结果来计算下一次的查询条件</strong></p>
+<h4 id="sort">
+  sort()
+  <a class="anchor" href="#sort">#</a>
+</h4>
+<p><code>sort()</code> 方法可以通过一些参数来指定要进行排序的字段，并使用 1 和 -1 来指定排序方式，其中<strong>1 表示升序，而 -1 表示降序</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">find</span>({},{<span style="color:#e6db74">&#34;title&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>,<span style="color:#a6e22e">_id</span><span style="color:#f92672">:</span><span style="color:#ae81ff">0</span>}).<span style="color:#a6e22e">sort</span>({<span style="color:#e6db74">&#34;title&#34;</span><span style="color:#f92672">:-</span><span style="color:#ae81ff">1</span>})
+</code></pre></div><h3 id="更新">
+  更新
+  <a class="anchor" href="#%e6%9b%b4%e6%96%b0">#</a>
+</h3>
+<p><code>update()</code> 方法更新已有文档中的值，而 <code>save()</code> 方法则是用传入该方法的文档来替换已有文档。格式 <code>db.COLLECTION_NAME.update(SELECTIOIN_CRITERIA, UPDATED_DATA, UPSERT, MULTI)</code>。</p>
+<ul>
+<li><code>UPSERT</code>: 为 <code>true</code> 时，如果文档不存在则插入文档</li>
+<li><code>MULTI</code>: 为 <code>true</code> 时，更新多个符合条件的文档</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">update</span>({<span style="color:#e6db74">&#39;title&#39;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#39;MongoDB Overview&#39;</span>},{<span style="color:#a6e22e">$set</span><span style="color:#f92672">:</span>{<span style="color:#e6db74">&#39;title&#39;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#39;New MongoDB Tutorial&#39;</span>}})
+</code></pre></div><h3 id="删除">
+  删除
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4">#</a>
+</h3>
+<p><code>remove()</code> 方法 清除集合中的文档。格式 <code>db.COLLECTION_NAME.remove(DELLETION_CRITTERIA)</code>。 2 个可选参数：</p>
+<ul>
+<li><code>deletion criteria</code>：（可选）删除文档的标准。</li>
+<li><code>justOne</code>：（可选）如果设为 <code>true</code> 或 <code>1</code>，则只删除一个文档。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">remove</span>({<span style="color:#e6db74">&#39;title&#39;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#39;MongoDB Overview&#39;</span>}, <span style="color:#ae81ff">1</span>)
+</code></pre></div><h2 id="索引">
+  索引
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95">#</a>
+</h2>
+<p>数据库索引与书籍的索引类似。有了索引就不需要翻整本书，数据库可以直接在索引中找到条目，直接跳转到目标文档的位置，能使查询速度提高几个数量级。</p>
+<p>如果没有索引，那么数据库就会进行<strong>全表扫描</strong>，比如一个用于集合有一百万条文档，我们执行<code>db.users.find({username: &quot;user101&quot;}).explain()</code>：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js">{
+  <span style="color:#e6db74">&#34;cursor&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;BasicCursor&#34;</span>,
+  <span style="color:#e6db74">&#34;nscanned&#34;</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">1000000</span>,
+  <span style="color:#e6db74">&#34;n&#34;</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">1</span>,
+  <span style="color:#e6db74">&#34;millis&#34;</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">721</span>,
+  ...
+}
+</code></pre></div><p><code>nscanned</code> 扫描的文档数。<code>millis</code> 表示查询耗费的毫秒数。<code>n</code> 表示查询结果的数量。</p>
+<p>由于数据库不知道 <code>username</code> 字段是唯一的，Mongo 会查看集合中的每一个文档。这里我们能想到的优化方法就是<strong>使用<code>limit</code>限制查询的文档个数</strong>，因为我们知道用户是唯一的，所以<code>limit(1)</code>。</p>
+<p>但是如果查询用户 <code>user99999</code> 呢？使用索引是一个非常好的解决方案。</p>
+<p>MongoDB 中 <code>ensureIndex()</code> 方法创建索引。格式 <code>db.COLLECTION_NAME.ensureIndex({KEY:1})</code>。<strong>1 代表按升序排列字段值。-1 代表按降序排列</strong>。
+<strong>创建索引会耗费一些时间，根据机器的性能和集合的大小而不同</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">ensureIndex</span>({<span style="color:#e6db74">&#34;title&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>})
+
+<span style="color:#75715e">// 为多个字段创建索引
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">ensureIndex</span>({<span style="color:#e6db74">&#34;title&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#34;description&#34;</span><span style="color:#f92672">:-</span><span style="color:#ae81ff">1</span>})
+</code></pre></div><p><code>ensureIndex()</code> 方法也可以接受一些可选参数：</p>
+<ul>
+<li><code>background</code>，在后台构建索引，从而不干扰数据库的其他活动。取值为 <code>true</code> 时，代表在后台构建索引。默认值为 <code>false</code></li>
+<li><code>unique</code>，创建一个唯一的索引，从而当索引键匹配了索引中一个已存在值时，集合不接受文档的插入。取值为 <code>true</code> 代表创建唯一性索引。默认值为 <code>false</code>。</li>
+<li><code>name</code>，索引名称。如果未指定，MongoDB 会结合索引字段名称和排序序号，生成一个索引名称。</li>
+<li><code>dropDups</code>，在可能有重复的字段内创建唯一性索引。MongoDB 只在某个键第一次出现时进行索引，去除该键后续出现时的所有文档。</li>
+<li><code>sparse</code>，如果为 <code>true</code>，索引只引用带有指定字段的文档。这些索引占据的空间较小，但在一些情况下的表现也不同（特别是排序）。默认值为 <code>false</code>。</li>
+<li><code>expireAfterSeconds</code>，指定一个秒数值，作为 TTL 来控制 MongoDB 保持集合中文档的时间。</li>
+<li><code>v</code>，索引版本号。默认的索引版本跟创建索引时运行的 MongoDB 版本号有关。</li>
+<li><code>weights</code>，文档数值，范围从 1 到 99, 999。表示就字段相对于其他索引字段的重要性。</li>
+<li><code>default_language</code>，对文本索引而言，用于确定停止词列表，以及词干分析器（stemmer）与断词器（tokenizer）的规则。默认值为 <code>english</code>。</li>
+<li><code>language_override</code>，对文本索引而言，指定了文档所包含的字段名，该语言将覆盖默认语言。默认值为 <code>language</code>。</li>
+</ul>
+<p><strong><code>background</code> 这个选项要注意，创建索引可能会非常耗时，尤其是在已有的集合上创建索引，Mongo 为了尽可能快的创建索引，会阻塞对
+数据库的读请求和写请求，知道创建完成。这时可以使用 <code>background</code> 这个选项，来避免对数据库操作的干扰。但是还是会影响性能，并且比前台创建索引慢的多。</strong></p>
+<h3 id="唯一索引">
+  唯一索引
+  <a class="anchor" href="#%e5%94%af%e4%b8%80%e7%b4%a2%e5%bc%95">#</a>
+</h3>
+<p>唯一索引可以确保结婚额的每一个文档的指定键都有唯一值。比如用户名是唯一的：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">ensureIndex</span>({<span style="color:#e6db74">&#34;username&#34;</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">1</span>}, {<span style="color:#e6db74">&#34;unique&#34;</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span>})
+</code></pre></div><p>在已有的集合中创建唯一索引可能会失败，因为集合中肯能已经存在重复的值了。</p>
+<h3 id="ttl-索引">
+  TTL 索引
+  <a class="anchor" href="#ttl-%e7%b4%a2%e5%bc%95">#</a>
+</h3>
+<p>TTL 索引允许为每一个文档设置过期时间。文档过期之后会自动删除。可以用来实现缓存。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">cache</span>.<span style="color:#a6e22e">ensureIndex</span>({<span style="color:#e6db74">&#34;lastUpdated&#34;</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">1</span>}, {<span style="color:#e6db74">&#34;expireAfterSeconds&#34;</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">60</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">60</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">24</span>})
+</code></pre></div><p>上面的语句在 <code>lastUpdated</code> 字段上建立了 TTL 索引。 如果一个文档的 <code>lastUpdated</code> 字段存在并且它的值是<strong>日期类型</strong>（注意，必须是日期类型），
+当服务器时间比 <code>lastUpdated</code> 字段的时间晚 <code>expireAfterSeconds</code> 秒时，文档就会删除。</p>
+<p><strong>Mongo 每分钟会对 TTL 索引进行一次清理，所以以秒为时间单位保证索引的存活状态是不准确的</strong>。</p>
+<h3 id="索引管理">
+  索引管理
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e7%ae%a1%e7%90%86">#</a>
+</h3>
+<p>所有数据库索引信息存储在 <code>system.indexes</code> 集合中。这个集合只能使用 <code>ensureIndex</code> 和 <code>dropIndexes</code> 对其操作。</p>
+<p>使用 <strong><code>db.COLLECTION_NAME.getIndexes()</code></strong> 来查看所有索引信息。</p>
+<h3 id="文本索引">
+  文本索引
+  <a class="anchor" href="#%e6%96%87%e6%9c%ac%e7%b4%a2%e5%bc%95">#</a>
+</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">posts</span>.<span style="color:#a6e22e">ensureIndex</span>({<span style="color:#a6e22e">post_text</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;text&#34;</span>})
+</code></pre></div><p>上面的代码在 <code>post_text</code> 字段上创建文本索引，以便搜索帖子文本之内的内容。</p>
+<p>在 <code>post_text</code> 字段上创建了文本索引，接下来搜索包含 <code>tutorialspoint</code> 文本内容的帖子。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">posts</span>.<span style="color:#a6e22e">find</span>({<span style="color:#a6e22e">$text</span><span style="color:#f92672">:</span>{<span style="color:#a6e22e">$search</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;tutorialspoint&#34;</span>}})
+</code></pre></div><h4 id="删除文本索引">
+  删除文本索引
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4%e6%96%87%e6%9c%ac%e7%b4%a2%e5%bc%95">#</a>
+</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">// 找到索引名称
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">posts</span>.<span style="color:#a6e22e">getIndexes</span>()
+
+<span style="color:#75715e">// 删掉
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">posts</span>.<span style="color:#a6e22e">dropIndex</span>(<span style="color:#e6db74">&#34;post_text_text&#34;</span>)
+</code></pre></div><h4 id="优化全文本搜索">
+  优化全文本搜索
+  <a class="anchor" href="#%e4%bc%98%e5%8c%96%e5%85%a8%e6%96%87%e6%9c%ac%e6%90%9c%e7%b4%a2">#</a>
+</h4>
+<p>思路就是使用某些查询条件来是搜索范围变小。比如<code>db.posts.ensureIndex({date: 1, post_text:&quot;text&quot;})</code>，<code>date</code> 先将范围缩小到特定日期的文档，再进行全文本搜索。</p>
+<h3 id="覆盖索引查询">
+  覆盖索引查询
+  <a class="anchor" href="#%e8%a6%86%e7%9b%96%e7%b4%a2%e5%bc%95%e6%9f%a5%e8%af%a2">#</a>
+</h3>
+<p>在每一个 MongoDB 官方文档中，覆盖查询都具有以下两个特点：</p>
+<ul>
+<li>查询中的所有字段都属于一个索引；</li>
+<li>查询所返回的所有字段也都属于同一索引内。</li>
+</ul>
+<p>既然<strong>查询中的所有字段都属于一个索引，MongoDB 就会利用同一索引，匹配查询集合并返回结果，而不需要实际地查看文档。因为索引存在于 RAM 中，从索引中获取数据要比通过扫描文档获取数据快得多</strong>。</p>
+<h4 id="使用覆盖查询">
+  使用覆盖查询
+  <a class="anchor" href="#%e4%bd%bf%e7%94%a8%e8%a6%86%e7%9b%96%e6%9f%a5%e8%af%a2">#</a>
+</h4>
+<p>假设在一个 <code>users</code> 集合中包含下列文档：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js">{
+   <span style="color:#e6db74">&#34;_id&#34;</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">ObjectId</span>(<span style="color:#e6db74">&#34;53402597d852426020000002&#34;</span>),
+   <span style="color:#e6db74">&#34;contact&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;987654321&#34;</span>,
+   <span style="color:#e6db74">&#34;dob&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;01-01-1991&#34;</span>,
+   <span style="color:#e6db74">&#34;gender&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;M&#34;</span>,
+   <span style="color:#e6db74">&#34;name&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Tom Benzamin&#34;</span>,
+   <span style="color:#e6db74">&#34;user_name&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;tombenzamin&#34;</span>
+}
+</code></pre></div><p>为 <code>users</code> 集合中的 <code>gender</code> 和 <code>user_name</code> 字段创建一个复合索引：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">ensureIndex</span>({<span style="color:#a6e22e">gender</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>,<span style="color:#a6e22e">user_name</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>})
+</code></pre></div><p>这一索引将覆盖下列查询：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">find</span>({<span style="color:#a6e22e">gender</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;M&#34;</span>},{<span style="color:#a6e22e">user_name</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>,<span style="color:#a6e22e">_id</span><span style="color:#f92672">:</span><span style="color:#ae81ff">0</span>})
+</code></pre></div><p>也就是说，对于上面的查询，MongoDB 不会去查看文档，转而从索引数据中获取所需的数据。</p>
+<p>下面的查询就不会被覆盖，因为<code>_id</code>会默认返回，而<code>_id</code>和<code>user_name</code>，<code>gender</code>不在同一个索引。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">find</span>({<span style="color:#a6e22e">gender</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;M&#34;</span>},{<span style="color:#a6e22e">user_name</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>})
+</code></pre></div><p>如果出现下列情况，索引不能覆盖查询：</p>
+<ul>
+<li>索引字段是数组</li>
+<li>索引字段是子文档</li>
+</ul>
+<h3 id="高级索引">
+  高级索引
+  <a class="anchor" href="#%e9%ab%98%e7%ba%a7%e7%b4%a2%e5%bc%95">#</a>
+</h3>
+<p>例如下面的 <code>user</code> 集合文档:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js">{
+   <span style="color:#e6db74">&#34;address&#34;</span><span style="color:#f92672">:</span> {
+      <span style="color:#e6db74">&#34;city&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Los Angeles&#34;</span>,
+      <span style="color:#e6db74">&#34;state&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;California&#34;</span>,
+      <span style="color:#e6db74">&#34;pincode&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;123&#34;</span>
+   },
+   <span style="color:#e6db74">&#34;tags&#34;</span><span style="color:#f92672">:</span> [
+      <span style="color:#e6db74">&#34;music&#34;</span>,
+      <span style="color:#e6db74">&#34;cricket&#34;</span>,
+      <span style="color:#e6db74">&#34;blogs&#34;</span>
+   ],
+   <span style="color:#e6db74">&#34;name&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Tom Benzamin&#34;</span>
+}
+</code></pre></div><p>上述文档包含一个地址<strong>子文档</strong>（address sub-document）与一个标签<strong>数组</strong>（tags array）。</p>
+<h4 id="索引数组字段">
+  索引数组字段
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e6%95%b0%e7%bb%84%e5%ad%97%e6%ae%b5">#</a>
+</h4>
+<p>假设我们想要根据标签来搜索用户文档。首先在集合中创建一个标签数组的索引。</p>
+<p>反过来说，<strong>在标签数组上创建一个索引，也就为每一个字段创建了单独的索引项</strong>。因此在该例中，当我们创建了标签数组的索引时，
+也就为它的music（音乐）、cricket（板球）以及 blog（博客）值创建了独立的索引。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">// 创建标签数据的索引
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">ensureIndex</span>({<span style="color:#e6db74">&#34;tags&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>})
+
+<span style="color:#75715e">// 搜索集合中的标签字段
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">find</span>({<span style="color:#a6e22e">tags</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;cricket&#34;</span>})
+
+<span style="color:#75715e">// 使用 explain 命令验证所使用索引的正确性
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">find</span>({<span style="color:#a6e22e">tags</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;cricket&#34;</span>}).<span style="color:#a6e22e">explain</span>()
+</code></pre></div><p>上述 <code>explain</code> 命令的执行结果是 <code>&quot;cursor&quot; : &quot;BtreeCursor tags_1&quot;</code>，表示使用了正确的索引。</p>
+<h4 id="索引子文档字段">
+  索引子文档字段
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e5%ad%90%e6%96%87%e6%a1%a3%e5%ad%97%e6%ae%b5">#</a>
+</h4>
+<p>假设需要根据市（city）、州（state）、个人身份号码（pincode）字段来搜索文档。因为所有这些字段都属于地址子文档字段的一部分，
+所以我们将在子文档的所有字段上创建索引。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#75715e">// 在子文档的所有三个字段上创建索引
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">ensureIndex</span>({<span style="color:#e6db74">&#34;address.city&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#34;address.state&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>,<span style="color:#e6db74">&#34;address.pincode&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>})
+
+<span style="color:#75715e">// 搜索子文档字段
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">find</span>({<span style="color:#e6db74">&#34;address.city&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;Los Angeles&#34;</span>})
+
+<span style="color:#75715e">// 查询
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">find</span>({<span style="color:#e6db74">&#34;address.city&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;Los Angeles&#34;</span>,<span style="color:#e6db74">&#34;address.state&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;California&#34;</span>})
+
+<span style="color:#75715e">// 也支持如下这样的查询
+</span><span style="color:#75715e"></span><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">users</span>.<span style="color:#a6e22e">find</span>({<span style="color:#e6db74">&#34;address.city&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;LosAngeles&#34;</span>,<span style="color:#e6db74">&#34;address.state&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;California&#34;</span>,<span style="color:#e6db74">&#34;address.pincode&#34;</span><span style="color:#f92672">:</span><span style="color:#e6db74">&#34;123&#34;</span>})
+</code></pre></div><p><strong>查询表达式必须遵循指定索引的顺序</strong>。</p>
+<h3 id="索引限制">
+  索引限制
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e9%99%90%e5%88%b6">#</a>
+</h3>
+<h4 id="额外开销">
+  额外开销
+  <a class="anchor" href="#%e9%a2%9d%e5%a4%96%e5%bc%80%e9%94%80">#</a>
+</h4>
+<p>每个索引都会占据一些空间，从而也会在每次插入、更新与删除操作时产生一定的开销。所以如果<strong>集合很少使用读取操作，就尽量不要使用索引</strong>。</p>
+<h4 id="内存使用">
+  内存使用
+  <a class="anchor" href="#%e5%86%85%e5%ad%98%e4%bd%bf%e7%94%a8">#</a>
+</h4>
+<p>因为<strong>索引存储在内存</strong>中，所以应<strong>保证索引总体的大小不超过内存的容量</strong>。如果索引总体积超出了内存容量，就会删除部分索引，从而降低性能。</p>
+<h4 id="查询限制">
+  查询限制
+  <a class="anchor" href="#%e6%9f%a5%e8%af%a2%e9%99%90%e5%88%b6">#</a>
+</h4>
+<p>当查询使用以下元素时，不能使用索引：</p>
+<ul>
+<li>正则表达式或否定运算符（<code>$nin</code>、<code>$not</code>，等等）</li>
+<li>算术运算符（比如 <code>$mod</code>）</li>
+<li><code>$where</code> 子句
+因此，经常检查查询使用的索引是一个明智的做法。</li>
+</ul>
+<h4 id="索引键限制">
+  索引键限制
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e9%94%ae%e9%99%90%e5%88%b6">#</a>
+</h4>
+<p>自 MongoDB 2.6 版本起，如果已有索引字段的值超出了索引键限制，则无法创建索引。</p>
+<ul>
+<li>插入文档超过索引键限制</li>
+<li><strong>如果文档的索引字段值超出了索引键的限制，MongoDB 不会将任何文档插入已索引集合</strong>。类似于使用 <code>mongorestore</code> 和 <code>mongoimport</code> 工具时的情况。</li>
+</ul>
+<h4 id="最大范围">
+  最大范围
+  <a class="anchor" href="#%e6%9c%80%e5%a4%a7%e8%8c%83%e5%9b%b4">#</a>
+</h4>
+<ul>
+<li>集合索引数不能超过 64 个。</li>
+<li>索引名称长度不能大于 125 个字符。</li>
+<li>复合索引最多能有 31 个被索引的字段。</li>
+</ul>
+<h2 id="聚合">
+  聚合
+  <a class="anchor" href="#%e8%81%9a%e5%90%88">#</a>
+</h2>
+<p><strong>聚合的结果必须限制在 16 MB 以内</strong>（MongoDB 支持的最大相应消息大小）。</p>
+<p>聚合操作能将多个文档中的值组合起来，对成组数据执行各种操作，返回单一的结果。使用 <code>aggregate()</code> 方法。相当于 SQL 中的 <code>count(*)</code> 组合 <code>group by</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">mycol</span>.<span style="color:#a6e22e">aggregate</span>([{<span style="color:#a6e22e">$group</span> <span style="color:#f92672">:</span> {<span style="color:#a6e22e">_id</span> <span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;$by_user&#34;</span>, <span style="color:#a6e22e">num_tutorial</span> <span style="color:#f92672">:</span> {<span style="color:#a6e22e">$sum</span> <span style="color:#f92672">:</span> <span style="color:#ae81ff">1</span>}}}])
+</code></pre></div><p>上例使用 <code>by_user</code> 字段来组合文档，每遇到一次 <code>by_user</code>，就递增之前的合计值。</p>
+<table>
+<thead>
+<tr>
+<th>表达式</th>
+<th>描述</th>
+<th>范例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>$sum</code></td>
+<td>对集合中所有文档的定义值进行加和操作</td>
+<td><code>db.mycol.aggregate([{$group : {_id : &quot;$by_user&quot;, num_tutorial : {$sum : &quot;$likes&quot;}}}])</code></td>
+</tr>
+<tr>
+<td><code>$avg</code></td>
+<td>对集合中所有文档的定义值进行平均值</td>
+<td><code>db.mycol.aggregate([{$group : {_id : &quot;$by_user&quot;, num_tutorial : {$avg : &quot;$likes&quot;}}}])</code></td>
+</tr>
+<tr>
+<td><code>$min</code></td>
+<td>计算集合中所有文档的对应值中的最小值</td>
+<td><code>db.mycol.aggregate([{$group : {_id : &quot;$by_user&quot;, num_tutorial : {$min : &quot;$likes&quot;}}}])</code></td>
+</tr>
+<tr>
+<td><code>$max</code></td>
+<td>计算集合中所有文档的对应值中的最大值</td>
+<td><code>db.mycol.aggregate([{$group : {_id : &quot;$by_user&quot;, num_tutorial : {$max : &quot;$likes&quot;}}}])</code></td>
+</tr>
+<tr>
+<td><code>$push</code></td>
+<td>将值插入到一个结果文档的数组中</td>
+<td><code>db.mycol.aggregate([{$group : {_id : &quot;$by_user&quot;, url : {$push: &quot;$url&quot;}}}])</code></td>
+</tr>
+<tr>
+<td><code>$addToSet</code></td>
+<td>将值插入到一个结果文档的数组中，但不进行复制</td>
+<td><code>db.mycol.aggregate([{$group : {_id : &quot;$by_user&quot;, url : {$addToSet : &quot;$url&quot;}}}])</code></td>
+</tr>
+<tr>
+<td><code>$first</code></td>
+<td>根据成组方式，从源文档中获取第一个文档。但只有对之前应用过 <code>$sort</code> 管道操作符的结果才有意义。</td>
+<td><code>db.mycol.aggregate([{$group : {_id : &quot;$by_user&quot;, first_url : {$first : &quot;$url&quot;}}}])</code></td>
+</tr>
+<tr>
+<td><code>$last</code></td>
+<td>根据成组方式，从源文档中获取最后一个文档。但只有对之前进行过 <code>$sort</code> 管道操作符的结果才有意义。</td>
+<td><code>db.mycol.aggregate([{$group : {_id : &quot;$by_user&quot;, last_url : {$last : &quot;$url&quot;}}}])</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="管道">
+  管道
+  <a class="anchor" href="#%e7%ae%a1%e9%81%93">#</a>
+</h3>
+<p>管道（pipeline）概念指的是能够在一些输入上执行一个操作，然后将输出结果用作下一个命令的输入。MongoDB 的聚合架构也支持这种概念。管道中有很多阶段（stage），
+在每一阶段中，管道操作符都会将一组文档作为输入，产生一个结果文档（或者管道终点所得到的最终 JSON 格式的文档），然后再将其用在下一阶段。</p>
+<p>聚合架构中可能采取的管道操作符有：</p>
+<ul>
+<li><code>$project</code> 用来选取集合中一些特定字段。</li>
+<li><code>$match</code> 过滤操作。减少用作下一阶段输入的文档的数量。</li>
+<li><code>$group</code> 如上所述，执行真正的聚合操作。</li>
+<li><code>$sort</code> 对文档进行排序。</li>
+<li><code>$skip</code> 在一组文档中，跳过指定数量的文档。</li>
+<li><code>$limit</code> 将查看文档的数目限制为从当前位置处开始的指定数目。</li>
+<li><code>$unwind</code> 解开使用数组的文档。当使用数组时，数据处于预连接状态，通过该操作，数据重新回归为各个单独的文档的状态。利用该阶段性操作可增加下一阶段性操作的文档数量。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-js" data-lang="js"><span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">test</span>.<span style="color:#a6e22e">aggregate</span>([
+  {<span style="color:#a6e22e">$match</span><span style="color:#f92672">:</span> {<span style="color:#a6e22e">uuid</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;sfsdfsfd&#39;</span>}},
+  {<span style="color:#a6e22e">$project</span><span style="color:#f92672">:</span> {<span style="color:#a6e22e">completeNum</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">1</span>, <span style="color:#a6e22e">failedNum</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">1</span>, <span style="color:#a6e22e">createTime</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">1</span>, <span style="color:#a6e22e">_id</span><span style="color:#f92672">:</span> <span style="color:#ae81ff">0</span>}},
+  {<span style="color:#a6e22e">$group</span><span style="color:#f92672">:</span> {
+    <span style="color:#a6e22e">_id</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;$createTime&#39;</span>,
+    <span style="color:#a6e22e">completeTotal</span><span style="color:#f92672">:</span> {<span style="color:#a6e22e">$sum</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;$completeNum&#39;</span>},
+    <span style="color:#a6e22e">failedTotal</span><span style="color:#f92672">:</span> {<span style="color:#a6e22e">$sum</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;$failedNum&#39;</span>}}}
+]);
+
+<span style="color:#a6e22e">db</span>.<span style="color:#a6e22e">test</span>.<span style="color:#a6e22e">aggregate</span>([
+  {<span style="color:#a6e22e">$match</span><span style="color:#f92672">:</span> {<span style="color:#e6db74">&#34;devSN&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#39;sdfasdsdfs&#39;</span>}}, <span style="color:#75715e">// 匹配字段
+</span><span style="color:#75715e"></span>  {<span style="color:#a6e22e">$unwind</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;$wanList&#34;</span>},<span style="color:#75715e">//把 wanList 展开，wanList 是一个数组，展开这个数组  例如 wanList:[{dd:1},{dd:2},{ff:3}],展开后得到{dd:1},{dd:2},{ff:3}
+</span><span style="color:#75715e"></span>  {<span style="color:#a6e22e">$match</span><span style="color:#f92672">:</span> {<span style="color:#e6db74">&#34;wanList.status&#34;</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1</span>}},<span style="color:#75715e">// 展开wanList之后再次匹配wanList.status为1
+</span><span style="color:#75715e"></span>  {<span style="color:#e6db74">&#34;$group&#34;</span><span style="color:#f92672">:</span> {<span style="color:#e6db74">&#34;_id&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;$_id&#34;</span>, <span style="color:#e6db74">&#34;wanList&#34;</span><span style="color:#f92672">:</span> {<span style="color:#e6db74">&#34;$push&#34;</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;$wanList&#34;</span>}}},<span style="color:#75715e">// 把wanList展开后得到的结果重组为一个新的数组，如 wanList:[{_id:2342342,dd:1},{_id:97687687,dd:2},{_id:876678,ff:3}]
+</span><span style="color:#75715e"></span>]);
+</code></pre></div></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/mongo/02_getting-started.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#mongo-shell">mongo shell</a>
+      <ul>
+        <li><a href="#mongorcjs">.mongorc.js</a></li>
+        <li><a href="#禁用-mongorcjs">禁用 .mongorc.js</a></li>
+      </ul>
+    </li>
+    <li><a href="#_id"><code>_id</code></a></li>
+    <li><a href="#数据类型">数据类型</a></li>
+    <li><a href="#常用命令">常用命令</a>
+      <ul>
+        <li><a href="#use"><code>use</code></a></li>
+        <li><a href="#删除数据库">删除数据库</a></li>
+        <li><a href="#创建集合">创建集合</a></li>
+        <li><a href="#删除集合">删除集合</a></li>
+        <li><a href="#插入文档">插入文档</a></li>
+        <li><a href="#查询">查询</a></li>
+        <li><a href="#更新">更新</a></li>
+        <li><a href="#删除">删除</a></li>
+      </ul>
+    </li>
+    <li><a href="#索引">索引</a>
+      <ul>
+        <li><a href="#唯一索引">唯一索引</a></li>
+        <li><a href="#ttl-索引">TTL 索引</a></li>
+        <li><a href="#索引管理">索引管理</a></li>
+        <li><a href="#文本索引">文本索引</a></li>
+        <li><a href="#覆盖索引查询">覆盖索引查询</a></li>
+        <li><a href="#高级索引">高级索引</a></li>
+        <li><a href="#索引限制">索引限制</a></li>
+      </ul>
+    </li>
+    <li><a href="#聚合">聚合</a>
+      <ul>
+        <li><a href="#管道">管道</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

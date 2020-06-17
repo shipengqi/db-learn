@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 的 Set 是 string 类型的无序集合，类似于 List 类型。但是集合中不允许重复成员的存在。一个 Redis 集合中最多可 包含 232-1(40亿) 个元素。Set 类型有一个非常重要的特性，就是支持集合之间的聚合计算操作，这些操作均在服务端完成，效率极高，而且也 节省了的网络 I/O 开销。
+Redis 的集合和 Java 的 HashSet 类似，它内部的键值对是无序的唯一的。它的内部实现相当于一个特殊的字典，字典中所有的 value 都 是一个值 NULL。当集合移除了最后一个元素之后，该 key 会被自动被删除，内存被回收。
+存取#SADD#添加一个或多个 member 元素到集合 key 中。
+SADD key member [member ...] 返回被添加到集合中的新元素的数量。如果集合 key 不存在，创建集合 key，并执行 SADD。如果 key 不是集合类型，将返回一个错误。
+# 添加单个元素 redis&gt; SADD blog &#34;segmentfault.com&#34; (integer) 1 # 添加重复元素 redis&gt; SADD blog &#34;segmentfault.com&#34; (integer) 0 # 添加多个元素 redis&gt; SADD blog &#34;csdn.">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="Redis 数据类型 Set" />
+<meta property="og:description" content="Redis 的 Set 是 string 类型的无序集合，类似于 List 类型。但是集合中不允许重复成员的存在。一个 Redis 集合中最多可 包含 232-1(40亿) 个元素。Set 类型有一个非常重要的特性，就是支持集合之间的聚合计算操作，这些操作均在服务端完成，效率极高，而且也 节省了的网络 I/O 开销。
+Redis 的集合和 Java 的 HashSet 类似，它内部的键值对是无序的唯一的。它的内部实现相当于一个特殊的字典，字典中所有的 value 都 是一个值 NULL。当集合移除了最后一个元素之后，该 key 会被自动被删除，内存被回收。
+存取#SADD#添加一个或多个 member 元素到集合 key 中。
+SADD key member [member ...] 返回被添加到集合中的新元素的数量。如果集合 key 不存在，创建集合 key，并执行 SADD。如果 key 不是集合类型，将返回一个错误。
+# 添加单个元素 redis&gt; SADD blog &#34;segmentfault.com&#34; (integer) 1 # 添加重复元素 redis&gt; SADD blog &#34;segmentfault.com&#34; (integer) 0 # 添加多个元素 redis&gt; SADD blog &#34;csdn." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/05_redis-set/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>Redis 数据类型 Set | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/"class=active>数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/">数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 数据类型 Set</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#存取">存取</a>
+      <ul>
+        <li><a href="#sadd">SADD</a></li>
+        <li><a href="#scard">SCARD</a></li>
+        <li><a href="#smembers">SMEMBERS</a></li>
+        <li><a href="#sismember">SISMEMBER</a></li>
+        <li><a href="#srandmember">SRANDMEMBER</a></li>
+      </ul>
+    </li>
+    <li><a href="#移除">移除</a>
+      <ul>
+        <li><a href="#spop">SPOP</a></li>
+        <li><a href="#srem">SREM</a></li>
+      </ul>
+    </li>
+    <li><a href="#合并">合并</a>
+      <ul>
+        <li><a href="#sdiff">SDIFF</a></li>
+        <li><a href="#sdiffstore">SDIFFSTORE</a></li>
+        <li><a href="#sinter">SINTER</a></li>
+        <li><a href="#sinterstore">SINTERSTORE</a></li>
+        <li><a href="#sunion">SUNION</a></li>
+        <li><a href="#sunionstore">SUNIONSTORE</a></li>
+        <li><a href="#smove">SMOVE</a></li>
+      </ul>
+    </li>
+    <li><a href="#其他">其他</a>
+      <ul>
+        <li><a href="#sscan">SSCAN</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><p>Redis 的 <code>Set</code> 是 <code>string</code> 类型的无序集合，类似于 <code>List</code> 类型。但是集合中不允许重复成员的存在。一个 Redis 集合中最多可
+包含 <code>232-1</code>(40亿) 个元素。<code>Set</code> 类型有一个非常重要的特性，就是支持集合之间的聚合计算操作，这些操作均在服务端完成，效率极高，而且也
+节省了的网络 I/O 开销。</p>
+<p>Redis 的<strong>集合和 <code>Java</code> 的 <code>HashSet</code> 类似，它内部的键值对是无序的唯一的。它的内部实现相当于一个特殊的字典，字典中所有的 <code>value</code> 都
+是一个值 <code>NULL</code>。当集合移除了最后一个元素之后，该 <code>key</code> 会被自动被删除，内存被回收</strong>。</p>
+<h2 id="存取">
+  存取
+  <a class="anchor" href="#%e5%ad%98%e5%8f%96">#</a>
+</h2>
+<h3 id="sadd">
+  SADD
+  <a class="anchor" href="#sadd">#</a>
+</h3>
+<p>添加一个或多个 <code>member</code> 元素到集合 <code>key</code> 中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SADD key member <span style="color:#f92672">[</span>member ...<span style="color:#f92672">]</span>
+</code></pre></div><p>返回被添加到集合中的新元素的数量。如果集合 <code>key</code> 不存在，创建集合 <code>key</code>，并执行 <code>SADD</code>。如果 <code>key</code> 不是集合类型，将返回一个错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 添加单个元素</span>
+redis&gt; SADD blog <span style="color:#e6db74">&#34;segmentfault.com&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+<span style="color:#75715e"># 添加重复元素</span>
+redis&gt; SADD blog <span style="color:#e6db74">&#34;segmentfault.com&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e"># 添加多个元素</span>
+redis&gt; SADD blog <span style="color:#e6db74">&#34;csdn.net&#34;</span> <span style="color:#e6db74">&#34;itbilu.com&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; SMEMBERS blog
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;segmentfault.com&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;csdn.net&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;itbilu.com&#34;</span>
+</code></pre></div><h3 id="scard">
+  SCARD
+  <a class="anchor" href="#scard">#</a>
+</h3>
+<p>返回集合 <code>key</code> 中元素的数量。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SCARD key
+</code></pre></div><p>如果 <code>key</code> 不存在，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SADD tool pc printer phone
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+
+redis&gt; SCARD tool   <span style="color:#75715e"># 非空集合</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+
+redis&gt; DEL tool
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; SCARD tool   <span style="color:#75715e"># 空集合</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+</code></pre></div><h3 id="smembers">
+  SMEMBERS
+  <a class="anchor" href="#smembers">#</a>
+</h3>
+<p>返回集合 <code>key</code> 的所有成员。
+<strong>注意当 <code>SMEMBERS</code> 处理一个很大的集合键时，由于 Redis 是单线程，它可能会阻塞服务器</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SMEMBERS key
+</code></pre></div><p>如果 <code>key</code> 不存在，返回空集合。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># key 不存在或集合为空</span>
+
+redis&gt; EXISTS not_exists_key
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis&gt; SMEMBERS not_exists_key
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+
+
+<span style="color:#75715e"># 非空集合</span>
+
+redis&gt; SADD language Ruby Python Clojure
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+
+redis&gt; SMEMBERS language
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Python&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Ruby&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Clojure&#34;</span>
+</code></pre></div><h3 id="sismember">
+  SISMEMBER
+  <a class="anchor" href="#sismember">#</a>
+</h3>
+<p>判断集合 <code>key</code> 中是否包含 <code>member</code> 元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SISMEMBER key member
+</code></pre></div><p>如果包含，返回 <code>1</code>。如果不包含或 <code>key</code> 不存在，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SMEMBERS joe<span style="color:#e6db74">&#39;s_movies
+</span><span style="color:#e6db74">1) &#34;hi, lady&#34;
+</span><span style="color:#e6db74">2) &#34;Fast Five&#34;
+</span><span style="color:#e6db74">3) &#34;2012&#34;
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">redis&gt; SISMEMBER joe&#39;</span>s_movies <span style="color:#e6db74">&#34;bet man&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis&gt; SISMEMBER joe<span style="color:#960050;background-color:#1e0010">&#39;</span>s_movies <span style="color:#e6db74">&#34;Fast Five&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><h3 id="srandmember">
+  SRANDMEMBER
+  <a class="anchor" href="#srandmember">#</a>
+</h3>
+<p>返回集合 <code>key</code> 中的一个或指定数量 <code>count</code> 的随机元素。与 <code>SPOP</code> 类似，但是 <code>SPOP</code> 会删除返回的随机元素，<code>SRANDMEMBER</code> 不会删除
+元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SRANDMEMBER key <span style="color:#f92672">[</span>count<span style="color:#f92672">]</span>
+</code></pre></div><p><code>count</code> 的值可以有下面两种：</p>
+<ul>
+<li><code>count</code> 为正数，且小于集合基数，返回一个包含 <code>count</code> 个元素的数组，数组中的元素各不相同。如果 <code>count</code> 大于等于集合基数，那么返
+回整个集合。</li>
+<li><code>count</code> 为负数，返回一个数组，数组中的元素可能会重复出现多次，而数组的长度为 <code>count</code> 的绝对值。</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 添加元素</span>
+
+redis&gt; SADD fruit apple banana cherry
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+
+<span style="color:#75715e"># 只给定 key 参数，返回一个随机元素</span>
+
+redis&gt; SRANDMEMBER fruit
+<span style="color:#e6db74">&#34;cherry&#34;</span>
+
+redis&gt; SRANDMEMBER fruit
+<span style="color:#e6db74">&#34;apple&#34;</span>
+
+<span style="color:#75715e"># 给定 3 为 count 参数，返回 3 个随机元素</span>
+<span style="color:#75715e"># 每个随机元素都不相同</span>
+
+redis&gt; SRANDMEMBER fruit <span style="color:#ae81ff">3</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;banana&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;cherry&#34;</span>
+
+<span style="color:#75715e"># 给定 -3 为 count 参数，返回 3 个随机元素</span>
+<span style="color:#75715e"># 元素可能会重复出现多次</span>
+
+redis&gt; SRANDMEMBER fruit -3
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;banana&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;cherry&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+
+redis&gt; SRANDMEMBER fruit -3
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;cherry&#34;</span>
+
+<span style="color:#75715e"># 如果 count 是整数，且大于等于集合基数，那么返回整个集合</span>
+
+redis&gt; SRANDMEMBER fruit <span style="color:#ae81ff">10</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;banana&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;cherry&#34;</span>
+
+<span style="color:#75715e"># 如果 count 是负数，且 count 的绝对值大于集合的基数</span>
+<span style="color:#75715e"># 那么返回的数组的长度为 count 的绝对值</span>
+
+redis&gt; SRANDMEMBER fruit -10
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;banana&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;banana&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;cherry&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+7<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;cherry&#34;</span>
+8<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+9<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+10<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;banana&#34;</span>
+
+<span style="color:#75715e"># SRANDMEMBER 并不会修改集合内容</span>
+
+redis&gt; SMEMBERS fruit
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;cherry&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;banana&#34;</span>
+
+<span style="color:#75715e"># 集合为空时返回 nil 或者空数组</span>
+
+redis&gt; SRANDMEMBER not-exists
+<span style="color:#f92672">(</span>nil<span style="color:#f92672">)</span>
+
+redis&gt; SRANDMEMBER not-eixsts <span style="color:#ae81ff">10</span>
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+</code></pre></div><h2 id="移除">
+  移除
+  <a class="anchor" href="#%e7%a7%bb%e9%99%a4">#</a>
+</h2>
+<h3 id="spop">
+  SPOP
+  <a class="anchor" href="#spop">#</a>
+</h3>
+<p>删除并返回集合 <code>key</code> 中的一个<strong>随机元素</strong>。注意返回的是<strong>随机元素</strong>，不是头部也不是尾部元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SPOP key
+</code></pre></div><p>如果<code>key</code>不存在或<code>key</code>是空集，返回<code>nil</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SMEMBERS db
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;MySQL&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;MongoDB&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Redis&#34;</span>
+
+redis&gt; SPOP db
+<span style="color:#e6db74">&#34;Redis&#34;</span>
+
+redis&gt; SMEMBERS db
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;MySQL&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;MongoDB&#34;</span>
+
+redis&gt; SPOP db
+<span style="color:#e6db74">&#34;MySQL&#34;</span>
+
+redis&gt; SMEMBERS db
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;MongoDB&#34;</span>
+</code></pre></div><h3 id="srem">
+  SREM
+  <a class="anchor" href="#srem">#</a>
+</h3>
+<p>删除集合 <code>key</code> 中的一个或多个元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SREM key member <span style="color:#f92672">[</span>member ...<span style="color:#f92672">]</span>
+</code></pre></div><p>如果 <code>member</code> 不存在，会被忽略。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 测试数据</span>
+
+redis&gt; SMEMBERS languages
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;lisp&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;python&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;ruby&#34;</span>
+
+
+<span style="color:#75715e"># 移除单个元素</span>
+
+redis&gt; SREM languages ruby
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+
+<span style="color:#75715e"># 移除不存在元素</span>
+
+redis&gt; SREM languages non-exists-language
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+
+<span style="color:#75715e"># 移除多个元素</span>
+
+redis&gt; SREM languages lisp python c
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+
+redis&gt; SMEMBERS languages
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+</code></pre></div><h2 id="合并">
+  合并
+  <a class="anchor" href="#%e5%90%88%e5%b9%b6">#</a>
+</h2>
+<h3 id="sdiff">
+  SDIFF
+  <a class="anchor" href="#sdiff">#</a>
+</h3>
+<p>返回指定的一个或多个集合的差集。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SDIFF key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SMEMBERS peter<span style="color:#e6db74">&#39;s_movies
+</span><span style="color:#e6db74">1) &#34;bet man&#34;
+</span><span style="color:#e6db74">2) &#34;start war&#34;
+</span><span style="color:#e6db74">3) &#34;2012&#34;
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">redis&gt; SMEMBERS joe&#39;</span>s_movies
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hi, lady&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Fast Five&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2012&#34;</span>
+
+redis&gt; SDIFF peter<span style="color:#e6db74">&#39;s_movies joe&#39;</span>s_movies
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;bet man&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;start war&#34;</span>
+</code></pre></div><h3 id="sdiffstore">
+  SDIFFSTORE
+  <a class="anchor" href="#sdiffstore">#</a>
+</h3>
+<p>和 <code>SDIFF</code> 类似，但是 <code>SDIFFSTORE</code> 是将指定的一个或多个集合的差集存储到集合 <code>destination</code> 中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SDIFFSTORE destination key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span>
+</code></pre></div><p>如果 <code>destination</code> 已存在，则覆盖。返回<strong>交集</strong>（注意这里不是差集）成员数量。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SMEMBERS joe<span style="color:#e6db74">&#39;s_movies
+</span><span style="color:#e6db74">1) &#34;hi, lady&#34;
+</span><span style="color:#e6db74">2) &#34;Fast Five&#34;
+</span><span style="color:#e6db74">3) &#34;2012&#34;
+</span><span style="color:#e6db74">
+</span><span style="color:#e6db74">redis&gt; SMEMBERS peter&#39;</span>s_movies
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;bet man&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;start war&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2012&#34;</span>
+
+redis&gt; SDIFFSTORE joe_diff_peter joe<span style="color:#e6db74">&#39;s_movies peter&#39;</span>s_movies
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; SMEMBERS joe_diff_peter
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hi, lady&#34;</span>
+</code></pre></div><h3 id="sinter">
+  SINTER
+  <a class="anchor" href="#sinter">#</a>
+</h3>
+<p>返回一个或多个指定集合的交集。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SINTER key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span>
+</code></pre></div><p>如果 <code>key</code> 不存在，返回的结果集为空。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SMEMBERS group_1
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;LI LEI&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;TOM&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;JACK&#34;</span>
+
+redis&gt; SMEMBERS group_2
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;HAN MEIMEI&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;JACK&#34;</span>
+
+redis&gt; SINTER group_1 group_2
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;JACK&#34;</span>
+</code></pre></div><h3 id="sinterstore">
+  SINTERSTORE
+  <a class="anchor" href="#sinterstore">#</a>
+</h3>
+<p>和 <code>SINTER</code> 类似，但是 <code>SINTERSTORE</code> 是将指定的一个或多个集合的交集存储到集合 <code>destination</code> 中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SDIFFSTORE destination key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span>
+</code></pre></div><p>如果 <code>destination</code> 已存在，则覆盖。返回交集成员数量。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SMEMBERS songs
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;good bye joe&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;hello,peter&#34;</span>
+
+redis&gt; SMEMBERS my_songs
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;good bye joe&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;falling&#34;</span>
+
+redis&gt; SINTERSTORE song_interset songs my_songs
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; SMEMBERS song_interset
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;good bye joe&#34;</span>
+</code></pre></div><h3 id="sunion">
+  SUNION
+  <a class="anchor" href="#sunion">#</a>
+</h3>
+<p>返回一个或多个指定集合的并集。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SUNION key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span>
+</code></pre></div><p>如果 <code>key</code> 不存在，返回的结果集为空。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SMEMBERS songs
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Billie Jean&#34;</span>
+
+redis&gt; SMEMBERS my_songs
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Believe Me&#34;</span>
+
+redis&gt; SUNION songs my_songs
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Billie Jean&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Believe Me&#34;</span>
+</code></pre></div><h3 id="sunionstore">
+  SUNIONSTORE
+  <a class="anchor" href="#sunionstore">#</a>
+</h3>
+<p>和 <code>SUNION</code> 类似，但是 <code>SUNIONSTORE</code> 是将指定的一个或多个集合的并集存储到集合 <code>destination</code> 中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SDIFFSTORE destination key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span>
+</code></pre></div><p>如果<code>destination</code>已存在，则覆盖。返回并集成员数量。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SMEMBERS NoSQL
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;MongoDB&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Redis&#34;</span>
+
+redis&gt; SMEMBERS SQL
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;sqlite&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;MySQL&#34;</span>
+
+redis&gt; SUNIONSTORE db NoSQL SQL
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">4</span>
+
+redis&gt; SMEMBERS db
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;MySQL&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;sqlite&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;MongoDB&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Redis&#34;</span>
+</code></pre></div><h3 id="smove">
+  SMOVE
+  <a class="anchor" href="#smove">#</a>
+</h3>
+<p>将指定的 <code>member</code> 元素从 <code>source</code> 集合删除并移动到 <code>destination</code> 集合。该命令原子操作。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SMOVE source destination member
+</code></pre></div><p>如果 <code>source</code> 不存在或者没有指定的 <code>member</code> 元素，则不执行任何操作，并返回 <code>0</code>。
+如果 <code>source</code> 和 <code>destination</code> 是同一个集合，就会把尾元素移动至开头，这叫做列表的旋转(rotation)操作。
+如果 <code>destination</code> 已经存在该 <code>member</code> 元素，只删除 <code>source</code> 集合中的 <code>member</code> 元素。
+如果 <code>source</code> 或 <code>destination</code> 不是集合类型，返回错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; SMEMBERS songs
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Billie Jean&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Believe Me&#34;</span>
+
+redis&gt; SMEMBERS my_songs
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+
+redis&gt; SMOVE songs my_songs <span style="color:#e6db74">&#34;Believe Me&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; SMEMBERS songs
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Billie Jean&#34;</span>
+
+redis&gt; SMEMBERS my_songs
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Believe Me&#34;</span>
+</code></pre></div><h2 id="其他">
+  其他
+  <a class="anchor" href="#%e5%85%b6%e4%bb%96">#</a>
+</h2>
+<h3 id="sscan">
+  SSCAN
+  <a class="anchor" href="#sscan">#</a>
+</h3>
+<p>参考 
+  <a href="/db-learn/docs/redis/08_redis-key/">SCAN</a> 命令。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">SSCAN key cursor <span style="color:#f92672">[</span>MATCH pattern<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>COUNT count<span style="color:#f92672">]</span>
+</code></pre></div></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/05_redis-set.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#存取">存取</a>
+      <ul>
+        <li><a href="#sadd">SADD</a></li>
+        <li><a href="#scard">SCARD</a></li>
+        <li><a href="#smembers">SMEMBERS</a></li>
+        <li><a href="#sismember">SISMEMBER</a></li>
+        <li><a href="#srandmember">SRANDMEMBER</a></li>
+      </ul>
+    </li>
+    <li><a href="#移除">移除</a>
+      <ul>
+        <li><a href="#spop">SPOP</a></li>
+        <li><a href="#srem">SREM</a></li>
+      </ul>
+    </li>
+    <li><a href="#合并">合并</a>
+      <ul>
+        <li><a href="#sdiff">SDIFF</a></li>
+        <li><a href="#sdiffstore">SDIFFSTORE</a></li>
+        <li><a href="#sinter">SINTER</a></li>
+        <li><a href="#sinterstore">SINTERSTORE</a></li>
+        <li><a href="#sunion">SUNION</a></li>
+        <li><a href="#sunionstore">SUNIONSTORE</a></li>
+        <li><a href="#smove">SMOVE</a></li>
+      </ul>
+    </li>
+    <li><a href="#其他">其他</a>
+      <ul>
+        <li><a href="#sscan">SSCAN</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

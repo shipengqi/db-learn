@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en" dir=>
+
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Redis 的有序集合和 Set 一样也是 String 类型元素的集合,且不允许重复的成员。 Redis 提供的最为特色的数据结构。不同的是每个元素都 会关联一个 double 类型的分数。redis 正是通过分数来为集合中的成员进行从小到大的排序。zset 的成员是唯一的,但分数(score)却可以重复。
+Redis 的 ZSET 类似 Java 的 SortedSet 和 HashMap 的结合体，既保证了内部 value 的唯一性，还可以给每个 value 赋予 一个 score，代表这个 value 的排序权重。当集合移除了最后一个元素之后，该 key 会被自动被删除，内存被回收。
+ZSET可以用来存粉丝列表，value值是粉丝的用户ID，score是关注时间。我们可以对粉丝列表按关注时间进行排序。 ZSET还可以用来存储学生的成绩，value值是学生的ID，score是考试成绩。可以按分数对名次进行排序就。
+存取#ZADD#将一个或多个 member 元素及其 score 值添加到有序集合 key 中。
+ZADD key score member [[score member] [score member] ...] score 可以是整数或双精度浮点数。 如果 key 不存在，创建 key 并执行 ZADD。如果 key 不是有序集合类型，返回一个错误。 如果 member 已经存在，则更新其 score 值，并重新插入，排序。">
+<meta name="theme-color" content="#FFFFFF"><meta property="og:title" content="Redis 数据类型 Sorted Set" />
+<meta property="og:description" content="Redis 的有序集合和 Set 一样也是 String 类型元素的集合,且不允许重复的成员。 Redis 提供的最为特色的数据结构。不同的是每个元素都 会关联一个 double 类型的分数。redis 正是通过分数来为集合中的成员进行从小到大的排序。zset 的成员是唯一的,但分数(score)却可以重复。
+Redis 的 ZSET 类似 Java 的 SortedSet 和 HashMap 的结合体，既保证了内部 value 的唯一性，还可以给每个 value 赋予 一个 score，代表这个 value 的排序权重。当集合移除了最后一个元素之后，该 key 会被自动被删除，内存被回收。
+ZSET可以用来存粉丝列表，value值是粉丝的用户ID，score是关注时间。我们可以对粉丝列表按关注时间进行排序。 ZSET还可以用来存储学生的成绩，value值是学生的ID，score是考试成绩。可以按分数对名次进行排序就。
+存取#ZADD#将一个或多个 member 元素及其 score 值添加到有序集合 key 中。
+ZADD key score member [[score member] [score member] ...] score 可以是整数或双精度浮点数。 如果 key 不存在，创建 key 并执行 ZADD。如果 key 不是有序集合类型，返回一个错误。 如果 member 已经存在，则更新其 score 值，并重新插入，排序。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://shipengqi.github.io/db-learn/docs/redis/06_redis-sortedset/" />
+<meta property="article:modified_time" content="2020-06-17T17:45:14+08:00" />
+<title>Redis 数据类型 Sorted Set | Database Learning</title>
+<link rel="manifest" href="/db-learn/manifest.json">
+<link rel="icon" href="/db-learn/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/db-learn/book.min.b3215d9d1d18d9051e7fbe8f256ff80e30f41d29073b86348e230d297b771002.css" integrity="sha256-syFdnR0Y2QUef76PJW/4DjD0HSkHO4Y0jiMNKXt3EAI=">
+<script defer src="/db-learn/en.search.min.79aa4caec43110b70bc10866de8e262ae56a148e0d75708b1522265755d59b70.js" integrity="sha256-eapMrsQxELcLwQhm3o4mKuVqFI4NdXCLFSImV1XVm3A="></script>
+
+<script defer src="/db-learn/sw.min.b93542a5760842e2e25439dfb3c014a53a75c12fc8ef2e8e01a71b378f98e127.js" integrity="sha256-uTVCpXYIQuLiVDnfs8AUpTp1wS/I7y6OAacbN4&#43;Y4Sc="></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+  
+</head>
+
+<body dir=>
+  <input type="checkbox" class="hidden" id="menu-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      
+  <nav>
+<h2 class="book-brand">
+  <a href="/db-learn"><span>Database Learning</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+  
+<ul>
+  
+  <li>
+    <a href="https://github.com/shipengqi/db-learn" target="_blank" rel="noopener">
+        Github
+      </a>
+  </li>
+  
+  <li>
+    <a href="https://shipengqi.github.io/" target="_blank" rel="noopener">
+        Blog
+      </a>
+  </li>
+  
+</ul>
+
+
+
+
+
+
+
+  <p>━━━━━━━━━━━━━━━━━━━</p>
+<ul>
+<li>
+<p><strong>Mysql</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mysql/01_getting_started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/02_install/">安裝</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/03_query/">简单查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/04_advanced_query/">复杂查询</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/05_write_operation/">写操作</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/06_other/">其他</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/07_architecture/">基础架构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/08_config/">启动选项和配置文件</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/09_character/">字符集和比较规则</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/10_innodb-record-store-structure/">InnoDB 记录存储结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/11_innodb-page-structure/">InnoDB 数据页结构</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/12_b-tree/">B+ 树索引</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/13_isolation-level/">事务的隔离级别</a></li>
+<li>
+  <a href="/db-learn/docs/mysql/14_lock/">锁</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>Redis</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/redis/01_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/redis/02_redis-config/">安装配置</a></li>
+<li>
+  <a href="/db-learn/docs/redis/03_redis-string/">数据类型 String</a></li>
+<li>
+  <a href="/db-learn/docs/redis/04_redis-hash/">数据类型 Hash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/05_redis-set/">数据类型 Set</a></li>
+<li>
+  <a href="/db-learn/docs/redis/06_redis-sortedset/"class=active>数据类型 SortedSet</a></li>
+<li>
+  <a href="/db-learn/docs/redis/07_redis-list/">数据类型 List</a></li>
+<li>
+  <a href="/db-learn/docs/redis/08_redis-key/">Key 操作</a></li>
+<li>
+  <a href="/db-learn/docs/redis/09_sds/">简单动态字符串</a></li>
+<li>
+  <a href="/db-learn/docs/redis/10_dict/">字典</a></li>
+<li>
+  <a href="/db-learn/docs/redis/11_redis-object/">对象</a></li>
+<li>
+  <a href="/db-learn/docs/redis/12_bitmap/">位图</a></li>
+<li>
+  <a href="/db-learn/docs/redis/13_distributed-lock/">分布式锁</a></li>
+<li>
+  <a href="/db-learn/docs/redis/14_queue/">延时队列</a></li>
+<li>
+  <a href="/db-learn/docs/redis/15_hyperloglog/">HyperLogLog</a></li>
+<li>
+  <a href="/db-learn/docs/redis/16_bloom-filter/">布隆过滤器</a></li>
+<li>
+  <a href="/db-learn/docs/redis/17_current-limit/">限流</a></li>
+<li>
+  <a href="/db-learn/docs/redis/18_geohash/">GeoHash</a></li>
+<li>
+  <a href="/db-learn/docs/redis/19_persistence/">持久化</a></li>
+<li>
+  <a href="/db-learn/docs/redis/20_pipeline/">管道</a></li>
+<li>
+  <a href="/db-learn/docs/redis/21_transaction/">事务</a></li>
+<li>
+  <a href="/db-learn/docs/redis/22_sync/">主从同步</a></li>
+<li>
+  <a href="/db-learn/docs/redis/23_cluster/">集群</a></li>
+<li>
+  <a href="/db-learn/docs/redis/24_info/">INFO 指令</a></li>
+<li>
+  <a href="/db-learn/docs/redis/25_redis-expire-strategy/">过期策略和内存淘汰机制</a></li>
+<li>
+  <a href="/db-learn/docs/redis/26_protect-redis/">保护 Redis</a></li>
+<li>
+  <a href="/db-learn/docs/redis/27_skills/">一些命令行技巧</a></li>
+<li>
+  <a href="/db-learn/docs/redis/28_slowlog/">慢查询日志</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>
+<p><strong>MongoDB</strong></p>
+<ul>
+<li>
+  <a href="/db-learn/docs/mongo/01_overview/">介绍</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/02_getting-started/">入门</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/03_advance/">使用</a></li>
+<li>
+  <a href="/db-learn/docs/mongo/04_migrate/">数据迁移</a>
+<!-- raw HTML omitted --></li>
+</ul>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var menu=document.querySelector("aside.book-menu nav");addEventListener("beforeunload",function(event){localStorage.setItem("menu.scrollTop",menu.scrollTop);});menu.scrollTop=localStorage.getItem("menu.scrollTop");})();</script>
+
+
+ 
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/db-learn/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Redis 数据类型 Sorted Set</strong>
+
+  <label for="toc-control">
+    
+    <img src="/db-learn/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+    <input type="checkbox" class="hidden" id="toc-control" />
+    <aside class="hidden clearfix">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#存取">存取</a>
+      <ul>
+        <li><a href="#zadd">ZADD</a></li>
+        <li><a href="#zcard">ZCARD</a></li>
+        <li><a href="#zrank">ZRANK</a></li>
+        <li><a href="#zscore">ZSCORE</a></li>
+        <li><a href="#zcount">ZCOUNT</a></li>
+        <li><a href="#zlexcount">ZLEXCOUNT</a></li>
+        <li><a href="#zrange">ZRANGE</a></li>
+        <li><a href="#zrevrange">ZREVRANGE</a></li>
+        <li><a href="#zrangebylex">ZRANGEBYLEX</a></li>
+        <li><a href="#zrangebyscore">ZRANGEBYSCORE</a></li>
+        <li><a href="#zrevrangebylex">ZREVRANGEBYLEX</a></li>
+        <li><a href="#zrevrangebyscore">ZREVRANGEBYSCORE</a></li>
+      </ul>
+    </li>
+    <li><a href="#自增">自增</a>
+      <ul>
+        <li><a href="#zincrby">ZINCRBY</a></li>
+      </ul>
+    </li>
+    <li><a href="#删除">删除</a>
+      <ul>
+        <li><a href="#zrem">ZREM</a></li>
+        <li><a href="#zremrangebylex">ZREMRANGEBYLEX</a></li>
+        <li><a href="#zremrangebyrank">ZREMRANGEBYRANK</a></li>
+        <li><a href="#zremrangebyscore">ZREMRANGEBYSCORE</a></li>
+      </ul>
+    </li>
+    <li><a href="#合并">合并</a>
+      <ul>
+        <li><a href="#zunionstore">ZUNIONSTORE</a></li>
+        <li><a href="#zinterstore">ZINTERSTORE</a></li>
+      </ul>
+    </li>
+    <li><a href="#其他">其他</a>
+      <ul>
+        <li><a href="#zscan">ZSCAN</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+    </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><p>Redis 的有序集合和 <code>Set</code> 一样也是 <code>String</code> 类型元素的集合,且不允许重复的成员。 Redis 提供的最为特色的数据结构。不同的是每个元素都
+会关联一个 <code>double</code> 类型的分数。redis 正是通过分数来为集合中的成员进行从小到大的排序。zset 的成员是唯一的,但分数(score)却可以重复。</p>
+<p>Redis 的 <code>ZSET</code> 类似 <code>Java</code> 的 <code>SortedSet</code> 和 <code>HashMap</code> 的结合体，既保证了内部 <code>value</code> 的唯一性，还可以给每个  <code>value</code> 赋予
+一个 <code>score</code>，代表这个 <code>value</code> 的排序权重。当集合移除了最后一个元素之后，该 <code>key</code> 会被自动被删除，内存被回收。</p>
+<p><code>ZSET</code>可以用来存粉丝列表，<code>value</code>值是粉丝的<code>用户ID</code>，<code>score</code>是关注时间。我们可以对粉丝列表按关注时间进行排序。
+<code>ZSET</code>还可以用来存储学生的成绩，<code>value</code>值是学生的<code>ID</code>，<code>score</code>是考试成绩。可以按分数对名次进行排序就。</p>
+<h2 id="存取">
+  存取
+  <a class="anchor" href="#%e5%ad%98%e5%8f%96">#</a>
+</h2>
+<h3 id="zadd">
+  ZADD
+  <a class="anchor" href="#zadd">#</a>
+</h3>
+<p>将一个或多个 <code>member</code> 元素及其 <code>score</code> 值添加到有序集合 <code>key</code> 中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZADD key score member <span style="color:#f92672">[[</span>score member<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>score member<span style="color:#f92672">]</span> ...<span style="color:#f92672">]</span>
+</code></pre></div><p><code>score</code> 可以是整数或双精度浮点数。
+如果 <code>key</code> 不存在，创建 <code>key</code> 并执行 <code>ZADD</code>。如果 <code>key</code> 不是有序集合类型，返回一个错误。
+如果 <code>member</code> 已经存在，则更新其 <code>score</code> 值，并重新插入，排序。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 添加单个元素</span>
+
+redis&gt; ZADD page_rank <span style="color:#ae81ff">10</span> google.com
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+
+<span style="color:#75715e"># 添加多个元素</span>
+
+redis&gt; ZADD page_rank <span style="color:#ae81ff">9</span> baidu.com <span style="color:#ae81ff">8</span> bing.com
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; ZRANGE page_rank <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;bing.com&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;8&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;baidu.com&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;9&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;google.com&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;10&#34;</span>
+
+
+<span style="color:#75715e"># 添加已存在元素，且 score 值不变</span>
+
+redis&gt; ZADD page_rank <span style="color:#ae81ff">10</span> google.com
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis&gt; ZRANGE page_rank <span style="color:#ae81ff">0</span> -1 WITHSCORES  <span style="color:#75715e"># 没有改变</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;bing.com&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;8&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;baidu.com&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;9&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;google.com&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;10&#34;</span>
+
+
+<span style="color:#75715e"># 添加已存在元素，但是改变 score 值</span>
+
+redis&gt; ZADD page_rank <span style="color:#ae81ff">6</span> bing.com
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis&gt; ZRANGE page_rank <span style="color:#ae81ff">0</span> -1 WITHSCORES  <span style="color:#75715e"># bing.com 元素的 score 值被改变</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;bing.com&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;6&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;baidu.com&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;9&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;google.com&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;10&#34;</span>
+</code></pre></div><h3 id="zcard">
+  ZCARD
+  <a class="anchor" href="#zcard">#</a>
+</h3>
+<p>返回有序集合 <code>key</code> 的基数。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZCARD key
+</code></pre></div><p>如果 <code>key</code> 不存在，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 添加一个元素</span>
+redis &gt; ZADD salary <span style="color:#ae81ff">2000</span> tom
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis &gt; ZCARD salary
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+ <span style="color:#75715e"># 再添加一个元素</span>
+redis &gt; ZADD salary <span style="color:#ae81ff">5000</span> jack
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis &gt; ZCARD salary
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+<span style="color:#75715e"># 对不存在的有序集合进行 ZCARD 操作</span>
+redis &gt; EXISTS non_exists_key
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+redis &gt; ZCARD non_exists_key
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+</code></pre></div><h3 id="zrank">
+  ZRANK
+  <a class="anchor" href="#zrank">#</a>
+</h3>
+<p>返回有序集合 <code>key</code> 中的指定 <code>member</code> 元素的排名。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZRANK key member
+</code></pre></div><p>元素成员按 <code>score</code> 值递增，相同 <code>score</code> 值的成员按字典排序。注意<strong>元素排名从 <code>0</code> 开始计数，也就是说第一名返回的是 <code>0</code>，以此类推</strong>。
+如果 <code>key</code> 不是有序集合类型，返回<code>nil</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 显示所有成员及其 score 值</span>
+redis&gt; ZRANGE salary <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;4000&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+
+<span style="color:#75715e"># tom 排名第二</span>
+redis&gt; ZRANK salary tom
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><h3 id="zscore">
+  ZSCORE
+  <a class="anchor" href="#zscore">#</a>
+</h3>
+<p>返回有序集合 <code>key</code> 中的指定 <code>member</code> 元素的 <code>score</code> 值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZRANK key member
+</code></pre></div><p>如果 <code>key</code> 或 <code>member</code> 不存在，返回 <code>nil</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; ZRANGE salary <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2000&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+
+<span style="color:#75715e"># 返回值是字符串形式</span>
+redis&gt; ZSCORE salary peter
+<span style="color:#e6db74">&#34;3500&#34;</span>
+</code></pre></div><h3 id="zcount">
+  ZCOUNT
+  <a class="anchor" href="#zcount">#</a>
+</h3>
+<p>返回有序集合 <code>key</code> 中 <code>score</code> 值在 <code>min</code> 和 <code>max</code> 之间的元素个数，<strong>注意包含值为 <code>min</code> 和 <code>max</code>的元素</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZCOUNT key min max
+</code></pre></div><p>如果 <code>key</code> 不存在，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 测试数据</span>
+redis&gt; ZRANGE salary <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2000&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+
+<span style="color:#75715e"># 计算薪水在 2000-5000 之间的人数</span>
+redis&gt; ZCOUNT salary <span style="color:#ae81ff">2000</span> <span style="color:#ae81ff">5000</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+
+<span style="color:#75715e"># 计算薪水在 3000-5000 之间的人数</span>
+redis&gt; ZCOUNT salary <span style="color:#ae81ff">3000</span> <span style="color:#ae81ff">5000</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+</code></pre></div><h3 id="zlexcount">
+  ZLEXCOUNT
+  <a class="anchor" href="#zlexcount">#</a>
+</h3>
+<p>返回有序集合 <code>key</code> 中指定元素 <code>min</code> 和 <code>max</code> 之间的元素个数，<strong>注意包含值为 <code>min</code> 和 <code>max</code> 的元素</strong>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZLEXCOUNT key min max
+</code></pre></div><p><strong><code>ZLEXCOUNT key min max</code> 相当于 <code>ZLEXCOUNT key [min-member [max-member</code></strong>
+成员名称前需要加 <code>[</code> 符号作为开头,<code>[</code> 符号与成员之间不能有空格。
+可以使用 <code>-</code> 和 <code>+</code> 表示 <code>score</code> 的最小值和最大值。
+<code>max</code> 放前面，<code>min</code> 放后面会导致返回结果为<code>0</code>。
+如果 <code>key</code> 不存在，返回 <code>0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; ZADD myzset <span style="color:#ae81ff">0</span> a <span style="color:#ae81ff">0</span> b <span style="color:#ae81ff">0</span> c <span style="color:#ae81ff">0</span> d <span style="color:#ae81ff">0</span> e
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">5</span>
+redis&gt; ZADD myzset <span style="color:#ae81ff">0</span> f <span style="color:#ae81ff">0</span> g
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+redis&gt; ZLEXCOUNT myzset - +
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">7</span>
+redis&gt; ZLEXCOUNT myzset <span style="color:#f92672">[</span>b <span style="color:#f92672">[</span>f
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">5</span>
+</code></pre></div><h3 id="zrange">
+  ZRANGE
+  <a class="anchor" href="#zrange">#</a>
+</h3>
+<p>返回有序集合 <code>key</code> 指定区间内的元素。<code>WITHSCORES</code> 用于指定是否同时返回元素的 <code>score</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZRANGE key start stop <span style="color:#f92672">[</span>WITHSCORES<span style="color:#f92672">]</span>
+</code></pre></div><p><code>start</code> 和 <code>stop</code>都是从 <code>0</code> 开始。可以是负数，如，<code>-1</code> 表示列表的最后一个元素， <code>-2</code> 表示列表的倒数第二个元素，以此类推。。
+元素成员按 <code>score</code> 值递增，相同 <code>score</code> 值的成员按字典排序。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 显示有序集合所有成员</span>
+redis &gt; ZRANGE salary <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;boss&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;10086&#34;</span>
+
+<span style="color:#75715e"># 返回有序集下标区间 1 至 2 的成员</span>
+redis &gt; ZRANGE salary <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">2</span> WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;boss&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;10086&#34;</span>
+
+<span style="color:#75715e"># end 超出最大下标时</span>
+redis &gt; ZRANGE salary <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">200000</span> WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;boss&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;10086&#34;</span>
+
+<span style="color:#75715e"># 当指定区间超出有序集合范围时</span>
+redis &gt; ZRANGE salary <span style="color:#ae81ff">200000</span> <span style="color:#ae81ff">3000000</span> WITHSCORES
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+</code></pre></div><h3 id="zrevrange">
+  ZREVRANGE
+  <a class="anchor" href="#zrevrange">#</a>
+</h3>
+<p><code>ZREVRANGE</code> 和 <code>ZRANGE</code> 类似，区别在于排序，<code>ZREVRANGE</code> 的 <code>score</code> 值按倒序(从大到小)顺序排序。<code>WITHSCORES</code> 用于指定是否同时返
+回元素的 <code>score</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZREVRANGE key start stop <span style="color:#f92672">[</span>WITHSCORES<span style="color:#f92672">]</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 递增排列</span>
+redis&gt; ZRANGE salary <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;4000&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+
+<span style="color:#75715e"># 递减排列</span>
+redis&gt; ZREVRANGE salary <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;4000&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+</code></pre></div><h3 id="zrangebylex">
+  ZRANGEBYLEX
+  <a class="anchor" href="#zrangebylex">#</a>
+</h3>
+<p>返回有序集合 <code>key</code> 指定区间内的元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZRANGEBYLEX key min max <span style="color:#f92672">[</span>LIMIT offset count<span style="color:#f92672">]</span>
+</code></pre></div><p><strong><code>ZRANGEBYLEX key min max</code> 相当于 <code>ZRANGEBYLEX key [min-member [max-member</code></strong></p>
+<p><strong>不要在分数不一致的有序集合中去使用 <code>ZRANGEBYLEX</code>,因为获取的结果并不准确。</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; zadd zset <span style="color:#ae81ff">0</span> a <span style="color:#ae81ff">0</span> aa <span style="color:#ae81ff">0</span> abc <span style="color:#ae81ff">0</span> apple <span style="color:#ae81ff">0</span> b <span style="color:#ae81ff">0</span> c <span style="color:#ae81ff">0</span> d <span style="color:#ae81ff">0</span> d1 <span style="color:#ae81ff">0</span> dd <span style="color:#ae81ff">0</span> dobble <span style="color:#ae81ff">0</span> z <span style="color:#ae81ff">0</span> z1
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">12</span>
+redis&gt; ZRANGEBYLEX zset - +
+ 1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;a&#34;</span>
+ 2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;aa&#34;</span>
+ 3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;abc&#34;</span>
+ 4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+ 5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;b&#34;</span>
+ 6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+ 7<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d&#34;</span>
+ 8<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d1&#34;</span>
+ 9<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;dd&#34;</span>
+10<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;dobble&#34;</span>
+11<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;z&#34;</span>
+12<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;z1&#34;</span>
+</code></pre></div><h3 id="zrangebyscore">
+  ZRANGEBYSCORE
+  <a class="anchor" href="#zrangebyscore">#</a>
+</h3>
+<p>返回有序集合 <code>key</code> 中 <code>score</code> 值位于 <code>max</code> 和 <code>min</code>(默认包含 <code>max</code> 和 <code>min</code>)区间内的成员的元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZRANGEBYSCORE key min max <span style="color:#f92672">[</span>WITHSCORES<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>LIMIT offset count<span style="color:#f92672">]</span>
+</code></pre></div><p>可选参数：</p>
+<ul>
+<li><code>LIMIT</code>：用于指定返回元素数量，</li>
+<li><code>offset</code>：用于指定偏移量(类似 <code>SQL</code> 中的 <code>SELECT LIMIT offset, count</code>)。</li>
+</ul>
+<p><code>-inf</code> 和 <code>+inf</code> 可以表示最小值和最大值。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 测试数据</span>
+redis&gt; ZADD salary <span style="color:#ae81ff">2500</span> jack
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; ZADD salary <span style="color:#ae81ff">5000</span> tom
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+redis&gt; ZADD salary <span style="color:#ae81ff">12000</span> peter
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e"># 显示整个有序集合</span>
+redis&gt; ZRANGEBYSCORE salary -inf +inf
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+
+<span style="color:#75715e"># 显示整个有序集合及成员的 score 值</span>
+redis&gt; ZRANGEBYSCORE salary -inf +inf WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2500&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;12000&#34;</span>
+
+<span style="color:#75715e"># 工资 &lt;=5000 的成员</span>
+redis&gt; ZRANGEBYSCORE salary -inf <span style="color:#ae81ff">5000</span> WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2500&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+
+<span style="color:#75715e"># 工资大于 5000 小于等于 400000 的成员</span>
+redis&gt; ZRANGEBYSCORE salary <span style="color:#ae81ff">5000</span> <span style="color:#ae81ff">400000</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+</code></pre></div><h3 id="zrevrangebylex">
+  ZREVRANGEBYLEX
+  <a class="anchor" href="#zrevrangebylex">#</a>
+</h3>
+<p><code>ZREVRANGEBYLEX</code> 和 <code>ZRANGEBYLEX</code> 类似，区别在于排序，<code>ZREVRANGEBYLEX</code> 的 <code>score</code> 值按倒序(从大到小)顺序排序。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZREVRANGEBYLEX key max min <span style="color:#f92672">[</span>WITHSCORES<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>LIMIT offset count<span style="color:#f92672">]</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; zadd zset <span style="color:#ae81ff">0</span> a <span style="color:#ae81ff">0</span> aa <span style="color:#ae81ff">0</span> abc <span style="color:#ae81ff">0</span> apple <span style="color:#ae81ff">0</span> b <span style="color:#ae81ff">0</span> c <span style="color:#ae81ff">0</span> d <span style="color:#ae81ff">0</span> d1 <span style="color:#ae81ff">0</span> dd <span style="color:#ae81ff">0</span> dobble <span style="color:#ae81ff">0</span> z <span style="color:#ae81ff">0</span> z1
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">12</span>
+redis&gt; ZREVRANGEBYLEX zset + -
+ 1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;z1&#34;</span>
+ 2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;z&#34;</span>
+ 3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;dobble&#34;</span>
+ 4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;dd&#34;</span>
+ 5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d1&#34;</span>
+ 6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d&#34;</span>
+ 7<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+ 8<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;b&#34;</span>
+ 9<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+10<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;abc&#34;</span>
+11<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;aa&#34;</span>
+12<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;a&#34;</span>
+</code></pre></div><h3 id="zrevrangebyscore">
+  ZREVRANGEBYSCORE
+  <a class="anchor" href="#zrevrangebyscore">#</a>
+</h3>
+<p><code>ZREVRANGEBYSCORE</code> 和 <code>ZRANGEBYSCORE</code> 类似，区别在于排序，<code>ZREVRANGEBYSCORE</code> 的 <code>score</code> 值按倒序(从大到小)顺序排序。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZREVRANGEBYSCORE key max min <span style="color:#f92672">[</span>WITHSCORES<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>LIMIT offset count<span style="color:#f92672">]</span>
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis &gt; ZADD salary <span style="color:#ae81ff">10086</span> jack
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis &gt; ZADD salary <span style="color:#ae81ff">5000</span> tom
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis &gt; ZADD salary <span style="color:#ae81ff">7500</span> peter
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis &gt; ZADD salary <span style="color:#ae81ff">3500</span> joe
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+<span style="color:#75715e"># 倒序返回所有成员</span>
+redis &gt; ZREVRANGEBYSCORE salary +inf -inf
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;joe&#34;</span>
+
+<span style="color:#75715e"># 倒序返回salary于 10000 和 2000 之间的成员</span>
+redis &gt; ZREVRANGEBYSCORE salary <span style="color:#ae81ff">10000</span> <span style="color:#ae81ff">2000</span>
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;joe&#34;</span>
+</code></pre></div><h2 id="自增">
+  自增
+  <a class="anchor" href="#%e8%87%aa%e5%a2%9e">#</a>
+</h2>
+<h3 id="zincrby">
+  ZINCRBY
+  <a class="anchor" href="#zincrby">#</a>
+</h3>
+<p>为有序集合 <code>key</code> 中的 <code>member</code> 元素的 <code>score</code> 值增加增量 <code>increment</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZINCRBY key increment member
+</code></pre></div><p><code>score</code> 可以是整数或双精度浮点数。
+如果 <code>key</code> 不存在或者 <code>member</code> 不存在，执行 <code>ZINCRBY key increment member</code> 相当于执行 <code>ZADD key increment member</code>。
+如果 <code>key</code> 不是有序集合类型，返回一个错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; ZSCORE salary tom
+<span style="color:#e6db74">&#34;2000&#34;</span>
+
+redis&gt; ZINCRBY salary <span style="color:#ae81ff">2000</span> tom
+<span style="color:#e6db74">&#34;4000&#34;</span>
+</code></pre></div><h2 id="删除">
+  删除
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4">#</a>
+</h2>
+<h3 id="zrem">
+  ZREM
+  <a class="anchor" href="#zrem">#</a>
+</h3>
+<p>移除有序集合 <code>key</code> 中的一个或多个元素 <code>member</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZREM key member <span style="color:#f92672">[</span>member ...<span style="color:#f92672">]</span>
+</code></pre></div><p>如果 <code>key</code> 不是有序集类型，返回一个错误。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 测试数据</span>
+redis&gt; ZRANGE page_rank <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;bing.com&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;8&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;baidu.com&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;9&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;google.com&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;10&#34;</span>
+
+
+<span style="color:#75715e"># 移除单个元素</span>
+redis&gt; ZREM page_rank google.com
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis&gt; ZRANGE page_rank <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;bing.com&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;8&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;baidu.com&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;9&#34;</span>
+
+
+<span style="color:#75715e"># 移除多个元素</span>
+redis&gt; ZREM page_rank baidu.com bing.com
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+redis&gt; ZRANGE page_rank <span style="color:#ae81ff">0</span> -1 WITHSCORES
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+
+<span style="color:#75715e"># 移除不存在元素</span>
+redis&gt; ZREM page_rank non-exists-element
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">0</span>
+</code></pre></div><h3 id="zremrangebylex">
+  ZREMRANGEBYLEX
+  <a class="anchor" href="#zremrangebylex">#</a>
+</h3>
+<p>移除有序集合 <code>key</code> 中指定区间内的元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZREMRANGEBYLEX key min max
+</code></pre></div><p><strong><code>ZREMRANGEBYLEX key min max</code> 相当于 <code>ZREMRANGEBYLEX key [min-member [max-member</code></strong>
+<strong>不要在分数不一致的有序集合中去使用 <code>ZREMRANGEBYLEX</code>,因为获取的结果并不准确。</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; zadd zset <span style="color:#ae81ff">0</span> a <span style="color:#ae81ff">0</span> aa <span style="color:#ae81ff">0</span> abc <span style="color:#ae81ff">0</span> apple <span style="color:#ae81ff">0</span> b <span style="color:#ae81ff">0</span> c <span style="color:#ae81ff">0</span> d <span style="color:#ae81ff">0</span> d1 <span style="color:#ae81ff">0</span> dd <span style="color:#ae81ff">0</span> dobble <span style="color:#ae81ff">0</span> z <span style="color:#ae81ff">0</span> z1
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">12</span>
+redis&gt; ZRANGEBYLEX zset + -
+ 1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;a&#34;</span>
+ 2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;aa&#34;</span>
+ 3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;abc&#34;</span>
+ 4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;apple&#34;</span>
+ 5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;b&#34;</span>
+ 6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;c&#34;</span>
+ 7<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d&#34;</span>
+ 8<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;d1&#34;</span>
+ 9<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;dd&#34;</span>
+10<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;dobble&#34;</span>
+11<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;z&#34;</span>
+12<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;z1&#34;</span>
+redis&gt; ZREMRANGEBYLEX zset - +
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">7</span>
+redis&gt; ZRANGEBYLEX zset - +
+<span style="color:#f92672">(</span>empty list or set<span style="color:#f92672">)</span>
+</code></pre></div><h3 id="zremrangebyrank">
+  ZREMRANGEBYRANK
+  <a class="anchor" href="#zremrangebyrank">#</a>
+</h3>
+<p>移除有序集合 <code>key</code> 中指定排名(rank)区间内的元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZREMRANGEBYRANK key start stop
+</code></pre></div><p><code>start</code> 和 <code>stop</code> 包含在区间内，可以使用负数，如 <code>-1</code> 表示最后一个元素，依次类推。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 测试数据</span>
+redis&gt; ZADD salary <span style="color:#ae81ff">2000</span> jack
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; ZADD salary <span style="color:#ae81ff">5000</span> tom
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis&gt; ZADD salary <span style="color:#ae81ff">3500</span> peter
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+<span style="color:#75715e"># 移除 0 至 1 区间内的成员</span>
+redis&gt; ZREMRANGEBYRANK salary <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">1</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+<span style="color:#75715e"># 有序集只剩下一个成员</span>
+redis&gt; ZRANGE salary <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+</code></pre></div><h3 id="zremrangebyscore">
+  ZREMRANGEBYSCORE
+  <a class="anchor" href="#zremrangebyscore">#</a>
+</h3>
+<p>移除有序集合 <code>key</code> 中指定 <code>score</code> 区间内的元素。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZREMRANGEBYRANK key min max
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 有序集合内的所有成员及其 score 值</span>
+redis&gt; ZRANGE salary <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2000&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+
+<span style="color:#75715e"># 移除所有salary 在 1500 到 3500 内的员工</span>
+redis&gt; ZREMRANGEBYSCORE salary <span style="color:#ae81ff">1500</span> <span style="color:#ae81ff">3500</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">2</span>
+
+<span style="color:#75715e"># 剩余的成员</span>
+redis&gt; ZRANGE salary <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+</code></pre></div><h2 id="合并">
+  合并
+  <a class="anchor" href="#%e5%90%88%e5%b9%b6">#</a>
+</h2>
+<h3 id="zunionstore">
+  ZUNIONSTORE
+  <a class="anchor" href="#zunionstore">#</a>
+</h3>
+<p>计算一或多个有序集合的并集，并将结果存储到 <code>destination</code> 中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZUNIONSTORE destination numkeys key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>WEIGHTS weight <span style="color:#f92672">[</span>weight ...<span style="color:#f92672">]]</span> <span style="color:#f92672">[</span>AGGREGATE SUM|MIN|MAX<span style="color:#f92672">]</span>
+</code></pre></div><p>可选参数：</p>
+<ul>
+<li><code>WEIGHTS</code>，乘法因子，所有有序集合值在传递聚合函数前，都要乘以该因子。默认值为<code>1</code></li>
+<li><code>AGGREGATE</code>，指定结果集的聚合方式。
+<ul>
+<li><code>SUM</code>，求合，默认值</li>
+<li><code>MAX</code>，计算最大值</li>
+<li><code>MIN</code>，计算最小值</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis&gt; ZRANGE programmer <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2000&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+
+redis&gt; ZRANGE manager <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;herry&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2000&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;mary&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;bob&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;4000&#34;</span>
+
+<span style="color:#75715e"># 除 programmer 外，其它成员增加 salary</span>
+redis&gt; ZUNIONSTORE salary <span style="color:#ae81ff">2</span> programmer manager WEIGHTS <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">3</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">6</span>
+
+redis&gt; ZRANGE salary <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;peter&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;2000&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;jack&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;3500&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;tom&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;5000&#34;</span>
+7<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;herry&#34;</span>
+8<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;6000&#34;</span>
+9<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;mary&#34;</span>
+10<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;10500&#34;</span>
+11<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;bob&#34;</span>
+12<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;12000&#34;</span>
+</code></pre></div><h3 id="zinterstore">
+  ZINTERSTORE
+  <a class="anchor" href="#zinterstore">#</a>
+</h3>
+<p>计算一或多个有序集合的交集，并将结果存储到 <code>destination</code> 中。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZINTERSTORE destination numkeys key <span style="color:#f92672">[</span>key ...<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>WEIGHTS weight <span style="color:#f92672">[</span>weight ...<span style="color:#f92672">]]</span> <span style="color:#f92672">[</span>AGGREGATE SUM|MIN|MAX<span style="color:#f92672">]</span>
+</code></pre></div><p>可选参数：</p>
+<ul>
+<li><code>WEIGHTS</code>，乘法因子，所有有序集合值在传递聚合函数前，都要乘以该因子。默认值为<code>1</code></li>
+<li><code>AGGREGATE</code>，指定结果集的聚合方式。
+<ul>
+<li><code>SUM</code>，求合，默认值</li>
+<li><code>MAX</code>，计算最大值</li>
+<li><code>MIN</code>，计算最小值</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">redis &gt; ZADD mid_test <span style="color:#ae81ff">70</span> <span style="color:#e6db74">&#34;Li Lei&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis &gt; ZADD mid_test <span style="color:#ae81ff">70</span> <span style="color:#e6db74">&#34;Han Meimei&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis &gt; ZADD mid_test 99.5 <span style="color:#e6db74">&#34;Tom&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+redis &gt; ZADD fin_test <span style="color:#ae81ff">88</span> <span style="color:#e6db74">&#34;Li Lei&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis &gt; ZADD fin_test <span style="color:#ae81ff">75</span> <span style="color:#e6db74">&#34;Han Meimei&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+redis &gt; ZADD fin_test 99.5 <span style="color:#e6db74">&#34;Tom&#34;</span>
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">1</span>
+
+<span style="color:#75715e"># 保存交集</span>
+redis &gt; ZINTERSTORE sum_point <span style="color:#ae81ff">2</span> mid_test fin_test
+<span style="color:#f92672">(</span>integer<span style="color:#f92672">)</span> <span style="color:#ae81ff">3</span>
+
+redis &gt; ZRANGE sum_point <span style="color:#ae81ff">0</span> -1 WITHSCORES
+1<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Han Meimei&#34;</span>
+2<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;145&#34;</span>
+3<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Li Lei&#34;</span>
+4<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;158&#34;</span>
+5<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Tom&#34;</span>
+6<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;199&#34;</span>
+</code></pre></div><h2 id="其他">
+  其他
+  <a class="anchor" href="#%e5%85%b6%e4%bb%96">#</a>
+</h2>
+<h3 id="zscan">
+  ZSCAN
+  <a class="anchor" href="#zscan">#</a>
+</h3>
+<p>参考 
+  <a href="/db-learn/docs/redis/08_redis-key/">SCAN</a>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">ZSCAN key cursor <span style="color:#f92672">[</span>MATCH pattern<span style="color:#f92672">]</span> <span style="color:#f92672">[</span>COUNT count<span style="color:#f92672">]</span>
+</code></pre></div></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+  <div><a class="flex align-center" href="https://github.com/shipengqi/db-learn/commit/391abafbb55e9e09f274b9823c6b411133314e4f" title='Last modified by shipengqi | June 17, 2020' target="_blank" rel="noopener">
+      <img src="/db-learn/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>June 17, 2020</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/shipengqi/db-learn/edit/master/content//docs/redis/06_redis-sortedset.md" target="_blank" rel="noopener">
+      <img src="/db-learn/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+</div>
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      
+  <nav id="TableOfContents">
+  <ul>
+    <li><a href="#存取">存取</a>
+      <ul>
+        <li><a href="#zadd">ZADD</a></li>
+        <li><a href="#zcard">ZCARD</a></li>
+        <li><a href="#zrank">ZRANK</a></li>
+        <li><a href="#zscore">ZSCORE</a></li>
+        <li><a href="#zcount">ZCOUNT</a></li>
+        <li><a href="#zlexcount">ZLEXCOUNT</a></li>
+        <li><a href="#zrange">ZRANGE</a></li>
+        <li><a href="#zrevrange">ZREVRANGE</a></li>
+        <li><a href="#zrangebylex">ZRANGEBYLEX</a></li>
+        <li><a href="#zrangebyscore">ZRANGEBYSCORE</a></li>
+        <li><a href="#zrevrangebylex">ZREVRANGEBYLEX</a></li>
+        <li><a href="#zrevrangebyscore">ZREVRANGEBYSCORE</a></li>
+      </ul>
+    </li>
+    <li><a href="#自增">自增</a>
+      <ul>
+        <li><a href="#zincrby">ZINCRBY</a></li>
+      </ul>
+    </li>
+    <li><a href="#删除">删除</a>
+      <ul>
+        <li><a href="#zrem">ZREM</a></li>
+        <li><a href="#zremrangebylex">ZREMRANGEBYLEX</a></li>
+        <li><a href="#zremrangebyrank">ZREMRANGEBYRANK</a></li>
+        <li><a href="#zremrangebyscore">ZREMRANGEBYSCORE</a></li>
+      </ul>
+    </li>
+    <li><a href="#合并">合并</a>
+      <ul>
+        <li><a href="#zunionstore">ZUNIONSTORE</a></li>
+        <li><a href="#zinterstore">ZINTERSTORE</a></li>
+      </ul>
+    </li>
+    <li><a href="#其他">其他</a>
+      <ul>
+        <li><a href="#zscan">ZSCAN</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+ 
+    </aside>
+    
+  </main>
+
+  
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
