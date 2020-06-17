@@ -3,9 +3,13 @@
 set -e
 
 # Build the project.
-hugo # if using a theme, replace with `hugo -t <YOURTHEME>`
+hugo -t book # if using a theme, replace with `hugo -t <YOURTHEME>`
 
 cd public
+
+git init
+git config user.name 'shipengqi'
+git config user.email 'pooky.shipengqi@gmail.com'
 git add -A
 
 # Commit changes.

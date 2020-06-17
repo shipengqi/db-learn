@@ -1,84 +1,76 @@
 ---
-title: MySQL 简单查询
+title: 简单查询语句
 ---
 
 
-**注意每条语句后面都要以`;`结尾。SQL语句是不区分大小写的。**
+**SQL 语句要以 `;` 结尾。不区分大小写。**
 
-## `USE` 选择数据库
+## `use` 选择数据库
 
-## `SHOW`
+## `show`
 
-- `SHOW DATABASES;`，查看数据库列表。
-- `SHOW TABLES;`，查看数据库中的表。
-- `SHOW COLUMNS`，显示某个表中的列，比如 `SHOW COLUMNS FROM users`。也可以使用 `DESCRIBE users`，效果
-和 `SHOW COLUMNS FROM users` 是一样的。
-- `SHOW STATUS`，用于显示广泛的服务器状态信息。
-- `SHOW CREATE DATABASE` 和 `SHOW CREATE TABLE`，分别用来显示创建特定数据库或表的语句。
-- `SHOW GRANTS`，用来显示授予用户（所有用户或特定用户）的安全权限。
-- `SHOW ERRORS` 和 `SHOW WARNINGS`，用来显示服务器错误或警告消息。
-- `HELP SHOW;` 查看 `SHOW` 的用法
+- `show databases;`，查看数据库列表。
+- `show tables;`，查看数据库中的表。
+- `show colums`，显示某个表中的列，比如 `show colums from users`。也可以使用 `describe users`，效果一样。
+- `show status`，用于显示广泛的服务器状态信息。
+- `show create database` 和 `show create table`，分别用来显示创建特定数据库或表的语句。
+- `show grants`，用来显示授予用户（所有用户或特定用户）的安全权限。
+- `show erros` 和 `show warnings`，用来显示服务器错误或警告消息。
+- `help show;` 查看 `show` 的用法
 
-## `SELECT`
+## `select`
 
-为了使用 `SELECT` 所搜表数据，必须至少给出两条信息——**想选择什么，以及从什么地方选择**。比如`select name from users;`，会找
-出 `users` 表中的所有 `name` 列。
+为了使用 `select` 查询语句，如 `select name from users;`，找出 `users` 表中的所有 `name` 列。
 
-检索多个列：
+查询多个列：
 
 ```sql
 select name, age, phone from users;
 ```
 
-检索所有列，使用星号 `*` 通配符：
+查询所有列，使用星号 `*`
 
-```sql
-select * from users;
-```
+### `distinct`
 
-### `DISTINCT`
-
-`DISTINCT` 关键字用来去重。比如下面的语句，只会返回 `name` 不同的用户：
+`distinct` 去重。
 
 ```sql
 select distinct name from users;
 ```
 
-> `DISTINCT` 关键字应用于所有列而不仅是前置它的列。如果给出 `SELECT DISTINCT vend_id, prod_price`，会分别作用于了 `vend_id`
-和 `prod_price` 列。
+上面的示例，会对 `name` 去重，返回 `name` 不同的行
 
-### `LIMIT`
+> `distinct` 关键字，会对其后面的所有列去重。如 `select distinct vend_id, prod_price from products`，`vend_id` 和 `prod_price` 列。
 
-`SELECT` 语句返回所有匹配的行，为了返回第一行或前几行，可使用 `LIMIT` 子句。
+### `limit`
+
+使用 `limit` 子句，限制返回的行数。
 
 ```sql
 select name from users limit 5;
 ```
 
-上面的语句最多返回5行。
+上面的语句最多返回 5 行。
 
 ```sql
 select name from users limit 5,5;
 ```
 
-上面的语句的意思是从第五行开始，最多返回 5 行。
+上面的语句的意思是从第 5 行开始，最多返回 5 行。
 
-> **MySQL 5 支持 LIMIT 的另一种替代语法。`LIMIT 4 OFFSET 3` 意为从行 3 开始取 4 行，就像 `LIMIT 3, 4` 一样**。
+> **MySQL 5 支持 limit 的另一种替代语法。`limit 4 offset 3` 表示从第 3 行开始取 4 行，和 `limit 3, 4` 一样**。
 
-### 完全限定的表名和列名
+### 限定的表名和列名
 
 ```sql
 select users.name from demo.users;
 ```
 
-上面的语句和 `select name from users` 没什么区别。但是有一些情形需要完全限定名。比如在涉及外部子查询的语句中，会使用完全限定列名，
-避免列名可能存在多义性。
+上面的语句和 `select name from users` 没什么区别。但是有一些情形需要限定名。比如 join 多个表时，都包含同样的列名，就可以使用限定表名。
 
-> **完全限定列名**在引用的列可能出现二义性时，必须使用完全限定列名（用一个点分隔的表名和列名）。
+### `order by`
 
-### `ORDER BY`
-
-使用 `ORDER BY` 子句对输出进行排序。比如 `select name from users order by age`，按照 `age` 排序。
+使用 `order by` 子句对输出进行排序。比如 `select name from users order by age`，按照 `age` 排序。
 
 #### 按多个列排序
 
@@ -90,7 +82,7 @@ select name from users order by age, weight;
 
 #### 排序方向
 
-升序排序（从 A 到 Z）是默认的排序顺序，如果要进行降序排序，需要指定 `DESC` 关键字。
+查询默认是**升序排序**（`asc`），如果要进行降序排序，使用 `desc` 关键字。
 
 ```sql
 select name, age from users order by age desc;
@@ -115,16 +107,15 @@ select name, age from users order by age desc;
 select name from users order by age desc, weight;
 ```
 
-上面的示例，对 `age` 列降序排序，`weight` 还是默认的升序排序。可以看出 **`DESC` 关键字只会作用到其前面的列**。
+上面的示例，对 `age` 列降序排序，`weight` 还是默认的升序排序。
 
-> **如果想在多个列上进行降序排序，必须对每个列指定 `DESC` 关键字。**
-> **`ASC`** 是升序排列的关键字，没什么用，因为默认就是升序。
+**`desc` 关键字只会作用到其前面的列**。
 
-### 过滤数据
+**如果想在多个列上进行降序排序，必须对每个列指定 `desc` 关键字。**
 
-通常数据库检索数据都会指定过滤条件（filter condition）。
+### `where`
 
-在 `SELECT` 语句中，数据根据 `WHERE` 子句中指定的搜索条件进行过滤。
+查询时使用 `where` 子句中指定过滤条件。
 
 ```sql
 select name from users where age = 18;
@@ -132,24 +123,21 @@ select name from users where age = 18;
 select name from users where name = 'ming';
 ```
 
-会找到 `age` 等于 18 的行。
+> **注意 `order by` 必须位于 `where` 之后。**
 
-> **如果同时使用 `ORDER BY` 和 `WHERE` 子句时，`ORDER BY` 必须位于 `WHERE` 之后，否则将会产生错误。**
-
-#### `WHERE`条件操作符
+#### `where` 条件操作符
 
 | 操作符 | 描述 |
 | --- |  --- |
 | `=` | 等于  |
-| `<>` | 不等于 |
-| `!=` | 不等于 |
+| `<>`, `!=` | 不等于 |
 | `<`  | 小于   |
 | `<=` |  小于等于 |
 | `>`  | 大于   |
 | `>=` | 大于等于 |
-| `BETWEEN` | 在指定的两个值之间 |
+| `between` | 在指定的两个值之间 |
 
-**`BETWEEN` 操作符使用**：
+**`between` 操作符使用**：
 
 ```sql
 select name from users where age between 15 and 18;
@@ -157,7 +145,7 @@ select name from users where age between 15 and 18;
 
 检索年龄在 15 和 18 之间的用户。
 
-`AND` 关键字前后分别是开始值和结束值。查询到的数据**包括指定的开始值和结束值**。
+`and` 关键字前后分别是开始值和结束值。查询到的数据**包括指定的开始值和结束值**。
 
 #### 空值检查
 
@@ -169,17 +157,17 @@ select name from users where age between 15 and 18;
 select name from users where phone IS NULL;
 ```
 
-#### AND
+#### and
 
-可使用 `AND` 操作符给 `WHERE` 子句附加条件。
+`and` 添加过滤条件。
 
 ```sql
 select name from users where age = 18 and weight = 60;
 ```
 
-#### OR
+#### or
 
-和 `AND` 差不多，只不过是匹配任一满足的条件。
+和 `and` 差不多，只不过是匹配任一满足的条件。
 
 #### 操作符优先级
 
@@ -188,10 +176,11 @@ select name from users where age = 18 or agr = 19 and weight >= 60;
 ```
 
 上面的语句是什么结果？
+
 是找出年龄是 18 或者 19，体重在 60 以上的行？并不是。
 
-SQL在处理 `OR` 操作符前，优先处理 `AND` 操作符。当 SQL 看到上述 `WHERE` 子句时，它理解为由年龄为 19，并且体重在 60 以上的用户，或者
-年龄为 18，不管体重多少的用户。
+SQL 在处理 `or` 操作符前，优先处理 `and` 操作符。当 SQL 看到上述 `where` 子句时，它理解为由年龄为 19，并且体重在 60 以上的用户，或者
+年龄为 18，不管体重多少的用户，相当于 `age = 18 or (agr = 19 and weight >= 60)`。
 
 正确的语法：
 
@@ -201,29 +190,27 @@ select name from users where (age = 18 or agr = 19) and weight >= 60;
 
 **SQL 会首先过滤圆括号内的条件**。
 
-#### IN
+#### in
 
-`IN` 操作符用来指定条件范围，匹配圆括号中的值。
+`in` 操作符用来指定条件范围，匹配圆括号中的值。
 
 ```sql
 select name from users where age in (18, 19);
 ```
 
-`IN` 操作符与 `OR` 有相同的功能。
+`in` 操作符与 `or` 有相同的功能。
 
-#### `NOT`
+#### `not`
 
-`NOT` 操作否定条件。
+`not` 操作否定条件。
 
 ```sql
 select name from users where age not in (18, 19);
 ```
 
-#### `LIKE`
+#### `like`
 
-如果要使用通配符，需要使用 `LIKE` 操作符。
-
-**通配符可在搜索模式中任意位置使用，并且可以使用多个通配符**。
+通配符，使用 `like` 操作符。
 
 ##### `%`
 
@@ -241,31 +228,31 @@ select name from users where name like '%in%';
 
 ##### `_`
 
-下划线 `_` 的用途与 `%` 一样，但下划线只匹配单个字符而不是多个字符。
+**`_` 匹配单个字符，`%` 匹配多个字符**。
 
 #### 使用正则表达式
 
 ```sql
-select name from users where name REGEX 'ing';
+select name from users where name regexp 'ing';
 ```
 
-`REGEXP` 后跟的是**正则表达式**。
+`regexp` 后面跟 **正则表达式**。
 
 正则表达式并没有什么优势，但是有些场景下可以考虑使用:
 
 ```sql
-select name from users where weight REGEX '.6';
+select name from users where weight regexp '.6';
 ```
 
 `.` 是正则表达式语言中一个特殊的字符。它表示匹配任意一个字符，因此，`56` 和 `66` 都匹配且返回。
 
-##### OR 匹配
+##### or 匹配
 
 ```sql
-select name from users where weight REGEX '46|56';
+select name from users where weight regexp '46|56';
 ```
 
-`|` 为正则表达式的 `OR` 操作符。
+`|` 为正则表达式的 `or` 操作符。
 
 ##### 匹配几个字符之一
 
@@ -275,7 +262,7 @@ select name from users where weight REGEX '46|56';
 select name from users where weight REGEX '[456]6';
 ```
 
-`[456]` 表示匹配 4，5，6。`[]` 是另一种形式的 `OR` 语句。可以使用一些正则的语法例如 `[^123]`，匹配除了 1，2，3 之外的字符，
+`[456]` 表示匹配 4，5，6。`[]` 是另一种形式的 `or` 语句。可以使用一些正则的语法例如 `[^123]`，匹配除了 1，2，3 之外的字符，
 `[1-9]` 匹配 1 到 9 范围的字符。匹配特殊字符钱加 `\\` 比如 `.` 要用 `\\.` 来查找。
 
 ## 计算字段

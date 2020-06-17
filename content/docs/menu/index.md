@@ -2,10 +2,9 @@
 headless: true
 ---
 
-━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━
 
 - **Mysql**
-  - [入门]({{< relref "/docs/mysql/01_getting_started" >}})
   - [安裝]({{< relref "/docs/mysql/02_install" >}})
   - [简单查询]({{< relref "/docs/mysql/03_query" >}})
   - [复杂查询]({{< relref "/docs/mysql/04_advanced_query" >}})
