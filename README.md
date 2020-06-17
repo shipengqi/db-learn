@@ -1,17 +1,20 @@
 # db-learn
-数据库相关知识学习整理。
 
-- GitHub 地址：https://github.com/shipengqi/db-learn
-- 在线浏览：https://www.shipengqi.top/db-learn
+Database learning ...
 
 ## Usage
+
+development:
+
 ```sh
-# install dependencies
-yarn
+# git clone  https://github.com/alex-shpak/hugo-book themes/book
+git submodule add https://github.com/alex-shpak/hugo-book themes/book
 
-# start dev server, access http://localhost:8087/db-learn
-yarn start
+hugo server --minify --theme book
+```
 
-# deploy
-yarn deploy
+deploy:
+
+```sh
+./deploy.sh
 ```
