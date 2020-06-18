@@ -76,6 +76,9 @@ mysql --host=<主机名>  --user=<用户名> --password=<密码>
 mysql -hlocalhost -uroot -p123456
 ```
 
+> 注意，不推荐使用 `-p` 输入密码。`-p` 和密码值之间不能有空白字符（其他参数名之间可以有空白字符）。
+> 如果服务端和客户端安装在同一台机器上，`-h` 参数可以省略。
+
 退出：`quit`，`exit`，`\q` 任意指令都可以关闭连接。
 
 Windows 下可以使用 mysql shell：

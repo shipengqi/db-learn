@@ -426,7 +426,7 @@ select vend_id, count(*) as prod_num from products group by vend_id having count
 
 它过滤 `count(*) >=2` 的那些分组。
 
-## SELECT 子句顺序
+## select 子句顺序
 
 | 子句 | 是否必须使用 |
 | --- | ---- |

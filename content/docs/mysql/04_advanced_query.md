@@ -107,8 +107,7 @@ select vend_name, prod_name, prod_price from vendors inner join products on vend
 
 > **SQL 规范首选 `INNER JOIN` 语法**。此外，尽管使用 `where` 子句定义联结的确比较简单，但是使用明确的联结语法能够确保不会忘记联结条件，有时候这样做也能影响性能。不要联结不必要的表。联结的表越多，性能下降越厉害。
 
-当两张表的数据量比较大，又需要连接查询时，应该使用 `FROM table1 JOIN table2 ON xxx` 的语法，避免使
-用 `FROM table1,table2 WHERE xxx` 的语法，因为后者会在内存中先生成一张数据量比较大的笛卡尔积表，增加了内存的开销。
+当两张表的数据量比较大，又需要连接查询时，应该使用 `FROM table1 JOIN table2 ON xxx` 的语法，避免使用 `FROM table1,table2 WHERE xxx` 的语法，因为后者会在内存中先生成一张数据量比较大的笛卡尔积表，增加了内存的开销。
 
 #### 联结多个表
 
