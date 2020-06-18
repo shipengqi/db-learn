@@ -271,10 +271,10 @@ select name from users where weight REGEX '[456]6';
 
 ### 拼接字段
 
-`Concat()` 拼接串，即把多个串连接起来形成一个较长的串。`Concat()` 需要一个或多个指定的串，各个串之间用逗号分隔。
+`concat()` 拼接串，多个串之间用 `,` 分隔。
 
 ```sh
-mysql> select Concat(c1, '(', c2, ')') from record_format_demo;
+mysql> select concat(c1, '(', c2, ')') from record_format_demo;
 +--------------------------+
 | Concat(c1, '(', c2, ')') |
 +--------------------------+
@@ -284,14 +284,12 @@ mysql> select Concat(c1, '(', c2, ')') from record_format_demo;
 2 rows in set (0.01 sec)
 ```
 
-`RTrim()` 函数可以删除数据右侧多余的空格，还有 `LTrim()` 和 `Trim()`，分别是删除左边空格和删除左右空格。
-
 ### 别名
 
-别名（alias）是一个字段或值的替换名。用 `AS` 关键字：
+别名（alias） `as` 关键字：
 
 ```sh
-mysql> select Concat(c1, '(', c2, ')') as c5 from record_format_demo;
+mysql> select concat(c1, '(', c2, ')') as c5 from record_format_demo;
 +-----------+
 | c5        |
 +-----------+
@@ -304,169 +302,138 @@ mysql> select Concat(c1, '(', c2, ')') as c5 from record_format_demo;
 ### 算术计算
 
 ```sql
-select price, name, quantity from orders where order_num = 2005;
-```
-
-`price` 是物品的价格，`quantity` 是数量，如果想汇总物品总价;
-
-```sql
 select price, name, quantity, quantity*price as total_price from orders where order_num = 2005;
 ```
 
-`total_price` 就是总价。
+`price` 是物品的价格，`quantity` 是数量， `total_price` （quantity*price）就是总价。
 
-**MySQL 支持基本算术操作符 `+`，`-`，`*`，`/`。此外，圆括号可用来区分优先顺序**。
+**基本算术操作符 `+`，`-`，`*`，`/`。`()` 用来区分优先顺序**。
 
 ## 数据处理函数
 
-`Trim()` 就是一个数据处理函数。
-
 ### 文本函数
 
-- `Upper()` 函数将文本转换为大写，`Upper(name) as newName`
-- `Left()`  返回串左边的字符
-- `Length()` 返回串的长度
-- `Locate()` 找出串的一个子串
-- `Lower()` 将串转换为小写
-- `LTrim()` 去掉串左边的空格
-- `Right()` 返回串右边的字符
-- `RTrim()` 去掉串右边的空格
-- `Soundex()` 返回串的 `SOUNDEX` 值
-- `SubString()` 返回子串的字符
+- `upper()` 文本转大写，`upper(name) as newName`
+- `lower()` 文本转小写
+- `left()`  返回串左边的字符
+- `right()` 返回串右边的字符
+- `length()` 返回串的长度
+- `locate()` 找出串的一个子串
+- `trim()`，删除两边空格。
+- `ltrim()` 去掉串左边的空格
+- `rtrim()` 去掉串右边的空格
+- `soundex()` 返回串的 `SOUNDEX` 值
+- `substring()` 返回子串的字符
 
 `SOUNDEX` 是一个将任何文本串转换为描述其语音表示的字母数字模式的算法。
 
 ### 日期和时间处理函数
 
-- `AddDate()` 增加一个日期（天、周等）
-- `AddTime()` 增加一个时间（时、分等）
-- `CurDate()` 返回当前日期
-- `CurTime()` 返回当前时间
-- `Date()` 返回日期时间的日期部分
-- `DateDiff()` 计算两个日期之差
-- `Date_Add()` 高度灵活的日期运算函数
-- `Date_Format()` 返回一个格式化的日期或时间串
-- `Day()` 返回一个日期的天数部分
-- `DayOfWeek()` 对于一个日期，返回对应的星期几
-- `Hour()` 返回一个时间的小时部分
-- `Minute()` 返回一个时间的分钟部分
-- `Month()` 返回一个日期的月份部分
-- `Now()` 返回当前日期和时间
-- `Second()` 返回一个时间的秒部分
-- `Time()` 返回一个日期时间的时间部分
-- `Year()` 返回一个日期的年份部分
+- `adddate()` 增加一个日期（天、周等）
+- `addtime()` 增加一个时间（时、分等）
+- `curdate()` 返回当前日期
+- `curtime()` 返回当前时间
+- `date()` 返回日期时间的日期部分
+- `datediff()` 计算两个日期之差
+- `date_add()` 高度灵活的日期运算函数
+- `date_format()` 返回一个格式化的日期或时间串
+- `day()` 返回一个日期的天数部分
+- `dayofweek()` 对于一个日期，返回对应的星期几
+- `hour()` 返回一个时间的小时部分
+- `minute()` 返回一个时间的分钟部分
+- `month()` 返回一个日期的月份部分
+- `now()` 返回当前日期和时间
+- `second()` 返回一个时间的秒部分
+- `time()` 返回一个日期时间的时间部分
+- `year()` 返回一个日期的年份部分
 
 ### 数值函数
 
-- `Abs()` 返回一个数的绝对值
-- `Cos()` 返回一个角度的余弦
-- `Exp()` 返回一个数的指数值
-- `Mod()` 返回除操作的余数
-- `Pi()` 返回圆周率
-- `Rand()` 返回一个随机数
-- `Sin()` 返回一个角度的正弦
-- `Sqrt()` 返回一个数的平方根
-- `Tan()` 返回一个角度的正切
+- `abs()` 返回一个数的绝对值
+- `cos()` 返回一个角度的余弦
+- `exp()` 返回一个数的指数值
+- `mod()` 返回除操作的余数
+- `pi()` 返回圆周率
+- `rand()` 返回一个随机数
+- `sin()` 返回一个角度的正弦
+- `sqrt()` 返回一个数的平方根
+- `tan()` 返回一个角度的正切
 
 ## 聚合函数
 
-### AVG
+### avg
 
-`AVG` 函数可用来返回所有列的平均值，也可以用来返回特定列或行的平均值。
+`avg` 函数可用来返回所有列的平均值，也可以用来返回特定列或行的平均值。
 
 ```sql
-select AVG(price) as avg_price from orders;
+select avg(price) as avg_price from orders;
 ```
 
 返回订单的平均价格。
 
-**`AVG()` 函数忽略列值为`NULL` 的行**。
+**`avg()` 函数忽略列值为 `NULL` 的行**。
 
-### COUNT
+### count
 
-`COUNT(*)` 对表中行的数目进行计数。`COUNT(column)` **对特定列中具有值的行进行计数，忽略 `NULL` 值**。
+`count(*)` 对行数进行计数。`count(column)` **对特定列中具有值的行进行计数，忽略 `NULL` 值**。
 
-### MAX
+### max
 
 返回指定列中的最大值。忽略列值为 `NULL` 的行。例如 `select max(price) as max_price from products;` 返回 products 表中
 最贵的物品的价格。
 
-### MIN
+### min
 
-与 `MAX()` 功能相反。
+与 `max()` 功能相反。
 
-### SUM
+### sum
 
-`SUM()` 函数返回指定列值的和。忽略列值为 `NULL` 的行。例如 `select SUM(item_price*quantity) as total_price from products;`
+`sum()` 函数返回指定列值的和。忽略列值为 `NULL` 的行。例如 `select sum(item_price*quantity) as total_price from products;`
 
 ### 聚合不同值
 
-上面的几个函数都可以使用 `DISTINCT`，比如 `AVG(DISTINCT price) as avg_total_price`
+上面的几个函数都可以使用 `distinct`，比如 `avg(distinct price) as avg_total_price`
 
-**`DISTINCT` 只能用于 `COUNT()`。`DISTINCT` 不能用于 `COUNT(*)`**。
+**`distinct` 只能用于 `count()`。`distinct` 不能用于 `count(*)`**。
 
 ## 分组
 
-`GROUP BY` 子句用来创建分组。
+`group by` 创建分组。
 
 ```sql
-select vend_id, COUNT(*) as prod_num from products group by vend_id;
+select vend_id, count(*) as prod_num from products group by vend_id;
 ```
 
 上面的语句按 `vend_id` 排序并分组数据。
 
 注意：
 
-- `GROUP BY` 句必须出现在 **`WHERE` 子句之后，`ORDER BY` 子句之前**。
-- 如果分组列中具有 `NULL` 值，则 `NULL` 将作为一个分组返回。如果列中有多行 `NULL` 值，它们将分为一组。
-- `GROUP BY` 子句中列出的每个列都必须是检索列或有效的表达式（但不能是聚集函数）。如果在 `SELECT` 中使用表达式，则必须在 `GROUP BY`
+- `group by` 句必须出现在 **`where` 子句之后，`order by` 子句之前**。
+- 如果分组列中具有 `NULL` 值，则 `NULL` 将作为一个分组返回。
+- `group by` 子句中列出的每个列都必须是检索列或有效的表达式（但不能是聚集函数）。如果在 `select` 中使用表达式，则必须在 `group by`
 子句中指定相同的表达式。不能使用别名。
-- 除了聚集计算语句，`SELECT` 语句中的每个列都必须在 `GROUP BY` 子句中给出。
+- 除了聚集计算语句，`select` 语句中的每个列都必须在 `group by` 子句中给出。
 
 ### 过滤分组
 
-`HAVING` 子句**过滤分组**。`HAVING` 非常类似于 `WHERE`（`WHERE` 过滤的是**行**）。它们的句法是相同的，只是关键字有差别。
+`having` 子句**过滤分组**。`having` 类似于 `where`，不过 `where` 过滤的是**行**。它们的句法是相同的。
 
-也可以这么理解：**`WHERE` 在数据分组前进行过滤，`HAVING` 在数据分组后进行过滤**。
-
-```sql
-select vend_id, COUNT(*) as prod_num from products group by vend_id having COUNT(*) >= 2;
-```
-
-它过滤 `COUNT(*) >=2` 的那些分组。
-
-### 分组和排序
-
-`GROUP BY` 和 `ORDER BY` 的差别：
-
-| `order by` | `group by` |
-| ------  | --------- |
-| 排序产生的输出 | 分组行。但输出可能不是分组的顺序 |
-| 任意列都可以使用（甚至非选择的列也可以使用） | 只可能使用选择列或表达式列，而且**必须使用每个选择列表达式** |
-| 不一定需要 | 如果与聚集函数一起使用列（或表达式），则必须使用 |
-
-> 一般在使用 `GROUP BY` 子句时，应该也给出 `ORDER BY` 子句。这是保证数据正确排序的唯一方法。千万不要仅依赖 `GROUP BY` 排序数据。
-
-检索总计订单价格大于等于 50 的订单的订单号和总计订单价格：
+**`where` 在数据分组前进行过滤，`having` 在数据分组后进行过滤**。
 
 ```sql
-select order_num, SUM(quantity*price) as order_total from orders group by order_num having SUM(quantity*price) >= 50;
+select vend_id, count(*) as prod_num from products group by vend_id having count(*) >= 2;
 ```
 
-按总计订单价格排序输出：
-
-```sql
-select order_num, SUM(quantity*price) as order_total from orders group by order_num having SUM(quantity*price) >= 50 order by order_total;
-```
+它过滤 `count(*) >=2` 的那些分组。
 
 ## SELECT 子句顺序
 
 | 子句 | 是否必须使用 |
 | --- | ---- |
-| `SELECT` | 是 |
-| `FROM` | 仅在从表选择数据时使用 |
-| `WHERE`| 否 |
-| `GROUP BY` | 仅在按组计算聚集时使用 |
-| `HAVING` | 否 |
-| `ORDER BY` | 否 |
-| `LIMIT` | 否 |
+| `select` | 是 |
+| `from` | 仅在从表选择数据时使用 |
+| `where`| 否 |
+| `group by` | 仅在按组计算聚集时使用 |
+| `having` | 否 |
+| `order by` | 否 |
+| `limit` | 否 |

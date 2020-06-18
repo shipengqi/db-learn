@@ -29,6 +29,10 @@ staticDir: "static"
 # canonifyURLs: true
 # relativeURLs: true
 
+# (Optional) If you provide a Disqus shortname, comments will be enabled on
+# all pages.
+# disqusShortname: "db-learn"
+
 params:
   # (Optional, default true) Controls table of contents visibility on right side of pages.
   # Start and end levels can be controlled with markup.tableOfContents setting.

@@ -69,3 +69,18 @@ mysql --host=<主机名>  --user=<用户名> --password=<密码>
 
 - 最好不要在一行命令中输入密码，可能会导致密码泄露。
 - 如果使用的是类 UNIX 系统，并且省略 `-u` 参数后，会把你**登陆操作系统的用户名当作 MySQL 的用户名**去处理。
+
+## 连接服务器
+
+```bash
+mysql -hlocalhost -uroot -p123456
+```
+
+退出：`quit`，`exit`，`\q` 任意指令都可以关闭连接。
+
+Windows 下可以使用 mysql shell：
+
+```bash
+\sql
+\connect --mysql root@localhost
+```
