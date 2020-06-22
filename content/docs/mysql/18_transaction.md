@@ -27,6 +27,10 @@ title: 事务
 START TRANSACTION
 ```
 
+```sql
+BEGIN
+```
+
 #### ROLLBACK
 
 `ROLLBACK` 命令用来回退（撤销）MySQL 语句：
@@ -78,3 +82,38 @@ commit;
 回退到本例给出的保留点，可执行：`ROLLBACK TO delete1;`
 
 > 保留点在事务处理完成（执行一条 `ROLLBACK` 或 `COMMIT`）后自动释放。
+
+## 自动提交
+
+MySQL中有一个系统变量 `autocommit`：
+
+默认情况下，如果我们不显式的使用START TRANSACTION或者BEGIN语句开启一个事务，那么每一条语句都算是一个独立的事务，这种特性称之为事务的**自动提交**。
+
+如果我们想关闭这种自动提交的功能，可以使用下边两种方法：
+
+- 显式的的使用 `START TRANSACTION` 或者 `BEGIN` 语句开启一个事务。
+
+这样在本次事务提交或者回滚前会暂时关闭掉自动提交的功能。
+
+把系统变量 `autocommit` 的值设置为 `OFF`，就像这样：
+
+```sql
+SET autocommit = OFF;
+``
+
+这样的话，我们写入的多条语句就算是属于同一个事务了，直到我们显式的写出COMMIT语句来把这个事务提交掉，或者显式的写出ROLLBACK语句来把这个事务回滚掉。
+
+
+
+
+## 隐式提交
+
+当我们使用START TRANSACTION或者BEGIN语句开启了一个事务，或者把系统变量autocommit的值设置为OFF时，事务就不会进行自动提交，但是如果我们输入了某些语句之后就会悄悄的提交掉，就像我们输入了COMMIT语句了一样，这种因为某些特殊的语句而导致事务提交的情况称为**隐式提交**。
+
+隐式提交的语句包括：
+- 定义或修改数据库对象的数据定义语言（Data definition language，缩写为：DDL）。
+
+所谓的数据库对象，指的就是数据库、表、视图、存储过程等等这些东西。当我们使用`CREATE、ALTER、DROP`等语句去修改这些所谓的数据库对象时，就会隐式的提交前边语句所属于的事务
+
+- 隐式使用或修改mysql数据库中的表
+当我们使用`ALTER USER`、`CREATE USER`、`DROP USER`、`GRANT`、`RENAME USER`、`REVOKE`、`SET PASSWORD`等语句时也会隐式的提交前边语句所属于的事务。
