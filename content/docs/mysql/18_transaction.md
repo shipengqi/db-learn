@@ -99,21 +99,36 @@ MySQL中有一个系统变量 `autocommit`：
 
 ```sql
 SET autocommit = OFF;
-``
+```
 
 这样的话，我们写入的多条语句就算是属于同一个事务了，直到我们显式的写出COMMIT语句来把这个事务提交掉，或者显式的写出ROLLBACK语句来把这个事务回滚掉。
 
-
-
-
 ## 隐式提交
 
-当我们使用START TRANSACTION或者BEGIN语句开启了一个事务，或者把系统变量autocommit的值设置为OFF时，事务就不会进行自动提交，但是如果我们输入了某些语句之后就会悄悄的提交掉，就像我们输入了COMMIT语句了一样，这种因为某些特殊的语句而导致事务提交的情况称为**隐式提交**。
+当我们使用START TRANSACTION或者BEGIN语句开启了一个事务，或者把系统变量 autocommit的 值设置为OFF时，事务就不会进行自动提交，但是如果我们输入了某些语句之后就会悄悄的提交掉，就像我们输入了COMMIT语句了一样，这种因为某些特殊的语句而导致事务提交的情况称为**隐式提交**。
 
 隐式提交的语句包括：
+
 - 定义或修改数据库对象的数据定义语言（Data definition language，缩写为：DDL）。
 
 所谓的数据库对象，指的就是数据库、表、视图、存储过程等等这些东西。当我们使用`CREATE、ALTER、DROP`等语句去修改这些所谓的数据库对象时，就会隐式的提交前边语句所属于的事务
 
 - 隐式使用或修改mysql数据库中的表
-当我们使用`ALTER USER`、`CREATE USER`、`DROP USER`、`GRANT`、`RENAME USER`、`REVOKE`、`SET PASSWORD`等语句时也会隐式的提交前边语句所属于的事务。
+当我们使用 `ALTER USER`、`CREATE USER`、`DROP USER`、`GRANT`、`RENAME USER`、`REVOKE`、`SET PASSWORD` 等语句时也会隐式的提交前边语句所属于的事务。
+
+- 事务控制或关于锁定的语句
+当我们在一个事务还没提交或者回滚时就又使用START TRANSACTION或者BEGIN语句开启了另一个事务时，会隐式的提交上一个事务
+
+或者当前的autocommit系统变量的值为OFF，我们手动把它调为ON时，也会隐式的提交前边语句所属的事务。
+
+- 加载数据的语句
+
+比如我们使用LOAD DATA语句来批量往数据库中导入数据时，也会隐式的提交前边语句所属的事务。
+
+- 关于MySQL复制的一些语句
+
+使用START SLAVE、STOP SLAVE、RESET SLAVE、CHANGE MASTER TO等语句时也会隐式的提交前边语句所属的事务。
+
+- 其它的一些语句
+
+使用ANALYZE TABLE、CACHE INDEX、CHECK TABLE、FLUSH、 LOAD INDEX INTO CACHE、OPTIMIZE TABLE、REPAIR TABLE、RESET等语句也会隐式的提交前边语句所属的事务。
