@@ -35,6 +35,12 @@ CREATE TABLE single_table (
 ) Engine=InnoDB CHARSET=utf8;
 ```
 
+- 为 `id`列建立的聚簇索引。
+- 为 `key1` 列建立的 `idx_key1` 二级索引。
+- 为 `key2` 列建立的 `idx_key2` 二级索引，而且该索引是唯一二级索引。
+- 为 `key3` 列建立的 `idx_key3` 二级索引。
+- 为 `key_part1`、`key_part2`、`key_part3` 列建立的 `idx_key_part` 二级索引，也是一个联合索引
+
 ## const
 
 主键或唯一二级索引的等值查询，
@@ -100,3 +106,11 @@ SELECT key_part1, key_part2, key_part3 FROM single_table WHERE key_part2 = 'abc'
 ## all
 
 全表扫描
+
+## 索引合并
+
+### intersection
+
+### union
+
+### sort-union

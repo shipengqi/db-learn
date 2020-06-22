@@ -16,8 +16,10 @@ headless: true
   - [InnoDB 记录存储结构]({{< relref "/docs/mysql/10_innodb-record-store-structure" >}})
   - [InnoDB 数据页结构]({{< relref "/docs/mysql/11_innodb-page-structure" >}})
   - [B+ 树索引]({{< relref "/docs/mysql/12_b-tree" >}})
-  - [事务的隔离级别]({{< relref "/docs/mysql/13_isolation-level" >}})
-  - [锁]({{< relref "/docs/mysql/14_lock" >}})
+  - [访问方法]({{< relref "/docs/mysql/13_access-method" >}})
+  - [Join 的原理]({{< relref "/docs/mysql/14_join" >}})
+  - [事务的隔离级别]({{< relref "/docs/mysql/21_isolation-level" >}})
+  - [锁]({{< relref "/docs/mysql/22_lock" >}})
 <br />
 
 - **Redis**
