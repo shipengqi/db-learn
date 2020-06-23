@@ -41,3 +41,42 @@ redo日志本质上只是记录了一下**事务对数据库做了哪些修改**
 - space ID：表空间ID。
 - page number：页号。
 - data：该条redo日志的具体内容。
+
+### 简单的 redo 日志类型
+
+### 复杂的 redo 日志类型
+
+## 以组的形式写入 redo 日志
+
+### 乐观插入
+
+### 悲观插入
+
+### Mini-Transaction 的概念
+
+## redo日志的写入
+
+### redo log block
+
+### redo日志缓冲区
+
+## redo日志刷盘时机
+
+- log buffer 空间不足时
+
+log buffer 的大小是有限的（通过系统变量 `innodb_log_buffer_size` 指定），如果不停的往这个有限大小的log buffer里塞入日志，很快它就会被填满。如果当前写入log buffer的redo日志量已经占满了log buffer总容量的大约一半左右，就需要把这些日志刷新到磁盘上。
+
+- 事务提交时
+redo日志主要是因为它占用的空间少，还是顺序写，在事务提交时可以不把修改过的Buffer Pool页面刷新到磁盘，但是为了保证持久性，必须要把修改这些页面对应的redo日志刷新到磁盘。
+
+- 后台线程不停的刷刷刷
+后台有一个线程，大约每秒都会刷新一次log buffer中的redo日志到磁盘。
+
+- 正常关闭服务器时
+- 做所谓的checkpoint时
+
+## redo日志文件组
+
+磁盘上的redo日志文件不只一个，而是以一个日志文件组的形式出现的。这些文件以 `ib_logfile[数字]`（数字可以是0、1、2...）的形式进行命名。在将redo日志写入日志文件组时，是从ib_logfile0开始写，如果ib_logfile0写满了，就接着ib_logfile1写，同理，ib_logfile1写满了就去写ib_logfile2，依此类推。如果写到最后一个文件该咋办？那就重新转到ib_logfile0继续写
+
+总共的redo日志文件大小其实就是：`innodb_log_file_size × innodb_log_files_in_group`。
