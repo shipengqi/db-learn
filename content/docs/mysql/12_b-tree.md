@@ -117,6 +117,28 @@ B+ 树的形成过程：
 
 联合索引的各个排序列的排序顺序必须是一致的
 
+```sql
+CREATE TABLE person_info(
+    id INT NOT NULL auto_increment,
+    name VARCHAR(100) NOT NULL,
+    birthday DATE NOT NULL,
+    phone_number CHAR(11) NOT NULL,
+    country varchar(100) NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_name_birthday_phone_number (name, birthday, phone_number)
+);
+```
+
+二级索引 `idx_name_birthday_phone_number`，它是由 3 个列组成的联合索引。所以在这个索引对应的 B+ 树的叶子节点处存储的用户记录只保留 `name`、`birthday`、`phone_number` 这三个列的值以及主键 `id` 的值
+
+这个 `idx_name_birthday_phone_number` 索引对应的 B+ 树中页面和记录的排序方式就是这样的：
+
+- 先按照 name 列的值进行排序。
+- 如果 `name` 列的值相同，则按照 `birthday` 列的值进行排序。
+- 如果 `birthday` 列的值也相同，则按照 `phone_number` 的值进行排序。
+
+这个排序方式非常重要，因为**只要页面和记录是排好序的，我们就可以通过二分法来快速定位查找**。
+
 ### 全值匹配
 
 ### 匹配左边的列
@@ -130,6 +152,26 @@ B+ 树的形成过程：
 ### 用于分组
 
 ### 回表的代价
+
+`idx_name_birthday_phone_number` 索引为例
+
+```sql
+SELECT * FROM person_info WHERE name > 'Asa' AND name < 'Barlow';
+```
+
+索引 `idx_name_birthday_phone_number` 对应的 B+ 树用户记录中只包含 `name`、`birthday`、`phone_number`、`id` 这 4 个字段，而查询列表是 `*`，意味着要查询表中所有字段。这时需要把从上一步中获取到的每一条记录的id字段都到聚簇索引对应的 B+ 树中找到完整的用户记录，也就是我们通常所说的**回表**，然后把完整的用户记录返回给查询用户。
+
+#### 顺序 I/O
+
+索引 `idx_name_birthday_phone_number` 对应的 B+ 树中的记录首先会按照 `name` 列的值进行排序，所以值在 `Asa～Barlow` 之间的记录在磁盘中的存储是相连的，集中分布在一个或几个数据页中，我们可以很快的把这些连着的记录从磁盘中读出来，这种读取方式我们也可以称为**顺序 I/O**
+
+#### 随机 I/O
+
+根据第 1 步中获取到的记录的id字段的值可能并不相连，而在聚簇索引中记录是根据 `id`（也就是主键）的顺序排列的，所以根据这些并不连续的 `id` 值到聚簇索引中访问完整的用户记录可能分布在不同的数据页中，这样读取完整的用户记录可能要访问更多的数据页，这种读取方式我们也可以称为**随机 I/O**
+
+顺序I/O比随机I/O的性能高很多，所以步骤1的执行可能很快，而步骤2就慢一些。
+
+**需要回表的记录越多，使用二级索引的性能就越低**。某些查询宁愿使用全表扫描也不使用二级索引。比方说name值在Asa～Barlow之间的用户记录数量占全部记录数量90%以上，那么如果使用idx_name_birthday_phone_number索引的话，有90%多的id值需要回表，这不是吃力不讨好么，还不如直接去扫描聚簇索引（也就是全表扫描）。
 
 ### 覆盖索引
 
