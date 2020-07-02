@@ -1,7 +1,6 @@
 ---
 title: 跳表
 ---
-# 跳表
 
 zset 的内部实现是一个 hash 字典加一个跳跃列表 (skiplist)。
 

@@ -1,7 +1,7 @@
 ---
 title: 小对象压缩
 ---
-# 小对象压缩
+
 
 如果 Redis 内部管理的集合数据结构很小，它就会使用紧凑存储形式压缩存储。
 
@@ -10,11 +10,13 @@ title: 小对象压缩
 
 ## ziplist
 
+zset 和 hash 容器对象在元素个数较少的时候，采用压缩列表 (ziplist) 进行存储。
+
 Redis 的 ziplist 是一个紧凑的 byte 数组结构，如下图，每个元素之间都是紧挨着的。
 
 ![](../../../images/redis-ziplist.jpg)
 
-如果 ziplist 存储的是 hash 结构，那么 key 和 value 会作为两个 entry 相邻存在一起。
+如果 ziplist 存储的是 hash 结构，那么 **key 和 value 会作为两个 entry 相邻存在一起**。
 
 ```sh
 127.0.0.1:6379> hset hello a 1
@@ -28,6 +30,7 @@ Redis 的 ziplist 是一个紧凑的 byte 数组结构，如下图，每个元�
 ```
 
 如果 ziplist 存储的是 zset，那么 value 和 score 会作为两个 entry 相邻存在一起。
+
 ```sh
 127.0.0.1:6379> zadd world 1 a
 (integer) 1
@@ -41,8 +44,7 @@ Redis 的 ziplist 是一个紧凑的 byte 数组结构，如下图，每个元�
 
 ## intset
 
-当 set 集合容纳的**元素都是整数并且元素个数较小**时，Redis 会使用 intset 来存储结合元素。intset 是紧凑的数组结构，同时
-支持 16 位、32 位和 64 位整数。
+当 set 集合容纳的**元素都是整数并且元素个数较小**时，Redis 会使用 intset 来存储结合元素。intset 是紧凑的数组结构，同时支持 16 位、32 位和 64 位整数。
 
 ```c
 struct intset<T> {
@@ -58,7 +60,6 @@ struct intset<T> {
 如果新加入的元素超过了 uint32 的表示范围，那么就使用 uint64 表示，Redis 支持 set 集合动态从 uint16 升级到 uint32，再升级
 到 uint64。
 
-
 ```sh
 127.0.0.1:6379> sadd hello 1 2 3
 (integer) 3
@@ -67,6 +68,7 @@ struct intset<T> {
 ```
 
 **如果 set 里存储的是字符串，那么 sadd 立即升级为 hashtable 结构**。
+
 ```sh
 127.0.0.1:6379> sadd hello yes no
 (integer) 2
@@ -76,6 +78,7 @@ struct intset<T> {
 
 **存储界限** 当集合对象的元素不断增加，或者某个 value 值过大，这种小对象存储也会被升级为标准结构。Redis 规定在小对象存储结构的限制
 条件如下：
+
 ```sh
 hash-max-ziplist-entries 512  # hash 的元素个数超过 512 就必须用标准结构存储
 hash-max-ziplist-value 64  # hash 的任意元素的 key/value 的长度超过 64 就必须用标准结构存储
@@ -87,6 +90,7 @@ set-max-intset-entries 512  # set 的整数元素个数超过 512 就必须用�
 ```
 
 ## ziplist 内部实现
+
 Redis 为了节约内存空间使用，zset 和 hash 容器对象在元素个数较少的时候，采用压缩列表 (ziplist) 进行存储。
 
 ```c
@@ -99,9 +103,10 @@ struct ziplist<T> {
 }
 ```
 
-`ztail_offset` 这个字段是为了支持双向遍历，用来快速定位到最后一个元素，然后倒着遍历。
+`ztail_offset` 这个字段是为了**支持双向遍历，用来快速定位到最后一个元素，然后倒着遍历**。
 
 entry 块随着容纳的元素类型不同，也会有不一样的结构。
+
 ```c
 struct entry {
     int<var> prevlen; // 前一个 entry 的字节长度
@@ -131,6 +136,7 @@ struct entry {
 - content 字段在结构体中定义为 optional 类型，表示这个字段是可选的，对于很小的整数而言，它的内容已经内联到 encoding 字段的尾部了。
 
 ## 增加元素
+
 因为 ziplist 都是紧凑存储，没有冗余空间 (对比一下 Redis 的字符串结构)。意味着插入一个新的元素就需要调用 realloc 扩展内存。取决
 于内存分配器算法和当前的 ziplist 内存大小，realloc 可能会重新分配新的内存空间，并将之前的内容一次性拷贝到新的地址，也可能在原有的地
 址上进行扩展，这时就不需要进行旧内容的内存拷贝。
@@ -138,6 +144,7 @@ struct entry {
 如果 ziplist 占据内存太大，重新分配内存和拷贝内存就会有很大的消耗。所以 ziplist 不适合存储大型字符串，存储的元素也不宜过多。
 
 ### 连锁更新
+
 考虑这样一种情况： 在一个压缩列表中， 有多个连续的、长度介于 250 字节到 253 字节之间的节点 e1 至 eN ：
 ![](../../../images/ziplistupdate.png)
 
@@ -157,6 +164,7 @@ e1 原本的长度介于 250 字节至 253 字节之间， 在为 `prevlen` 属�
 Redis 将这种在特殊情况下产生的连续多次空间扩展操作称之为**连锁更新**。
 
 连锁更新的复杂度较高， 但它真正造成性能问题的几率是很低的：
+
 - 首先， 压缩列表里要恰好有多个连续的、长度介于 250 字节至 253 字节之间的节点， 连锁更新才有可能被引发， 在实际中， 这种情况并不多见；
 - 其次， 即使出现连锁更新， 但只要被更新的节点数量不多， 就不会对性能造成任何影响： 比如，对三五个节点进行连锁更新是绝对不会影响
 性能的；

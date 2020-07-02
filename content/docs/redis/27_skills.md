@@ -1,8 +1,9 @@
 ---
 title: 一些命令行技巧
 ---
-# 一些命令行技巧
+
 ## 直接模式
+
 一般使用 redis-cli 都会进入交互模式，然后一问一答来读写服务器，这是**交互模式**。还有一种**直接模式**，通过将命令参数直接
 传递给 redis-cli 来执行指令并获取输出结果。
 
@@ -44,7 +45,9 @@ OK
 ```
 
 ## set 多行字符串
+
 如果一个字符串有多行，如何传入 set 指令？使用 `-x` 选项，该选项会使用标准输入的内容作为最后一个参数。
+
 ```sh
 $ cat str.txt
 Ernest Hemingway once wrote,
@@ -57,7 +60,9 @@ $ redis-cli get foo
 ```
 
 ## 重复执行指令
+
 redis-cli 还支持重复执行指令多次，每条指令执行之间设置一个间隔时间，如此便可以观察某条指令的输出内容随时间变化。
+
 ```sh
 // 间隔 1s，执行 5 次，观察 qps 的变化
 $ redis-cli -r 5 -i 1 info | grep ops
@@ -71,6 +76,7 @@ instantaneous_ops_per_sec:47216
 如果将次数设置为 `-1` 那就是重复无数次永远执行下去。如果不提供 `-i` 参数，那就没有间隔，连续重复执行。
 
 在交互模式下也可以重复执行指令，形式上比较怪异，在指令前面增加次数
+
 ```sh
 127.0.0.1:6379> 5 ping
 PONG
@@ -80,9 +86,10 @@ PONG
 PONG
 ```
 
-
 ## 监控服务器状态
+
 可以使用 `--stat` 参数来实时监控服务器的状态，间隔 1s 实时输出一次。
+
 ```sh
 $ redis-cli --stat
 ------- data ------ --------------------- load -------------------- - child -
@@ -98,6 +105,7 @@ keys       mem      clients blocked requests            connections
 可以使用 `-i` 参数调整输出间隔。
 
 ## 扫描大 KEY
+
 遇到 Redis 偶然卡顿问题，第一个想到的就是实例中是否存在大 KEY，大 KEY 的内存扩容以及释放都会导致主线程卡顿。
 `--bigkeys` 参数可以很快扫出内存里的大 KEY，使用 `-i` 参数控制扫描间隔，避免扫描指令导致服务器的 ops 陡增报警。
 
@@ -120,6 +128,7 @@ redis-cli 对于每一种对象类型都会记录长度最大的 KEY，对于每
 描确认还有没有次大的 KEY。
 
 ## 采样服务器指令
+
 现在线上有一台 Redis 服务器的 OPS 太高，有很多业务模块都在使用这个 Redis，如何才能判断出来是哪个业务导致了 OPS 异常的高。这
 时可以对线上服务器的指令进行采样，观察采样的指令大致就可以分析出 OPS 占比高的业务点。这时就要使用 monitor 指令，它会将服务器瞬间执行的指令全
 部显示出来。不过使用的时候要注意即使使用 ctrl+c 中断，否则你的显示器会噼里啪啦太多的指令瞬间让你眼花缭乱。
@@ -137,6 +146,7 @@ $ redis-cli --host 192.168.x.x --port 6379 monitor
 ```
 
 ## 诊断服务器时延
+
 平时诊断两台机器的时延一般是使用 Unix 的 ping 指令。Redis 也提供了时延诊断指令，不过它的原理不太一样，它是诊断当前机器和 Redis 服务
 器之间的指令(PING 指令)时延，它不仅仅是物理网络的时延，还和当前的 Redis 主线程是否忙碌有关。如果你发现 Unix 的 ping 指令时延很小，
 而 Redis 的时延很大，那说明 Redis 服务器在执行指令时有微弱卡顿。
@@ -147,12 +157,15 @@ min: 0, max: 5, avg: 0.08 (305 samples)
 ```
 
 时延单位是 ms。redis-cli 还能显示时延的分布情况，而且是图形化输出。
+
 ```sh
-$ redis-cli --latency-dist
+redis-cli --latency-dist
 ```
 
 ## 远程 rdb 备份
+
 执行下面的命令就可以将远程的 Redis 实例备份到本地机器，远程服务器会执行一次 bgsave 操作，然后将 rdb 文件传输到客户端。
+
 ```sh
 $ ./redis-cli --host 192.168.x.x --port 6379 --rdb ./user.rdb
 SYNC sent to master, writing 2501265095 bytes to './user.rdb'
@@ -160,7 +173,9 @@ Transfer finished with success.
 ```
 
 ## 模拟从库
+
 如果你想观察主从服务器之间都同步了那些数据，可以使用 redis-cli 模拟从库。
+
 ```sh
 $ ./redis-cli --host 192.168.x.x --port 6379 --slave
 SYNC with master, discarding 51778306 bytes of bulk transfer...

@@ -1,7 +1,7 @@
 ---
 title: Redis 安装配置
 ---
-# Redis 安装配置
+
 Redis 安装，配置认证密码，配置 service 服务。
 
 ## 安装
@@ -18,6 +18,7 @@ make install
 ```
 
 `make install` 会在 `/usr/local/bin` 目录下生成以下文件：
+
 - redis-server：Redis 服务器端启动程序
 - redis-cli：Redis 客户端操作工具。也可以用 telnet 根据其纯文本协议来操作
 - redis-benchmark：Redis 性能测试工具
@@ -25,18 +26,22 @@ make install
 - redis-check-dump：检查导出工具
 
 如果出现以下错误：
+
 ```bash
 make[1]: Entering directory `/root/redis/src'
 You need tcl 8.5 or newer in order to run the Redis test
 ……
 ```
+
 这是因为没有安装 tcl 导致，yum 安装即可：
+
 ```bash
 yum install tcl
 ```
 
 **配置 Redis**
 复制配置文件到 `/etc/` 目录：
+
 ``` bash
 cp redis.conf /etc/
 vim /etc/redis.conf
@@ -53,6 +58,7 @@ daemonize yes
 ```
 
 **启动 Redis**
+
 ``` bash
 cd /usr/local/bin
 ./redis-server /etc/redis.conf
@@ -87,6 +93,7 @@ Redis 默认配置是不需要密码认证，需要手动配置启用 Redis 的�
 
 linux 下 Redis 的默认配置文件默认在 `/etc/redis.conf`。windows 下则是安装目录下的 `redis.windows.conf` 文件。
 打开配置文件，找到下面的内容：
+
 ``` conf
 ################################## SECURITY ###################################
 
@@ -103,12 +110,15 @@ linux 下 Redis 的默认配置文件默认在 `/etc/redis.conf`。windows 下�
 #
 #requirepass foobared
 ```
+
 去掉前面的注释，并修改为你的认证密码：
+
 ``` conf
 requirepass {your password}
 ```
 
 修改后重启 Redis：
+
 ``` bash
 # 如果已经配置为 service 服务
 systemctl restart redis
@@ -119,13 +129,17 @@ systemctl restart redis
 ```
 
 ### 登录验证
+
 重启后登录时需要使用 `-a` 参数输入密码，否则登录后没有任何操作权限。如下：
+
 ``` bash
 ./redis-cli -h 127.0.0.1 -p 6379
 127.0.0.1:6379> set testkey
 (error) NOAUTH Authentication required.
 ```
+
 使用密码认证登录：
+
 ``` bash
 ./redis-cli -h 127.0.0.1 -p 6379 -a myPassword
 127.0.0.1:6379> set testkey hello
@@ -133,6 +147,7 @@ OK
 ```
 
 或者在连接后进行验证：
+
 ``` bash
 ./redis-cli -h 127.0.0.1 -p 6379
 127.0.0.1:6379> auth yourpassword
@@ -142,6 +157,7 @@ OK
 ```
 
 ### 客户端配置密码
+
 ``` bash
 127.0.0.1:6379> config set requirepass yourpassword
 OK
@@ -152,21 +168,21 @@ OK
 
 > 注意：使用客户端配置密码，重启 Redis 后仍然会使用 `redis.conf` 配置文件中的密码。
 
-
 ### 在集群中配置认证密码
 
 如果 Redis 使用了集群。除了在 `master` 中配置密码外，`slave` 中也需要配置。在 `slave` 的配置文件中找到如下行，去掉注释并修改
 为与 `master` 相同的密码：
+
 ``` conf
 # masterauth your-master-password
 ```
-
 
 ## Redis 配置到系统服务(systemd)
 
 ### 创建 redis.service 文件
 
 进入 `/usr/lib/systemd/system` 目录，创建 `redis.service` 文件：
+
 ```conf
 [Unit]
 # 描述
@@ -196,6 +212,7 @@ WantedBy=multi-user.target
 `Type=forking`，forking 表示服务管理器是系统 init 的子进程，用于管理需要后台运行的服务。
 
 修改 `/etc/redis.conf`：
+
 ``` conf
 daemonize yes
 

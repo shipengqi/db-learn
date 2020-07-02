@@ -2,23 +2,25 @@
 title: 对象
 ---
 
-# 对象
 Redis 用到的所有主要**数据结构**，比如简单动态字符串（SDS）、双端链表、字典、压缩列表、整数集合，等等。
 
 Redis 并没有直接使用这些数据结构来实现键值对数据库，而是基于这些数据结构创建了一个**对象系统**，这个系统包含字符串对象、列表对象、哈希
 对象、集合对象和有序集合对象这五种类型的对象。
 
 ## 对象的类型与编码
+
 Redis 使用对象来表示数据库中的键和值，每次在 Redis 的数据库中新创建一个键值对时，至少会创建两个对象，一个对象用作键值对的键（键对象），
 另一个对象用作键值对的值（值对象）。
 
 比如：
+
 ```sh
 redis> SET msg "hello world"
 OK
 ```
 
 每个对象都由一个 `redisObject` 结构表示:
+
 ```c
 typedef struct redisObject {
 
@@ -37,7 +39,9 @@ typedef struct redisObject {
 ```
 
 ### type
+
 对象的 `type` 属性记录了对象的类型，这个属性的值可以是下面列表中的任意一个：
+
 - `REDIS_STRING`，字符串对象
 - `REDIS_LIST`，列表对象
 - `REDIS_HASH`，哈希对象
@@ -46,10 +50,12 @@ typedef struct redisObject {
 
 对于 Redis 数据库保存的键值对来说，**键总是一个字符串对象，而值则可以是字符串对象、列表对象、哈希对象、集合对象或者有序集合对象的其中
 一种**，因此：
+
 - 当我们称呼一个数据库键为“字符串键”时， 我们指的是“这个数据库键所对应的值为字符串对象”
 - 当我们称呼一个键为“列表键”时， 我们指的是“这个数据库键所对应的值为列表对象”
 
 ### 编码和底层实现
+
 **对象的 `ptr` 指针指向对象的底层实现数据结构，而这些数据结构由对象的 `encoding` 属性决定**。
 
 `encoding` 属性记录了对象所使用的编码，也即是说这个对象使用了什么数据结构作为对象的底层实现：
@@ -65,7 +71,6 @@ typedef struct redisObject {
 | `REDIS_ENCODING_INTSET`（`intset`） | 整数集合 |
 | `REDIS_ENCODING_SKIPLIST`（`skiplist`） | 跳跃表和字典 |
 
-
 每种类型的对象都至少使用了两种不同的编码:
 
 | 类型 | 编码 | 对象 |
@@ -78,14 +83,16 @@ typedef struct redisObject {
 | `REDIS_HASH` | `REDIS_ENCODING_ZIPLIST` | 使用压缩列表实现的哈希对象。 |
 | `REDIS_HASH` | `REDIS_ENCODING_HT` | 使用字典实现的哈希对象。 |
 | `REDIS_SET` | `REDIS_ENCODING_INTSET` | 使用整数集合实现的集合对象。 |
-| `REDIS_SET` | `REDIS_ENCODING_HT`	 | 使用字典实现的集合对象。 |
+| `REDIS_SET` | `REDIS_ENCODING_HT`  | 使用字典实现的集合对象。 |
 | `REDIS_ZSET` | `REDIS_ENCODING_ZIPLIST` | 使用压缩列表实现的有序集合对象。 |
 | `REDIS_ZSET` | `REDIS_ENCODING_SKIPLIST` | 使用跳跃表和字典实现的有序集合对象。 |
 
 ## 字典遍历
+
 Redis 对象树的主干是一个字典，如果对象很多，这个主干字典也会很大。当我们使用 keys 命令搜寻指定模式的 key 时，它会遍历整个主干字典。
 
 ## 重复遍历
+
 字典在扩容的时候要进行渐进式迁移，会存在新旧两个 hashtable。遍历需要对这两个 hashtable 依次进行，先遍历完旧的 hashtable，再继续
 遍历新的 hashtable。如果在遍历的过程中进行了 rehashStep，将已经遍历过的旧的 hashtable 的元素迁移到了新的 hashtable 中，那么会不
 会出现元素的重复？
@@ -93,6 +100,7 @@ Redis 对象树的主干是一个字典，如果对象很多，这个主干字�
 为了解决这个问题，Redis 为字典的遍历提供了 2 种迭代器，一种是安全迭代器，另一种是不安全迭代器。
 
 ## 迭代器
+
 ```c
 typedef struct dictIterator {
     dict *d; // 目标字典对象
@@ -151,9 +159,11 @@ static void _dictRehashStep(dict *d) {
 ```
 
 ## 迭代器的选择
+
 除了 `keys` 指令使用了安全迭代器，因为结果不允许重复。那还有其它的地方使用了安全迭代器么，什么情况下遍历适合使用非安全迭代器？
 
 如果遍历过程中不允许出现重复，那就使用 SafeIterator：
+
 - `bgaofrewrite` 需要遍历所有对象转换称操作指令进行持久化，绝对不允许出现重复
 - `bgsave` 也需要遍历所有对象来持久化，同样不允许出现重复
 

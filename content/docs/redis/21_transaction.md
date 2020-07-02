@@ -1,11 +1,13 @@
 ---
 title: 事务
 ---
-# 事务
+
 为了确保连续多个操作的原子性，一个成熟的数据库通常都会有事务支持，Redis 也支持简单的事务模型。
 
 ## 使用
+
 每个事务的操作都有 `begin`、`commit` 和 `rollback` 三个指令：
+
 - `begin` 事务的开始
 - `commit` 事务的提交
 - `rollback` 事务的回滚
@@ -23,10 +25,10 @@ try {
 ```
 
 Redis 在形式上看起来也差不多，分别是 `multi/exec/discard`。
+
 - `multi` 事务的开始
 - `exec` 事务的执行
 - `discard` 事务的丢弃
-
 
 ```sh
 > multi
@@ -45,6 +47,7 @@ QUEUED
 以保证他们能得到的**原子性**执行。
 
 ## 原子性
+
 ```sh
 > multi
 OK
@@ -73,6 +76,7 @@ QUEUED
 它事务打断的权利**。
 
 ## discard(丢弃)
+
 **`discard` 指令，用于丢弃事务缓存队列中的所有指令，在 `exec` 执行之前**。
 
 ```sh
@@ -91,9 +95,11 @@ OK
 ```
 
 ## 优化
+
 上面的 Redis 事务在发送每个指令到事务缓存队列时都要经过一次网络读写，当一个事务内部的指令较多时，需要的网络 IO 时间也会线性增长。所以
 通常 Redis 的客户端在执行事务时都会结合 `pipeline` 一起使用，这样可以将多次 IO 操作压缩为单次 IO 操作。比如 Python 的 Redis 客
 户端时执行事务时是要强制使用 `pipeline` 的。
+
 ```py
 pipe = redis.pipeline(transaction=true)
 pipe.multi()
@@ -103,6 +109,7 @@ values = pipe.execute()
 ```
 
 ## Watch
+
 考虑到一个业务场景，Redis 存储了我们的账户余额数据，它是一个整数。现在有两个并发的客户端要对账户余额进行修改操作，这个修改不是一个
 简单的 incrby 指令，而是要对余额乘以一个倍数。Redis 可没有提供 multiplyby 这样的指令。我们需要先取出余额然后在内存里乘以倍数，再将
 结果写回 Redis。
@@ -111,6 +118,7 @@ values = pipe.execute()
 种悲观锁，那是不是可以使用乐观锁的方式来解决冲突**？
 
 Redis 提供了这种 `watch` 的机制，它就是一种乐观锁。有了 `watch` 又多了一种可以用来解决并发修改的方法。 `watch` 的使用方式如下：
+
 ```py
 while True:
     do_watch()

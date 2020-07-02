@@ -1,7 +1,6 @@
 ---
 title: Redis 入门
 ---
-# Redis 入门
 
 [Redis 中文官网的介绍](http://www.redis.cn/)：
 

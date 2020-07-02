@@ -1,7 +1,6 @@
 ---
 title: 快速列表
 ---
-# 快速列表
 
 Redis 早期版本存储 list 列表数据结构使用的是压缩列表 ziplist 和普通的双向链表 linkedlist，当元素少时用 ziplist，元素多时
 用 linkedlist。
@@ -51,6 +50,7 @@ struct quicklist {
 Redis 还会对 ziplist 进行压缩存储，使用 LZF 算法压缩，可以选择压缩深度。
 
 ## 每个 ziplist 存多少元素
+
 quicklist 内部默认单个 ziplist 长度为 8k 字节，超出了这个字节数，就会新起一个 ziplist。ziplist 的长度由配置
 参数 `list-max-ziplist-size` 决定。
 
@@ -76,5 +76,5 @@ list-max-ziplist-size -2
 ![](../../../images/redis-quicklist-compress.jpg)
 
 quicklist 默认的压缩深度是 0，也就是不压缩。压缩的深度由配置参数 `list-compress-depth` 决定。为了支持快速的 push/pop 操作，
-quicklist 的首尾两个 ziplist 不压缩，此时深度就是 1。如果深度为 2，就表示 quicklist 的首尾第一个 ziplist 以及首尾第二个 ziplist 
+quicklist 的首尾两个 ziplist 不压缩，此时深度就是 1。如果深度为 2，就表示 quicklist 的首尾第一个 ziplist 以及首尾第二个 ziplist
 都不压缩。
