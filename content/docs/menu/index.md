@@ -51,6 +51,11 @@ headless: true
   - [保护 Redis]({{< relref "/docs/redis/26_protect-redis" >}})
   - [一些命令行技巧]({{< relref "/docs/redis/27_skills" >}})
   - [慢查询日志]({{< relref "/docs/redis/28_slowlog" >}})
+  - [数据结构]({{< relref "/docs/redis/29_data-structure" >}})
+  - [小对象压缩]({{< relref "/docs/redis/30_redis-ziplist" >}})
+  - [快速列表]({{< relref "/docs/redis/31_redis-quicklist" >}})
+  - [跳表]({{< relref "/docs/redis/32_redis-skiplist" >}})
+  - [紧凑列表]({{< relref "/docs/redis/33_redis-listpack" >}})
 <br />
 
 - **MongoDB**
