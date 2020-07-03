@@ -261,3 +261,27 @@ SELECT * FROM single_table WHERE key1 = 'a' AND key3 = 'b';
 ```sql
 ALTER TABLE single_table drop index idx_key1, idx_key3, add index idx_key1_key3(key1, key3);
 ```
+
+## 索引下推
+
+满足最左前缀原则的时候，最左前缀可以用于在索引中定位记录。这时，你可能要问，那些不符合最左前缀的部分，会怎么样呢？
+
+我们还是以市民表的联合索引（name, age）为例。如果现在有一个需求：检索出表中“名字第一个字是张，而且年龄是10岁的所有男孩”。那么，SQL语句是这么写的：
+
+```sql
+select * from tuser where name like '张%' and age=10 and ismale=1;
+```
+
+这个语句在搜索索引树的时候，只能用 “张”，找到第一个满足条件的记录ID3。当然，这还不错，总比全表扫描要好。
+
+然后呢？
+
+当然是判断其他条件是否满足。
+
+在MySQL 5.6之前，只能从ID3开始一个个回表。到主键索引上找出数据行，再对比字段值。
+
+而MySQL 5.6 引入的**索引下推**优化（index condition pushdown)， 可以在**索引遍历过程中，对索引中包含的字段先做判断，直接过滤掉不满足条件的记录，减少回表次数**。
+
+![](../../../images/index-down.png)
+
+![](../../../images/index-down2.png)
