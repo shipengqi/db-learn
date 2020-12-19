@@ -37,7 +37,7 @@ insert into customers(cust_name, cust_address, cust_age) select cust_name, cust_
 
 `select` 语句从 `custnew` 检索出要插入的值。
 
-> `insert` 和 `select` 语句中使用了相同的列名。但是，不一定要求列名匹配。事实上，MySQL 使用的是列的位置，因此 `select` 中的第一列（不管其列名）将用来填充表列中指定的第一个列
+> `insert` 和 `select` 语句中使用了相同的列名。但是，**不一定要求列名匹配**。事实上，MySQL 使用的是列的位置，因此 `select` 中的第一列（不管其列名）将用来填充表列中指定的第一个列
 
 ## 更新数据
 
@@ -45,7 +45,7 @@ insert into customers(cust_name, cust_address, cust_age) select cust_name, cust_
 
 `update` 语句由 3 部分组成，分别是：
 
-- 要更新的表；
+- 要更新的表
 - 列名和它们的新值
 - 确定要更新行的过滤条件
 

@@ -111,7 +111,7 @@ select name from users order by age desc, weight;
 
 **`desc` 关键字只会作用到其前面的列**。
 
-**如果想在多个列上进行降序排序，必须对每个列指定 `desc` 关键字。**
+**如果想在多个列上进行降序排序，必须对每个列指定 `desc` 关键字**。
 
 ### `where`
 
@@ -123,9 +123,9 @@ select name from users where age = 18;
 select name from users where name = 'ming';
 ```
 
-> **注意 `order by` 必须位于 `where` 之后。**
+> **注意 `order by` 必须位于 `where` 之后**。
 
-#### `where` 条件操作符
+#### where 条件操作符
 
 | 操作符 | 描述 |
 | --- |  --- |
@@ -410,8 +410,7 @@ select vend_id, count(*) as prod_num from products group by vend_id;
 
 - `group by` 句必须出现在 **`where` 子句之后，`order by` 子句之前**。
 - 如果分组列中具有 `NULL` 值，则 `NULL` 将作为一个分组返回。
-- `group by` 子句中列出的每个列都必须是检索列或有效的表达式（但不能是聚集函数）。如果在 `select` 中使用表达式，则必须在 `group by`
-子句中指定相同的表达式。不能使用别名。
+- `group by` 子句中列出的每个列都必须是检索列或有效的表达式（但不能是聚集函数）。如果在 `select` 中使用表达式，则必须在 `group by` 子句中指定相同的表达式。不能使用别名。
 - 除了聚集计算语句，`select` 语句中的每个列都必须在 `group by` 子句中给出。
 
 ### 过滤分组

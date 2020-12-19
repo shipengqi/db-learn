@@ -8,8 +8,7 @@ SQL 还允许创建子查询（subquery），即嵌套在其他查询中的查�
 
 ### 利用子查询过滤
 
-订单存储在两个表中。对于包含订单号、客户 ID、订单日期的每个订单，`orders` 表存储一行。各订单的物品存储在相关的 `orderitems` 表中。
-`orders` 表不存储客户信息。它只存储客户的 ID。实际的客户信息存储在 `customers` 表中。
+订单存储在两个表中。对于包含订单号、客户 ID、订单日期的每个订单，`orders` 表存储一行。各订单的物品存储在相关的 `orderitems` 表中。`orders` 表不存储客户信息。它只存储客户的 ID。实际的客户信息存储在 `customers` 表中。
 
 假如需要列出订购物品 TNT2 的所有客户，需要下面几步：
 
@@ -88,11 +87,9 @@ select cust_name, (select COUNT(*) from orders where orders.cust_id = customers.
 select vend_name, prod_name, prod_price from vendors, products where vendors.vend_id = products.vend_id order by vend_name, prod_name;
 ```
 
-列 `prod_name` 和 `prod_price` 在一个表中，而列 `vend_name` 在另一个表中。`from` 子句列出了两个表，分别是 `vendors` 和 `products`。
-这两个表用 `where` 子句联结。
+列 `prod_name` 和 `prod_price` 在一个表中，而列 `vend_name` 在另一个表中。`from` 子句列出了两个表，分别是 `vendors` 和 `products`。这两个表用 `where` 子句联结。
 
-> **笛卡儿积**（cartesian product）由**没有联结条件**的表关系返回的结果为笛卡儿积。检索出的行的数目将是第一个表中的行数乘以第二个表中
-的行数。
+> **笛卡儿积**（cartesian product）由**没有联结条件**的表关系返回的结果为笛卡儿积。检索出的行的数目将是第一个表中的行数乘以第二个表中的行数。
 
 #### 内部联结
 
@@ -102,8 +99,7 @@ select vend_name, prod_name, prod_price from vendors, products where vendors.ven
 select vend_name, prod_name, prod_price from vendors inner join products on vendors.vend_id = products.vend_id;
 ```
 
-此语句中的 `from` 子句与上面的不同。两个表之间的关系是 `from` 子句的组成部分，以 **`INNER JOIN`** 指定。在使用这种语法时，联
-结条件用特定的 **`on` 子句** 而不是 `where` 子句给出。传递给 `on` 的实际条件与传递给 `where` 的相同。
+此语句中的 `from` 子句与上面的不同。两个表之间的关系是 `from` 子句的组成部分，以 **`INNER JOIN`** 指定。在使用这种语法时，联结条件用特定的 **`on` 子句** 而不是 `where` 子句给出。传递给 `on` 的实际条件与传递给 `where` 的相同。
 
 > **SQL 规范首选 `INNER JOIN` 语法**。此外，尽管使用 `where` 子句定义联结的确比较简单，但是使用明确的联结语法能够确保不会忘记联结条件，有时候这样做也能影响性能。不要联结不必要的表。联结的表越多，性能下降越厉害。
 
@@ -167,8 +163,7 @@ select customers.cust_id, orders.order_num from customers left outer join orders
 
 ## 组合查询
 
-MySQL 允许执行多个查询（多条 `select` 语句），并将结果作为单个查询结果集返回。这些组合查询通常称为**并**（`union`）或
-**复合查询**（`compound query`）。
+MySQL 允许执行多个查询（多条 `select` 语句），并将结果作为单个查询结果集返回。这些组合查询通常称为**并**（`union`）或**复合查询**（`compound query`）。
 
 ```sql
 select vend_id, prod_id, prod_price from products where prod_price >= 5
@@ -196,5 +191,4 @@ select vend_id, prod_id, prod_price from products where prod_price >= 5 or vend_
 
 ### 组合查询结果排序
 
-**用 `union` 组合查询时，只能使用一条 `order by` 子句，它必须出现在最后一条 `select` 语句之后**。对于结果集，不存在用一种方式排序一
-部分，而又用另一种方式排序另一部分的情况，因此不允许使用多条 `order by` 子句。
+**用 `union` 组合查询时，只能使用一条 `order by` 子句，它必须出现在最后一条 `select` 语句之后**。对于结果集，不存在用一种方式排序一部分，而又用另一种方式排序另一部分的情况，因此不允许使用多条 `order by` 子句。
