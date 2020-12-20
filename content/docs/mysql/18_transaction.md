@@ -31,6 +31,15 @@ START TRANSACTION
 BEGIN
 ```
 
+`START TRANSACTION` 语句后边可以跟随几个修饰符，就是它们几个，`START TRANSACTION READ ONLY;`，`START TRANSACTION READ ONLY, WITH CONSISTENT SNAPSHOT;`：
+
+`READ ONLY`：标识当前事务是一个只读事务，也就是属于该事务的数据库操作只能读取数据，而不能修改数据。
+
+其实只读事务中只是不允许修改那些其他事务也能访问到的表中的数据，对于临时表来说（我们使用`CREATE TMEPORARY TABL`E创建的表），由于它们只能在当前会话中可见，所以只读事务其实也是可以对临时表进行增、删、改操作的。
+
+- `READ WRITE`：标识当前事务是一个读写事务，也就是属于该事务的数据库操作既可以读取数据，也可以修改数据。
+- `WITH CONSISTENT SNAPSHOT`：启动一致性读。
+
 #### ROLLBACK
 
 `ROLLBACK` 命令用来回退（撤销）MySQL 语句：
@@ -82,6 +91,52 @@ commit;
 回退到本例给出的保留点，可执行：`ROLLBACK TO delete1;`
 
 > 保留点在事务处理完成（执行一条 `ROLLBACK` 或 `COMMIT`）后自动释放。
+
+```bash
+mysql> SELECT * FROM account;
++----+--------+---------+
+| id | name   | balance |
++----+--------+---------+
+|  1 | 狗哥   |      11 |
+|  2 | 猫爷   |       2 |
++----+--------+---------+
+2 rows in set (0.00 sec)
+
+mysql> BEGIN;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> UPDATE account SET balance = balance - 10 WHERE id = 1;
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> SAVEPOINT s1;    # 一个保存点
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> SELECT * FROM account;
++----+--------+---------+
+| id | name   | balance |
++----+--------+---------+
+|  1 | 狗哥   |       1 |
+|  2 | 猫爷   |       2 |
++----+--------+---------+
+2 rows in set (0.00 sec)
+
+mysql> UPDATE account SET balance = balance + 1 WHERE id = 2; # 更新错了
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> ROLLBACK TO s1;  # 回滚到保存点s1处
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> SELECT * FROM account;
++----+--------+---------+
+| id | name   | balance |
++----+--------+---------+
+|  1 | 狗哥   |       1 |
+|  2 | 猫爷   |       2 |
++----+--------+---------+
+2 rows in set (0.00 sec)
+```
 
 ## 自动提交
 
