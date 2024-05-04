@@ -1,5 +1,6 @@
 ---
 title: redo 日志
+weight: 12
 ---
 
 

@@ -14,11 +14,11 @@ Redis（Remote Dictionary Service）是目前互联网技术领域使用最为�
 
 Redis 一共支持 5 种数据类型：
 
-- [字符串(Strings)](03_redis-string)
-- [哈希(Hashs)](04_redis-hash)
-- [列表(Lists)](07_redis-list)
-- [集合(Sets)](05_redis-set)
-- [有序集合(SortedSets)](06_redis-sortedset)
+- [字符串(Strings)](03_redis-string.md)
+- [哈希(Hashs)](04_redis-hash.md)
+- [列表(Lists)](07_redis-list.md)
+- [集合(Sets)](05_redis-set.md)
+- [有序集合(SortedSets)](06_redis-sortedset.md)
 
 ### String（字符串）
 

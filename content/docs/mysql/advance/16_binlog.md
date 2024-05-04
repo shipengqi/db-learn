@@ -1,5 +1,6 @@
 ---
 title: binlog
+weight: 16
 ---
 
 MySQL整体来看，其实就有两块：一块是Server层，它主要做的是MySQL功能层面的事情；还有一块是引擎层

@@ -1,5 +1,6 @@
 ---
 title: MySQL 基础架构
+weight: 1
 ---
 
 一条 SQL 查询语句在 MySQL 内的执行过程，是怎样的？

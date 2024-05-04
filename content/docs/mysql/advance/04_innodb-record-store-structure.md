@@ -1,5 +1,6 @@
 ---
 title: InnoDB 记录存储结构
+weight: 4
 ---
 
 ## InnoDB 页简介
