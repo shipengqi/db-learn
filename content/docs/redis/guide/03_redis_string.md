@@ -1,5 +1,6 @@
 ---
 title: Redis 数据类型 String
+weight: 3
 ---
 
 String 类型是最常用，也是最简单的的一种类型，string 类型是二进制安全的。也就是说 string 可以包含任何数据。比如 `jpg图片`

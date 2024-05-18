@@ -1,5 +1,6 @@
 ---
 title: Redis 安装配置
+weight: 2
 ---
 
 Redis 安装，配置认证密码，配置 service 服务。

@@ -1,5 +1,6 @@
 ---
 title: Redis 数据类型 Hash
+weight: 4
 ---
 
 Redis 对 `JSON` 数据的支持不是很友好。通常把 `JSON` 转成 `String` 存储到 Redis 中，但现在的 `JSON` 数据都是连环嵌套的，每次更新

@@ -1,5 +1,6 @@
 ---
 title: 字典
+wight: 2
 ---
 
 Redis 中除了 hash 结构的数据会用到字典外，整个 Redis 数据库的所有 key 和 value 也组成了一个全局字典，还有带过期时间的 key 集合

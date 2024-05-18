@@ -1,5 +1,6 @@
 ---
 title: Redis 数据类型 Sorted Set
+weight: 6
 ---
 
 Redis 的有序集合和 `Set` 一样也是 `String` 类型元素的集合,且不允许重复的成员。 Redis 提供的最为特色的数据结构。不同的是每个元素都

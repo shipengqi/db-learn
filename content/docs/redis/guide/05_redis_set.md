@@ -1,5 +1,6 @@
 ---
 title: Redis 数据类型 Set
+weight: 5
 ---
 
 Redis 的 `Set` 是 `string` 类型的无序集合，类似于 `List` 类型。但是集合中不允许重复成员的存在。一个 Redis 集合中最多可

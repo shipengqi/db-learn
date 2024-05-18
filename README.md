@@ -9,6 +9,8 @@ Development:
 ```sh
 # install hugo-book as git submodule
 git submodule add git@github.com:alex-shpak/hugo-book.git themes/book
+# update submodule
+git submodule update --init
 
 hugo server --minify --theme book
 ```

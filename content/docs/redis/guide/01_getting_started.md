@@ -1,24 +1,19 @@
 ---
 title: Redis 入门
+weight: 1
 ---
 
 [Redis 中文官网的介绍](http://www.redis.cn/)：
-
-Redis（Remote Dictionary Service）是目前互联网技术领域使用最为广泛的存储中间件，它是一个开源（BSD 许可）的，内存中的数据结构存储系
-统，它可以用作数据库、缓存和消息中间件。它支持多种类型的数据结构，如 字符串（strings）， 散列（hashes）， 列表（lists），
-集合（sets）， 有序集合（sorted sets） 与范围查询，bitmaps， hyperloglogs 和 地理空间（geospatial） 索引半径查询。 Redis 内置了
- 复制（replication），LUA 脚本（Lua scripting），LRU 驱动事件（LRU eviction），事务（transactions） 和不同级别的 磁
- 盘持久化（persistence），并通过 Redis 哨兵（Sentinel）和自动 分区（Cluster）提供高可用性（high availability）。
 
 ## 数据类型
 
 Redis 一共支持 5 种数据类型：
 
-- [字符串(Strings)](03_redis-string.md)
-- [哈希(Hashs)](04_redis-hash.md)
-- [列表(Lists)](07_redis-list.md)
-- [集合(Sets)](05_redis-set.md)
-- [有序集合(SortedSets)](06_redis-sortedset.md)
+- [字符串(Strings)](03_redis_string.md)
+- [哈希(Hashs)](04_redis_hash.md)
+- [列表(Lists)](07_redis_list.md)
+- [集合(Sets)](05_redis_set.md)
+- [有序集合(SortedSets)](06_redis_sortedset.md)
 
 ### String（字符串）
 
