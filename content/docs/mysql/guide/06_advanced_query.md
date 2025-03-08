@@ -1,6 +1,6 @@
 ---
-title: MySQL 复杂查询语句
-weight: 4
+title: 复杂查询语句
+weight: 6
 ---
 
 ## 子查询

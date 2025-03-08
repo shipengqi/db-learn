@@ -1,4 +1,4 @@
-# Summary
+# Book List
 
 ## MySQL
 
@@ -25,3 +25,5 @@
 
 - 关系型数据库与非关系型数据库
 - Hbase 列式存储
+- https://github.com/dunwu/db-tutorial
+- https://www.ddkk.com/zhuanlan/db/redis-action/1.html

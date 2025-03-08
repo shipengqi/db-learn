@@ -1,6 +1,6 @@
 ---
 title: 其他
-weight: 6
+weight: 8
 ---
 
 ## 视图

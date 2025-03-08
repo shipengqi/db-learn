@@ -1,6 +1,6 @@
 ---
 title: 写操作
-weight: 5
+weight: 7
 ---
 
 ## 插入数据

@@ -1,6 +1,6 @@
 ---
-title: 简单查询语句
-weight: 3
+title: 简单查询
+weight: 5
 ---
 
 

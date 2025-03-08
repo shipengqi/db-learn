@@ -4,15 +4,27 @@ Database learning ...
 
 ## Usage
 
-Development:
+Initialize project as a Hugo Module using the `hugo mod init` command:
 
 ```sh
-# install hugo-book as git submodule
-git submodule add git@github.com:alex-shpak/hugo-book.git themes/book
-# update submodule
-git submodule update --init
+hugo mod init github.com/shipengqi/db-learn
+```
 
-hugo server --minify --theme book
+Adding the [Hextra](https://github.com/imfing/hextra) theme:
+
+```yaml
+baseURL: "https://shipengqi.github.io/db-learn"
+title: "Database Learning"
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+```
+
+Start server:
+
+```sh
+hugo server -D
 ```
 
 Manually deploy:
@@ -23,7 +35,16 @@ Manually deploy:
 
 > Any changes in the `content` directory will automatically trigger a deployment.
 
-## Menu
+## Update Theme
 
-By default, the [hugo-book](https://github.com/alex-shpak/hugo-book) theme will render pages from the `content/docs` section as a menu in a tree structure.
-You can set `title` and `weight` in the front matter of pages to adjust the order and titles in the menu.
+To update all Hugo modules in your project to their latest versions, run the following command:
+
+```
+hugo mod get -u
+```
+
+To update Hextra to the latest released version, run the following command:
+
+```
+hugo mod get -u github.com/imfing/hextra
+```

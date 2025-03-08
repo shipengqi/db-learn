@@ -1,4 +1,4 @@
 ---
 title: Redis
-weight: 1
+weight: 2
 ---
