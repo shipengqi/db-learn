@@ -14,7 +14,7 @@ weight: 1
 Linux 下的安装目录一般为 `/usr/local/mysql/`。Windows 一般为 `C:\Program Files\MySQL\MySQL Server x.x`
 （记住你自己的安装目录）。
 
-### bin目录
+### bin 目录
 
 打开 `/usr/local/mysql/bin`，执行 `tree`：
 
