@@ -328,8 +328,6 @@ SELECT * FROM person_info WHERE name > 'Asa' AND name < 'Barlow' AND birthday > 
 
 对于联合索引 `idx_name_birthday_phone_number` 来说，**只能用到 name 列的部分，而用不到 birthday 列的部分，因为只有 name 值相同的情况下才能用 birthday 列的值进行排序**。
 
-MySQL 5.6 支持索引下推优化， `birthday > '1980-01-01'` 也可以用到索引。
-
 ### 精确匹配某一列并范围匹配另外一列
 
 对于同一个联合索引来说，虽然对多个列都进行范围查找时只能用到最左边那个索引列，但是如果左边的列是精确查找，则右边的列可以进行范围查找，比方说这样：
@@ -343,8 +341,6 @@ SELECT * FROM person_info WHERE name = 'Ashburn' AND birthday > '1980-01-01' AND
 `birthday > '1980-01-01' AND birthday < '2000-12-31'`，由于 name 列是精确查找，所以通过 `name = 'Ashburn'`条件查找后得到的结果的 name 值都是相同的，它们会再按照 birthday 的值进行排序。所以此时对 birthday 列进行范围查找是可以用到 B+ 树索引的。
 
 `phone_number > '15100000000'`，通过 birthday 的范围查找的记录的 birthday 的值可能不同，所以这个条件无法再利用 B+ 树索引了，只能遍历上一步查询得到的记录。
-
-MySQL 5.6 支持索引下推优化， `phone_number > '15100000000'` 也可以用到索引。
 
 ### 用于排序
 
@@ -442,14 +438,17 @@ SELECT name, birthday, phone_number FROM person_info WHERE name > 'Asa' AND name
 4. 将过滤后的数据返回给服务器层
 
 ```sql
--- 索引 (name,age)
-SELECT * FROM users WHERE name LIKE 'J%' and age = 20;
--- age 条件可以下推
+-- 联合索引 (name,age,position)
+SELECT * FROM employees WHERE name like 'LiLei%' AND age = 22 AND position ='manager';
 ```
 
-没有 ICP 的情况下，存储引擎需要先获取所有满足 `name LIKE 'J%'` 的主键 ID，然后再进行一次回表扫描，找到完整的记录，服务器层再根据 `age = 20` 的过滤条件进行筛选。很明显，这种方式大量的数据需要回表，而且浪费了联合索引的 age 字段。
+在MySQL 5.6之 前的版本没有 ICP，这个查询只能在联合索引里匹配到名字是 'LiLei' 开头的索引，然后拿这些索引对应的主键逐个回表，到主键索引上找出相应的记录，服务器层再根据 `age` 和 `position` 的过滤条件进行筛选。这种情况只会走 `name` 字段索引，无法很好的利用索引。
 
-ICP 可以将 `age = 20` 条件下推到存储引擎层，存储引擎获取满足 `name LIKE 'J%'` 条件的记录之后，直接再根据 `age = 20` 的条件在联合索引中进行过滤，只有符合条件的记录才会回表，提高了查询效率。
+MySQL 5.6 引入了索引下推优化 ICP，上面那个查询在联合索引里匹配到名字是 'LiLei' 开头的索引之后，同时还会在索引里过滤 `age` 和 `position` 这两个字段，拿着过滤完剩下的索引对应的主键 `id` 再回表查整行数据。
+
+#### 为什么范围查找 MySQL 没有用索引下推优化？
+
+可能是 MySQL 认为索引下推需要额外的判断，范围查找过滤的结果集过大，会导致更多的计算，`like KK%` 在绝大多数情况来看，过滤后的结果集比较小，所以这里 MySQL 选择给 `like KK%` 用了索引下推优化，当然这也不是绝对的，有时 `like KK%` 也不一定就会走索引下推。
 
 ### 不在索引列上做任何操作（计算、函数、（自动 or 手动）类型转换），会导致索引失效而转向全表扫描
 
@@ -481,19 +480,50 @@ select * from employees where id >=15001 and id <=20000;
 
 ### 如何挑选索引
 
+索引设计的核心思想就是尽量利用一两个复杂的多字段联合索引，抗下 80% 以上的查询，然后用一两个辅助索引尽量抗下剩余的一些非典型查询，保证这种大数据量表的查询尽可能多的都能充分利用索引，这样就能保证查询速度和性能了。
+
+#### 代码先行，索引后上
+
+一般应该等到主体业务功能开发完毕，把涉及到该表相关sql都要拿出来分析之后再建立索引。
+
+#### 联合索引尽量覆盖条件
+
+可以设计一个或者两三个联合索引(尽量少建单值索引)，让每一个联合索引都尽量去包含 sql 语句里的 where、order by、group by 的字段，还要确保这些联合索引的字段顺序尽量满足 sql 查询的最左前缀原则。
+
+联合索引中的某个字段通常是范围查找，最好把这个字段放在联合索引的最后面。因为一般情况下，范围查找之后的字段就无法走索引了。
+
+示例：
+
+```sql
+-- 联合索引 (province,city,sex)
+SELECT * FROM users WHERE province = xx AND city = xx AND age <= xx AND age >= xx;
+
+-- 范围查找字段放在联合索引的最后面
+-- 联合索引 (province,city,sex,age)
+-- 索引修改后，会导致上面的 sql age 无法走索引，可以优化为
+SELECT * FROM users WHERE province = xx AND city = xx AND sex in ('female','male') AND age <= xx AND age >= xx;
+```
+
+假设可能还有一个筛选条件，比如要筛选最近一周登录过的用户，对应后台 sql 可能是这样：
+
+```sql
+where province=xx and city=xx and sex in ('female','male') and age>=xx and age<=xx and
+latest_login_time>= xx
+```
+`latest_login_time` 也是一个范围查找字段，如果把它放在联合索引里，如 `(province,city,sex,hobby,age,latest_login_time)`，显然是不行的。可以换一种思路，设计一个字段 `is_login_in_latest_7_days`，用户如果一周内有登录值就为 1，否则为 0，那么就可以把索引设计成 `(province,city,sex,hobby,is_login_in_latest_7_days,age)` 来满足上面那种场景。
+
+
+
 #### 只为用于搜索、排序或分组的列创建索引
 
-#### 考虑列的基数
+#### 不要在小基数字段上建立索引
 
-**列的基数**指的是某一列中不重复数据的个数，比方说某个列包含值 `2, 5, 8, 2, 5, 8, 2, 5, 8`，虽然有 9 条记录，但该列的基数却是 `3`。也就是说，在**记录行数一定的情况下，列的基数越大，该列中的值越分散，列的基数越小，该列中的值越集中**。
-
-假设某个列的基数为 1，也就是所有记录在该列中的值都一样，那为该列建立索引是没有用的，因为所有值都一样就无法排序，无法进行快速查找了
-
-而且如果某个建立了二级索引的列的重复值特别多，那么使用这个二级索引查出的记录还可能要做回表操作，这样性能损耗就更大了。
-
-**最好为那些列的基数大的列建立索引，为基数太小列的建立索引效果可能不好**。
+索引基数是指这个字段在表里总共有多少个不同的值，比如一张表总共 100 万行记录，其中有个性别字段，其值不是男就是女，那么该字段的基数就是 2。对这种小基数字段建立索引的话，还不如全表扫描。因为索引树里就包含男和女两种值，根本没
+法进行快速的二分查找，那用索引就没有太大的意义了。
 
 #### 索引列的类型尽量小
+
+尽量对字段类型较小的列设计索引，因为字段类型较小的话，占用磁盘空间也会比较小。
 
 以整数类型为例，有 `TINYINT`、`MEDIUMINT`、`INT`、`BIGINT` 这么几种，它们占用的存储空间依次递增，我们这里所说的**类型大小指的就是该类型表示的数据范围的大小**。
 
@@ -502,15 +532,13 @@ select * from employees where id >=15001 and id <=20000;
 - 数据类型越小，在查询时进行的比较操作越快（这是 CPU 层次的东东）
 - 数据类型越小，**索引占用的存储空间就越少，在一个数据页内就可以放下更多的记录，从而减少磁盘 I/O 带来的性能损耗，也就意味着可以把更多的数据页缓存在内存中，从而加快读写效率**。
 
-#### 只对字符串的前几个字符进行索引
+#### 长字符串我们可以采用前缀索引
 
 假设我们的字符串很长，那存储一个字符串就需要占用很大的存储空间。
 
-B+树索引中的记录需要把该列的完整字符串存储起来，而且字符串越长，在索引中占用的存储空间越大。
+例如，`varchar(100)` 这种大字段建立索引，可以稍微优化下，比如针对这个字段的前 20 个字符建立索引，就是说，对这个字段里的每个值的前 20 个字符放在索引树里。
 
-如果 B+树索引中索引列存储的字符串很长，那在做字符串比较时会占用更多的时间。
-
-只对字符串的前几个字符进行索引也就是说在二级索引的记录中只保留字符串前几个字符。这样在查找记录时虽然不能精确的定位到记录的位置，但是能定位到相应前缀所在的位置，然后根据前缀相同的记录的主键值回表查询完整的字符串值，再对比就好了。
+这样在根据 name 字段来搜索记录时虽然不能精确的定位到记录的位置，但是能定位到相应前缀所在的位置，然后根据前缀相同的记录的主键值回表查询完整的字符串值，再对比就好了。
 
 ```sql
 CREATE TABLE person_info(
@@ -522,15 +550,7 @@ CREATE TABLE person_info(
 );
 ```
 
-但是会影响排序，因为二级索引中不包含完整的 name 列信息，所以无法对前十个字符相同，后边的字符不同的记录进行排序，也就是使用索引列前缀的方式无法支持使用索引排序，只好乖乖的用文件排序喽。
-
-前缀索引就用不上覆盖索引对查询性能的优化 因为系统并不确定前缀索引的定义是否截断了完整信息。
-
-使用前缀索引，定义好长度，就可以做到既节省空间，又不用额外增加太多的查询成本。
-
-于是，你就有个问题：当要给字符串创建前缀索引时，有什么方法能够确定我应该使用多长的前缀呢？
-
-实际上，我们在建立索引时关注的是区分度，区分度越高越好。因为区分度越高，
+但是对于 order by name，那么此时你的 name 因为在索引树里仅仅包含了前 20 个字符，无法对后边的字符不同的记录进行排序， group by 也是同理。
 
 #### 让索引列在比较表达式中单独出现
 
@@ -538,7 +558,7 @@ CREATE TABLE person_info(
 
 `WHERE my_col * 2 < 4` 是以 `my_col * 2` 这样的表达式的形式出现的，存储引擎会依次**遍历所有的记录**，计算这个表达式的值是不是小于 4
 
-`WHERE my_col < 4/2` my_col 列并是以单独列的形式出现的，这样的情况可以直接使用 B+树索引。
+`WHERE my_col < 4/2` my_col 列并是以单独列的形式出现的，这样的情况可以直接使用 B+ 树索引。
 
 **如果索引列在比较表达式中不是以单独列的形式出现，而是以某个表达式，或者函数调用形式出现的话，是用不到索引的**。
 
@@ -562,3 +582,293 @@ select * from t force index(a) where a between 10000 and 20000;/*Q2*/
 
 第二种方法就是，可以考虑修改语句，引导 MySQL 使用我们期望的索引。
 第三种方法是，在有些场景下，我们可以新建一个更合适的索引，来提供给优化器做选择，或删掉误用的索引。
+
+
+## Using filesort 文件排序原理详解
+
+
+文件排序方式：
+
+- 单路排序：是一次性取出（聚簇索引）满足条件行的所有字段，然后在 sort buffer 中进行排序；trace 工具可以看到 sort_mode 信息里显示 `<sort_key, additional_fields>` 或者 `<sort_key,packed_additional_fields>`，sort_key 就表示排序的 key，additional_fields 表示表中的其他字段。
+- 双路排序（又叫**回表排序模式**）：是首先根据相应的条件取出相应的排序字段和可以直接定位行数据的主键 ID，然后在 sort buffer 中进行排序，排序完后需要再次取回其它需要的字段；trace 工具可以看到 sort_mode 信息里显示`<sort_key, rowid>`，sort_key 就表示排序的 key，rowid 表示主键 ID。
+
+判断使用哪种排序模式：
+
+- 如果字段的总长度小于 `max_length_for_sort_data` ，那么使用单路排序模式；
+- 如果字段的总长度大于 `max_length_for_sort_data` ，那么使用双路排序模式。
+
+
+如果 MySQL 排序内存 sort_buffer 配置的比较小并且没有条件继续增加了，可以适当把 `max_length_for_sort_data` 配置小点，让优化器选择使用双路排序算法，可以在 sort_buffer 中一次排序更多的行，只是需要再根据主键回到原表取数据。
+
+如果 MySQL 排序内存有条件可以配置比较大，可以适当增大 `max_length_for_sort_data` 的值，让优化器优先选择全字段排序(单路排序)，把需要的字段放到 sort_buffer 中，这样排序后就会直接从内存里返回查
+询结果了。
+
+所以，MySQL 通过 `max_length_for_sort_data` 这个参数来控制排序，在不同场景使用不同的排序模式，从而提升排序效率。
+
+> 注意，如果全部使用 sort_buffer 内存排序一般情况下效率会高于磁盘文件排序，但不能因为这个就随便增大 sort_buffer(默认 1M)，mysql 很多参数设置都是做过优化的，不要轻易调整。
+
+在磁盘中排序，最终还是要加载到内存中进行排序的，只不过由于数据量太大，需要先创建临时文件，然后在一块更大的内存中再加载临时文件进行排序，不会在 sort_buffer 中进行排序了。
+
+## 查询优化
+
+```sql
+select * from employees limit 10000,10;
+```
+
+从表 employees 中取出从 10001 行开始的 10 行记录。看似只查询了 10 条记录，实际这条 SQL 是先读取 10010 条记录，然后抛弃前 10000 条记录，然后返回后面 10 条想要的数据。因此要**查询一张大表比较靠后的数据，执行效率是非常低的**。
+
+
+### 常见的分页场景优化技巧
+
+1. 根据**自增且连续**的主键排序的分页查询
+
+```sql
+select * from employees limit 90000,5;
+
+-- 优化为
+select * from employees where id > 90000 limit 5;
+```
+
+但是，这条改写的 SQL 在很多场景并不实用，因为表中可能某些记录被删后，主键空缺，导致结果不一致。
+
+2. 根据非主键字段排序的分页查询
+
+```sql
+-- 联合索引 (name,age,position)
+-- 该 sql 没有使用 name 字段的索引，因为查找联合索引的结果集太大，并回表的成本比扫描全表的成本更高，所以优化器放弃使用索引。
+select * from employees ORDER BY name limit 90000,5;
+
+-- 关键是让排序时返回的字段尽可能少，所以可以让排序和分页操作先查出主键，然后根据主键查到对应的记录，SQL 改写如下
+-- 优化为
+select * from employees e inner join (select id from employees order by name limit 90000,5) ed on e.id = ed.id;
+```
+
+优化后的语句全部都走了索引，其中 `(select id from employees order by name limit 90000,5)` 使用了覆盖索引来优化，查询的字段只有 id 字段，而且排好了序。`(select id from employees order by name limit 90000,5) ed` 产生的临时表只有 5 条记录，然后再根据主键 id 去 employees 表中查询对应的记录。
+
+#### JOIN 关联查询优化
+
+测试数据：
+
+```sql
+-- 示例表：
+CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_a` (`a`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+create table t2 like t1;
+
+-- 插入一些示例数据
+-- 往t1表插入1万行记录
+DROP PROCEDURE IF EXISTS insert_t1;
+DELIMITER ;;
+
+CREATE PROCEDURE insert_t1()
+BEGIN
+  DECLARE i INT;
+  SET i = 1;
+  WHILE i <= 10000 DO
+    INSERT INTO t1(a, b) VALUES(i, i);
+    SET i = i + 1;
+  END WHILE;
+END;;
+
+DELIMITER ;
+
+CALL insert_t1();
+
+
+-- 往t2表插入100行记录
+DROP PROCEDURE IF EXISTS insert_t2;
+DELIMITER ;;
+
+CREATE PROCEDURE insert_t2()
+BEGIN
+  DECLARE i INT;
+  SET i = 1;
+  WHILE i <= 100 DO
+    INSERT INTO t2(a, b) VALUES(i, i);
+    SET i = i + 1;
+  END WHILE;
+END;;
+
+DELIMITER ;
+
+CALL insert_t2();
+```
+
+mysql 的表关联常见有两种算法：
+- Nested-Loop Join 算法
+- Block Nested-Loop Join 算法
+
+**1. Nested-Loop Join 算法**：
+
+一次一行循环地从第一张表（称为**驱动表**）中读取行，在这行数据中取到关联字段，根据关联字段在另一张表（**被驱动表**）里取出满足条件的行，然后取出两张表的结果合集。
+
+```sql
+EXPLAIN select * from t1 inner join t2 on t1.a= t2.a;
+```
+
+![]()
+
+从执行计划中可以看到：
+
+- 驱动表是 t2，被驱动表是 t1。先执行的就是驱动表(执行计划结果的 id 如果一样则按从上到下顺序执行 sql)；**优化器一般会优先选择小表做驱动表。所以使用 inner join 时，排在前面的表并不一定就是驱动表**。
+- 如果执行计划 Extra 中未出现 Using join buffer 则表示使用的 join 算法是 NLJ。
+
+sql 的大致流程如下：
+1. 从表 t2 中读取一行数据（如果 t2 表有查询过滤条件的，会从过滤结果里取出一行数据）；
+2. 从第 1 步的数据中，取出关联字段 a，到表 t1 中查找；
+3. 取出表 t1 中满足条件的行，跟 t2 中获取到的结果合并，作为结果返回给客户端；
+4. 重复上面 3 步。
+
+整个过程会读取 t2 表的所有数据(扫描 100 行)，然后遍历这每行数据中字段 a 的值，根据 t2 表中 a 的值索引扫描 t1 表中的对应行(扫描 100 次 t1 表的索引，1 次扫描可以认为最终只扫描 t1 表一行完整数据，也就是总共 t1 表也扫描了 100 行)。因此整个过程扫描了 200 行。
+
+**如果被驱动表的关联字段没索引，使用 NLJ 算法性能会比较低，mysql会选择 Block Nested-Loop Join 算法**。
+
+**2. Block Nested-Loop Join 算法**：
+
+
+**把驱动表的数据读入到 join_buffer 中**，然后扫描被驱动表，把被驱动表每一行取出来跟 **join_buffer 中的所有数据**一起做对比。
+
+```sql
+EXPLAIN select * from t1 inner join t2 on t1.b = t2.b;
+```
+
+![]()
+
+Extra 中 的 Using join buffer (Block Nested Loop)说明该关联查询使用的是 BNL 算法。
+
+sql 的大致流程如下：
+1. 把 t2 的所有数据放入到 join_buffer 中
+2. 把表 t1 中每一行取出来，跟 join_buffer 中的所有数据做对比
+3. 返回满足 join 条件的数据
+
+
+整个过程对表 t1 和 t2 都做了一次全表扫描，因此扫描的总行数为 `10000 (表 t1 的数据总量) + 100 (表 t2 的数据总量) = 10100`。并且 join_buffer 里的数据是无序的，因此对表 t1 中的每一行，都要做 100 次判断，所以内存中的判断次数是 `100 * 10000= 100 万次`。
+
+join_buffer 的大小是由参数 `join_buffer_size` 设定的，默认值是 `256k`。如果放不下表 t2 的所有数据话，策略很简单，就是**分段放**。
+
+比如 t2 表有 1000 行记录， join_buffer 一次只能放 800 行数据，那么执行过程就是先往 join_buffer 里放 800 行记录，然后从 t1 表里取数据跟 join_buffer 中数据对比得到部分结果，然后清空 join_buffer，再放入 t2 表剩余 200 行记录，再次从 t1 表里取数据跟 join_buffer 中数据对比。所以就多扫了一次 t1 表。
+
+**被驱动表的关联字段没索引为什么要选择使用 BNL 算法而不使用 Nested-Loop Join 呢**？
+
+如果上面第二条 sql 使用 Nested-Loop Join，那么扫描行数为 `100 * 10000 = 100 万行`，由于没有 t1.b 是没有索引的，意味这要进行**全表扫描**，这个要在磁盘中扫描 t1 表的所有行。很显然，用 BNL 磁盘扫描次数少很多，相比于磁盘扫描，BNL 的内存计算会快得多。
+
+
+对于关联 sql 的优化
+- **关联字段加索引**，让 mysql 做 join 操作时尽量选择 NLJ 算法
+- **小表驱动大表**，写多表连接 sql 时如果明确知道哪张表是小表可以用 straight_join 写法固定连接驱动方式，省去 mysql 优化器自己判断的时间。
+
+
+`straight_join` 解释：straight_join 功能同 join 类似，但能让左边的表来驱动右边的表，能改表优化器对于联表查询的执行顺序。
+比如：`select * from t2 straight_join t1 on t2.a = t1.a`; 代表指定 mysql 选着 t2 表作为驱动表。
+**`straight_join`只适用于 inner join**，并不适用于left join，right join。（因为 left join，right join 已经代表指定了表的执行顺序）
+尽可能让优化器去判断，因为大部分情况下 mysql 优化器是比人要聪明的。使用 straight_join 一定要慎重，因为部分情况下人为指定的执行顺序并不一定会比优化引擎要靠谱。
+
+
+**对于小表定义的明确**：
+
+在决定哪个表做驱动表的时候，应该是两个表按照各自的条件过滤，过滤完成之后，计算参与 join 的各个字段的总数据量，数据量小的那个表，就是“小表”，应该作为驱动表。
+
+
+**join buffer**：
+
+当被驱动表中的数据非常多时，每次访问被驱动表，被驱动表的记录会被加载到内存中，在内存中的每一条记录只会和驱动表结果集的一条记录做匹配，之后就会被从内存中清除掉。然后再从驱动表结果集中拿出另一条记录，再一次把被驱动表的记录加载到内存中一遍，周而复始，**驱动表结果集中有多少条记录，就得把被驱动表从磁盘上加载到内存中多少次**。所以可以在把被驱动表的记录加载到内存的时候，一次性和多条驱动表中的记录做匹配，这样就可以大大减少重复从磁盘上加载被驱动表的代价了。
+
+`join buffer` 就是执行连接查询前申请的一块固定大小的内存，先把**若干条驱动表结果集中的记录装在这个 `join buffer` 中**，然后开始扫描被驱动表，**每一条被驱动表的记录一次性和 join buffer 中的多条驱动表记录做匹配**，因为匹配的过程都是在内存中完成的，所以这样可以显著减少被驱动表的 I/O 代价。
+
+另外需要注意的是，驱动表的记录并不是所有列都会被放到join buffer中，只有查询列表中的列和过滤条件中的列才会被放到join buffer中，所以，**最好不要把 `*` 作为查询列表**，只需要把我们关心的列放到查询列表就好了，这样还可以在 `join buffer` 中放置更多的记录。
+
+
+
+#####  Hash Join 原理（仅支持等值连接）
+
+MySQL 中的 Hash Join 是一种高效的**等值连接算法**，尤其适合**没有索引、表不太大或临时表**操作的场景。
+
+```sql
+SELECT * FROM t1 JOIN t2 ON t1.id = t2.id;
+```
+
+Hash Join 分两个阶段进行：
+
+1. Build Phase（构建哈希表）
+  - 优化器选择较小的一张表（如 t2）作为构建表（build input）。
+  - 把这张表的连接列（如 t2.id）作为 key，构建哈希表，存入内存。
+2. Probe Phase（探测匹配项）
+  - 遍历另一张较大的表 t1。
+  - 以连接键 t1.id 去刚刚构建的哈希表中查找匹配项。
+
+```
+-- 探测并输出结果：
+for each row in t1:
+    if hash_table contains t1.id:
+        output (t1, hash_table[t1.id])
+```
+
+相对于传统的 Nested Loop Join（嵌套循环），Hash Join 将连接时间复杂度从 O(n*m) 降低到接近 O(n + m)，适合**无索引的中小表等值连接**。
+
+
+限制：
+
+- **只支持等值连接**，例如 `ON a.id = b.id`，不能用范围条件如 `>`、`<`。
+- 大表内存不够会溢出，如果构建的哈希表过大，会使用磁盘上的临时表，性能降低
+
+
+**in 和 exsits 优化**:
+原则：**小表驱动大表**
+
+in：当 B 表的数据集小于 A 表的数据集时，in 优于 exists `select * from A where id in (select id from B)`。
+
+```
+#等价于：
+for(select id from B){
+     select * from A where A.id = B.id
+}
+```
+
+exists：当 B 表的数据集大于 A 表的数据集时，exists 优于 in `select * from A where exists (select 1 from B where B.id = A.id)`。
+
+`EXISTS` (subquery)只返回TRUE或FALSE,因此子查询中的 `SELECT *` 也可以用 `SELECT 1` 替换,官方说法是实际执行时会忽略 `SELECT` 清单,因此没有区别
+
+```
+#等价于：
+for(select * from A){
+    select * from B where B.id = A.id
+}
+```
+
+
+
+#### count(*) 查询优化
+
+
+```sql
+EXPLAIN select count(1) from employees;
+EXPLAIN select count(id) from employees;
+EXPLAIN select count(name) from employees;
+EXPLAIN select count(*) from employees;
+```
+
+四个 sql 的执行计划一样，说明这四个 sql 执行效率应该差不多。
+
+
+字段有索引：`count(*)≈count(1)>count(字段)>count(主键 id)`，字段有索引，`count(字段)` 统计走二级索引，二级索引存储数据比主键索引少，所以 `count(字段)>count(主键 id)`
+字段无索引：`count(*)≈count(1)>count(主键 id)>count(字段)`，字段没有索引 `count(字段)` 统计走不了索引，`count(主键 id)` 还可以走主键索引，所以 `count(主键 id)>count(字段)`。
+
+`count(*)` mysql 是专门做了优化，并不会把全部字段取出来，不取值，按行累加，效率很高。
+
+`count(1)` 跟 `count(字段)`执行过程类似，不过 `count(1)` 不需要取出字段统计，就用常量 1 做统计，`count(字段)` 还需要取出字段，所以理论上 `count(1)` 比 `count(字段)` 会快一点。
+
+为什么对于 `count(id)`，mysql 最终选择辅助索引而不是主键聚集索引？因为二级索引相对主键索引存储数据更少，检索性能应该更高。
+
+
+不带 where 条件的常见优化方法：
+
+1. 对于 myisam 存储引擎的表做不带 where 条件的 count 查询性能是很高的，因为 myisam 存储引擎的表的总行数会被 mysql 存储在磁盘上，查询不需要计算。
+2. `show table status` 可以看到表的行数，但是这个行数是不准确的。性能很高。例如 `show table status like 'employees'`。
+3. 将总数维护到 Redis 里，插入或删除表数据行的时候同时维护 redis 里的表总行数 key 的计数值(用 incr 或 decr 命令)，但是这种方式可能不准，很难保证表操作和redis操作的**事务一致性**
+4. 增加数据库计数表，插入或删除表数据行的时候同时维护计数表，让他们在同一个事务里操作
