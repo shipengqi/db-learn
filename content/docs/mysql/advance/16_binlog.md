@@ -41,3 +41,16 @@ binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 
 一个事务的 binlog 是不能被拆开的，因此不论这个事务多大，也要确保一次性写入。这就涉及到了 binlog cache 的保存问题。
 
 系统给 binlog cache 分配了一片内存，每个线程一个，参数 binlog_cache_size 用于控制单个线程内 binlog cache 所占内存的大小。如果超过了这个参数规定的大小，就要暂存到磁盘。
+
+
+为什么会有redo log和binlog两份日志呢？
+因为最开始 MySQL 里并没有 InnoDB 引擎。MySQL 自带的引擎是 MyISAM，但是MyISAM 没有 crash-safe 的能
+力，binlog 日志只能用于归档。而 InnoDB 是另一个公司以插件形式引入 MySQL 的，既然只依靠 binlog 是没有
+crash-safe 能力的，所以InnoDB 使用另外一套日志系统——也就是 redo log 来实现 crash-safe 能力。
+有了 redo log，InnoDB 就可以保证即使数据库发生异常重启，之前提交的记录都不会丢失，这个能力称为crash safe。
+
+
+
+/*******************
+自旋线程不会主动让出 CPU，但是自旋线程的 CPU 时间片用完后，调度器会强制切换其他线程。
+ */
