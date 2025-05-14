@@ -305,11 +305,12 @@ DELIMITER ;
 CALL insert_t2();
 ```
 
-mysql 的表关联常见有两种算法：
+MySQL 的表关联常见有两种算法：
+
 - Nested-Loop Join 算法
 - Block Nested-Loop Join 算法
 
-**1. Nested-Loop Join 算法**：
+#### 1. Nested-Loop Join 算法
 
 一次一行循环地从第一张表（称为**驱动表**）中读取行，在这行数据中取到关联字段，根据关联字段在另一张表（**被驱动表**）里取出满足条件的行，然后取出两张表的结果合集。
 
@@ -324,7 +325,7 @@ EXPLAIN select * from t1 inner join t2 on t1.a= t2.a;
 - 驱动表是 t2，被驱动表是 t1。先执行的就是驱动表(执行计划结果的 id 如果一样则按从上到下顺序执行 sql)；**优化器一般会优先选择小表做驱动表。所以使用 inner join 时，排在前面的表并不一定就是驱动表**。
 - 如果执行计划 Extra 中未出现 Using join buffer 则表示使用的 join 算法是 NLJ。
 
-sql 的大致流程如下：
+SQL 的大致流程如下：
 1. 从表 t2 中读取一行数据（如果 t2 表有查询过滤条件的，会从过滤结果里取出一行数据）；
 2. 从第 1 步的数据中，取出关联字段 a，到表 t1 中查找；
 3. 取出表 t1 中满足条件的行，跟 t2 中获取到的结果合并，作为结果返回给客户端；
@@ -332,10 +333,9 @@ sql 的大致流程如下：
 
 整个过程会读取 t2 表的所有数据(扫描 100 行)，然后遍历这每行数据中字段 a 的值，根据 t2 表中 a 的值索引扫描 t1 表中的对应行(扫描 100 次 t1 表的索引，1 次扫描可以认为最终只扫描 t1 表一行完整数据，也就是总共 t1 表也扫描了 100 行)。因此整个过程扫描了 200 行。
 
-**如果被驱动表的关联字段没索引，使用 NLJ 算法性能会比较低，mysql会选择 Block Nested-Loop Join 算法**。
+**如果被驱动表的关联字段没索引，使用 NLJ 算法性能会比较低，MySQL 会选择 Block Nested-Loop Join 算法**。
 
-**2. Block Nested-Loop Join 算法**：
-
+#### 2. Block Nested-Loop Join 算法
 
 **把驱动表的数据读入到 join_buffer 中**，然后扫描被驱动表，把被驱动表每一行取出来跟 **join_buffer 中的所有数据**一起做对比。
 
@@ -345,7 +345,7 @@ EXPLAIN select * from t1 inner join t2 on t1.b = t2.b;
 
 ![]()
 
-Extra 中 的 Using join buffer (Block Nested Loop)说明该关联查询使用的是 BNL 算法。
+`Extra` 中 的 `Using join buffer` (Block Nested Loop)说明该关联查询使用的是 BNL 算法。
 
 sql 的大致流程如下：
 1. 把 t2 的所有数据放入到 join_buffer 中
@@ -364,9 +364,10 @@ join_buffer 的大小是由参数 `join_buffer_size` 设定的，默认值是 `2
 如果上面第二条 sql 使用 Nested-Loop Join，那么扫描行数为 `100 * 10000 = 100 万行`，由于没有 t1.b 是没有索引的，意味这要进行**全表扫描**，这个要在磁盘中扫描 t1 表的所有行。很显然，用 BNL 磁盘扫描次数少很多，相比于磁盘扫描，BNL 的内存计算会快得多。
 
 
-对于关联 sql 的优化
-- **关联字段加索引**，让 mysql 做 join 操作时尽量选择 NLJ 算法
-- **小表驱动大表**，写多表连接 sql 时如果明确知道哪张表是小表可以用 straight_join 写法固定连接驱动方式，省去 mysql 优化器自己判断的时间。
+对于关联 SQL 的优化
+
+- **关联字段加索引**，让 MySQL 做 join 操作时尽量选择 NLJ 算法
+- **小表驱动大表**，写多表连接 SQL 时如果明确知道哪张表是小表可以用 straight_join 写法固定连接驱动方式，省去 mysql 优化器自己判断的时间。
 
 
 `straight_join` 解释：straight_join 功能同 join 类似，但能让左边的表来驱动右边的表，能改表优化器对于联表查询的执行顺序。

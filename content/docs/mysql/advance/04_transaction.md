@@ -1,6 +1,6 @@
 ---
 title: 事务
-weight: 11
+weight: 4
 ---
 
 事务的四个特性 ACID：
@@ -35,7 +35,7 @@ START TRANSACTION
 BEGIN
 ```
 
-`START TRANSACTION` 语句后边可以跟随几个修饰符，就是它们几个，`START TRANSACTION READ ONLY;`，`START TRANSACTION READ ONLY, WITH CONSISTENT SNAPSHOT;`：
+`BEGIN` 和 `START TRANSACTION` 差不多，不过 `START TRANSACTION` 语句后边可以跟随几个修饰符，就是它们几个，`START TRANSACTION READ ONLY;`，`START TRANSACTION READ ONLY, WITH CONSISTENT SNAPSHOT;`：
 
 - `READ ONLY`：标识当前事务是一个只读事务，也就是属于该事务的数据库操作只能读取数据，而不能修改数据。
 - `READ WRITE`：标识当前事务是一个读写事务，也就是属于该事务的数据库操作既可以读取数据，也可以修改数据。
@@ -58,7 +58,7 @@ select * from ordertotals;
 
 **`ROLLBACK` 只能在一个事务处理内使用（在执行一条 `START TRANSACTION` 命令之后）**。
 
-##### 哪些语句可以回退
+##### 哪些语句不可以回退
 
 `CREATE` 或 `DROP` 操作不能回退。事务处理块中可以使用这两条语句，但如果你执行回退，它们不会被撤销。
 

@@ -1,6 +1,6 @@
 ---
 title: 事务的隔离级别
-weight: 14
+weight: 5
 ---
 
 ## 事务并发执行遇到的问题
@@ -63,9 +63,9 @@ SET [GLOBAL|SESSION] TRANSACTION ISOLATION LEVEL level;
 
 ## MVCC
 
-MVCC（Multi-Version Concurrency Control）多版本并发控制，是一种并发控制的方法，一般在数据库管理系统中，实现对数据库的并发访问，在编程语言中实现事务内存。
+MVCC（Multi-Version Concurrency Control）**多版本并发控制**，是一种并发控制的方法，一般在数据库管理系统中，实现对数据库的并发访问。
 
-InnoDB 存储引擎实现了 MVCC，用来解决**读已提交**和**可重复读**的问题。
+InnoDB 存储引擎实现了 MVCC，用来解决**不可重复读**和**幻读**的问题。
 
 ### 版本链
 

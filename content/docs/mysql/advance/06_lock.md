@@ -1,6 +1,6 @@
 ---
 title: 锁
-weight: 15
+weight: 6
 ---
 
 ## 锁分类
@@ -61,7 +61,7 @@ RC 读已提交级别不会升级为表锁，因为 RC 级别下，**不需要�
 
 ### 间隙锁（Gap Lock）
 
-间隙锁，锁的就是**两个值之间的空隙**，间隙锁是在**可重复读隔离级别下才会生效**。Mysql 默认级别是 RR，有幻读问题，**间隙锁是可以解决幻读问题的**。
+间隙锁，锁的就是**两个值之间的空隙**，间隙锁是在**可重复读隔离级别下才会生效**。MySQL 默认隔离级别是 RR，有幻读问题，**间隙锁是可以解决幻读问题的**。
 
 ![gap-lock](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/gap-lock.png)
 

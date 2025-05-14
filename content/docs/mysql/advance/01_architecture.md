@@ -5,7 +5,7 @@ weight: 1
 
 一条 SQL 查询语句在 MySQL 内的执行过程，是怎样的？
 
-![arch-simple]()
+![arch-simple](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/arch-simple.png)
 
 上图是 MySQL 的基本架构示意图。MySQL 大致可以分为两部分：**Server 层** 和 **存储引擎层**。
 

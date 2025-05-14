@@ -1,6 +1,6 @@
 ---
 title: MySQL 日志机制
-weight: 16
+weight: 7
 ---
 
 
