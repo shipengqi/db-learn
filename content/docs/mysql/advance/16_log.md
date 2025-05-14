@@ -1,6 +1,6 @@
 ---
 title: MySQL 日志机制
-weight: 17
+weight: 16
 ---
 
 
@@ -18,9 +18,9 @@ WAL 的好处：
 - 日志是**顺序 I/O**（追加写入），比随机 I/O 快得多（尤其是机械硬盘时代）。
   - 先顺序 I/O 写入日志文件，数据页可后续批量写入数据表文件，减少 I/O 频率（innodb 中是以页为单位来进行磁盘 IO 的，一个页面默认是 16KB，也就是说在该事务提交时不得不将一个完整的页面从内存中刷新到磁盘，哪怕只修改一个字节也要刷新 16KB 的数据到磁盘上）。
 
-## redo log 关键配置
+### redo log 关键配置
 
-### innodb_log_buffer_size
+#### innodb_log_buffer_size
 
 设置 redo log buffer 大小参数，默认 `16M`，最大值是 `4096M`，最小值为 `1M`。
 
@@ -28,7 +28,7 @@ WAL 的好处：
 show variables like '%innodb_log_buffer_size%';
 ```
 
-### innodb_log_group_home_dir
+#### innodb_log_group_home_dir
 
 设置 redo log 文件存储位置，默认值为 `./`，即 innodb 数据文件存储位置，其中的 `ib_logfile0` 和 `ib_logfile1` 即为 redo log 文件。
 
@@ -36,7 +36,7 @@ show variables like '%innodb_log_buffer_size%';
 show variables like '%innodb_log_group_home_dir%';
 ```
 
-### innodb_log_files_in_group
+#### innodb_log_files_in_group
 
 磁盘上的 redo log 文件不只一个，而是以一个日志文件组的形式出现的。`innodb_log_files_in_group` 设置 redo log 文件组中文件个数，默认值为 2，命名方式如: `ib_logfile0`, `iblogfile1` ... `iblogfileN`。
 
@@ -45,18 +45,18 @@ show variables like '%innodb_log_group_home_dir%';
 show variables like '%innodb_log_files_in_group%';
 ```
 
-#### redo log 写入磁盘过程
+##### redo log 写入磁盘过程
 
 在将 redo log 写入日志文件组时，是从 `ib_logfile0` 开始写，如果 `ib_logfile0` 写满了，就接着 `ib_logfile1` 写，同理，`ib_logfile1` 写满了就去写 `ib_logfile2`，依此类推。如果写到最后一个文件该咋办？那就重新转到 `ib_logfile0` 继续写。类似环形的写入，假设现在有四个 redo log 文件，如下图，
 
-![redo-log-write]()
+![redo-log-write](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redo-log-write.png)
 
 - **write pos** 是当前记录的位置，一边写一边后移，写到第 3 号文件末尾后就回到 0 号文件开头。
 - **checkpoint** 是当前要擦除的位置，也是往后推移并且循环的，擦除记录前要把记录更新到**数据文件**。
 
 write pos 和 checkpoint 之间的部分就是空着的**可写部分**，可以用来记录新的操作。如果 write pos 追上 checkpoint，表示 redo log 写满了，这时候不能再执行新的更新，得停下来先擦掉一些记录，把 checkpoint 推进一下。
 
-### innodb_log_file_size    
+#### innodb_log_file_size
 
 设置 redo log 文件大小，默认值为 `48M`，最大值为 `512G`，注意**最大值指的是所有 redo log 文件之和**，即 `innodb_log_files_in_group * innodb_log_file_size` 不能大于最大值 `512G`。
 
@@ -64,7 +64,7 @@ write pos 和 checkpoint 之间的部分就是空着的**可写部分**，可以
 show variables like '%innodb_log_file_size%';
 ```
 
-### innodb_flush_log_at_trx_commit
+#### innodb_flush_log_at_trx_commit
 
 这个参数控制 redo log 的写入策略，可选值：
 
@@ -87,7 +87,7 @@ show variables like 'innodb_flush_log_at_trx_commit';
 set global innodb_flush_log_at_trx_commit = 1;
 ```
 
-#### redo 日志刷盘时机
+##### redo 日志刷盘时机
 
 `innodb_flush_log_at_trx_commit` 是控制**事务提交**时 redo 日志写入磁盘的策略，还有其他的一些时机也会触发 redo 日志写入磁盘：
 
@@ -415,7 +415,64 @@ binlog 的 `expire_logs_days` 如何设置，一般最好比全量备份的间�
 
 为了保证事务的原子性，就需要把东西改回原先的样子，这个过程就称之为**回滚**。
 
+每当对一条记录做改动时（`INSERT`、`DELETE`、`UPDATE`），都需要把回滚时所需的东西都给记下来。例如：
 
-/*******************
-自旋线程不会主动让出 CPU，但是自旋线程的 CPU 时间片用完后，调度器会强制切换其他线程。
- */
+- 插入一条记录时，至少要把这条记录的主键值记下来，之后回滚的时候只需要把这个主键值对应的记录删掉就好了。
+- 删除了一条记录，至少要把这条记录中的内容都记下来，这样之后回滚时再把由这些内容组成的记录插入到表中就好了。
+- 修改了一条记录，至少要把修改这条记录前的旧值都记录下来，这样之后回滚时再把这条记录更新为旧值就好了。
+
+这些为了回滚而记录的这些日志就称之为 **undo log**。
+
+### 事务 id 分配的时机
+
+事务执行过程中，只有在第一次真正修改记录时（执行 `INSERT`、`DELETE`、`UPDATE` 这些语句或加排它锁操作比如 `select...for update` 语句时），才会被分配一个单独的事务 id，否则在一个只读事务中的事务 id 值都默认为 0。
+
+### trx_id 和 roll_pointer 隐藏列
+
+**聚簇索引的记录除了会保存完整的用户数据以外，而且还会自动添加名为 `trx_id`、`roll_pointer` 的隐藏列**。如果用户没有在表中定义主键以及 UNIQUE 键，还会自动添加一个名为 `row_id` 的隐藏列。
+
+- `trx_id` 就是某个聚簇索引记录被修改时所在的事务对应的**事务 id**。
+- `roll_pointer` 就是一个**指向记录对应的 undo log 的一个指针**。
+
+### undo log 回滚段
+
+InnoDB 对 undo log 文件的管理采用段的方式，也就是**回滚段**（rollback segment）。**每个回滚段记录了 `1024` 个 undo log segment，每个事务只会使用一个 undo log segment**。
+
+在 MySQL 5.5 时只有一个回滚段，那么最大同时支持的事务数量为 1024 个。MySQL 5.6 以后，InnoDB 支持最大 128 个回滚段，故其支持同时在线的事务限制提高到了 `128*1024`。
+
+查看 undo log 相关参数：
+
+```sql
+show variables like '%innodb_undo%';
+show variables like 'innodb_rollback_segments';
+```
+
+- `innodb_undo_directory`：undo log 文件所在的路径。默认值为 `./`，即 innodb 数据文件存储位置，目录下 `ibdata1` 文件就是 undo log 存储的位置。
+- `innodb_undo_tablespaces`: undo log 文件的数量，这样回滚段可以较为平均地分布在多个文件中。设置该参数后，会在路径 `innodb_undo_directory` 看到 `undo` 为前缀的文件。
+- `innodb_rollback_segments`: undo log 文件内部回滚段的个数，默认值为 `128`。
+
+### undo log 日志什么时候删除
+
+新增类型的，在事务提交之后就可以清除掉了。
+修改类型的，事务提交之后不能立即清除掉，这些日志会用于 mvcc。只有当没有事务用到该版本信息时才可以清除。
+
+## 错误日志
+
+MySQL 有一个比较重要的日志是错误日志，它记录了数据库启动和停止，以及运行过程中发生任何严重错误时的相关信息。当数据库出现任何故障导致无法正常使用时，建议首先查看此日志。在 MySQL 数据库中，错误日志功能是默认开启的，而且无法被关闭。
+
+```sql
+show variables like '%log_error%';
+```
+
+
+## 通用查询日志
+
+通用查询日志**记录用户的所有操作**，包括启动和关闭 MySQL 服务、所有用户的连接开始时间和截止时间、发给 MySQL 数据库服务器的所有 SQL 指令等，如 `select`、`show` 等，无论 SQL 的语法正确还是错误、也无论 SQL 执行成功还是失败，MySQL 都会将其记录下来。
+
+一般不建议开启，只在需要调试查询问题时开启。因为开启会消耗系统资源并且占用大量的磁盘空间。
+
+```sql
+show variables like '%general_log%';
+-- 打开通用查询日志
+SET GLOBAL general_log=on;
+```

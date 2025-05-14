@@ -3,19 +3,9 @@ title: 事务的隔离级别
 weight: 14
 ---
 
-```sql
-CREATE TABLE hero (
-    number INT,
-    name VARCHAR(100),
-    country varchar(100),
-    PRIMARY KEY (number)
-) Engine=InnoDB CHARSET=utf8;
-```
-
 ## 事务并发执行遇到的问题
 
-当数据库上多个事务并发执行的时候，就可能出现**脏写**（Dirty Write）、**脏读**（Dirty Read）、**不可重复读**（Non-Repeatable Read）、
-**幻读**（Phantom Read）的问题。
+当数据库上多个事务并发执行的时候，就可能出现**脏写**（Dirty Write）、**脏读**（Dirty Read）、**不可重复读**（Non-Repeatable Read）、**幻读**（Phantom Read）的问题。
 
 问题按照严重性来排序：
 
@@ -33,21 +23,13 @@ CREATE TABLE hero (
 
 ### 不可重复读
 
-"不可重复读"是指，**一个事务只能读到另一个已经提交的事务修改过的数据，并且其他事务每对该数据进行一次修改并提交后，该事务都能查询得到最新值**。
-
-![](../../../images/un-repearable-read-sample.jpg)
-
-如上图在 Session B 中提交了几个隐式事务（注意是隐式事务，意味着语句结束事务就提交了），这些事务都修改了 number 列为 1 的记录的列 name 的值，每次事务提交之后，Session A 中的事务都可以查看到最新的值，这就是不可重复读。
+**如果一个事务能读到另一个已经提交的事务修改过的数据，并且其他事务每对该数据进行一次修改并提交后，该事务都能查询得到最新值，那就意味着发生了不可重复读**。
 
 ### 幻读
 
-"幻读"是指。**一个事务先根据某些条件查询出了一些记录，然后另一个事务又向表中插入了一些符合这些条件的记录，第一个事务再次使用相同条件查询时，把另一个事务插入的记录也读出来了**。
+**如果一个事务先根据某些条件查询出一些记录，之后另一个事务又向表中插入了符合这些条件的记录，原先的事务再次按照该条件查询时，能把另一个事务插入的记录也读出来，那就意味着发生了幻读**。
 
-![](../../../images/phantom-read-sample.jpg)
-
-如上图，Session A 中的事务先根据条件 `number > 0` 这个条件查询表 hero，得到了 name 列值为'刘备'的记录；之后 Session B 中提交了一个隐式事务，该事务向表 hero 中插入了一条新记录；之后 Session A 中的事务再根据相同的条件 `number > 0` 查询表 hero，得到的结果集中包含了 Session B 中的事务新插入的那条记录，这就是幻读。
-
-> 那对于先前已经读到的记录，之后记录被别的事物删除了，导致又读取不到了，这种情况，算不算幻读？这不属于幻读，幻读只是重点强调了读取到了之前读取没有获取到的记录。
+> 不可重复读的重点是**修改**，幻读的重点在于**新增**或者**删除**。
 
 ## 四种隔离级别
 
@@ -60,7 +42,14 @@ CREATE TABLE hero (
 
 MySQL 的默认隔离级别为 `REPEATABLE READ`。**MySQL在 `REPEATABLE READ` 隔离级别下，是可以禁止幻读问题的发生的**。
 
-**隔离级别越低，越严重的问题就越可能发生**。
+**隔离级别越高事务隔离性越好，但性能就越低；隔离级别越低，越严重的问题就越可能发生**：
+
+| 事务隔离级别 | 脏读 | 不可重复读 | 幻读 |
+| --- | --- | --- | --- |
+| 读未提交 (read uncommitted) | 可能 | 可能 | 可能 |
+| 读已提交 (read committed) | 不可能 | 可能 | 可能 |
+| 可重复读 (repeatable read) | 不可能 | 不可能 | 可能 |
+| 串行化 (serializable) | 不可能 | 不可能 | 不可能 |
 
 ### 设置事务的隔离级别
 
@@ -68,18 +57,22 @@ MySQL 的默认隔离级别为 `REPEATABLE READ`。**MySQL在 `REPEATABLE READ` 
 SET [GLOBAL|SESSION] TRANSACTION ISOLATION LEVEL level;
 ```
 
-level可选值有4个：REPEATABLE READ，READ COMMITTED，READ UNCOMMITTED，SERIALIZABLE
+`level` 可选值有 4 个：`REPEATABLE READ`，`READ COMMITTED`，`READ UNCOMMITTED`，`SERIALIZABLE`。
 
 启动参数 `transaction-isolation` 可以设置事务的默认隔离级别。
 
-## MVCC（Multi-Version Concurrency Control）多版本并发控制原理
+## MVCC
+
+MVCC（Multi-Version Concurrency Control）多版本并发控制，是一种并发控制的方法，一般在数据库管理系统中，实现对数据库的并发访问，在编程语言中实现事务内存。
+
+InnoDB 存储引擎实现了 MVCC，用来解决**读已提交**和**可重复读**的问题。
 
 ### 版本链
 
 InnoDB 存储引擎它的聚簇索引记录中都包含两个必要的隐藏列：
 
-- `trx_id`：每次一个事务对某条聚簇索引记录进行改动时，都会把该事务的**事务 id** 赋值给 trx_id 隐藏列。
-- `roll_pointer`：每次对某条聚簇索引记录进行改动时，都会把旧的版本写入到 undo 日志中，然后这个隐藏列就相当于一个指针，可以通过它来找到该记录修改前的信息。
+- `trx_id`：每次一个事务对某条聚簇索引记录进行改动时，都会把该事务的**事务 id** 赋值给 `trx_id` 隐藏列。
+- `roll_pointer`：每次对某条聚簇索引记录进行改动时，都会把旧的版本写入到 undo log 中，然后这个隐藏列就相当于一个指针，可以通过它来找到该记录修改前的信息。
 
 假设插入一条记录，事务 id 为 80，之后另外两个事务 id 分别为 100、200 的事务对这条记录进行更新：
 
@@ -94,11 +87,11 @@ InnoDB 存储引擎它的聚簇索引记录中都包含两个必要的隐藏列�
 | 7 |  | `update hero set name = '诸葛' where number = 1;` |
 | 8 |  | `commit;` |
 
-每次对记录进行改动，都会记录一条 undo 日志，每条 undo 日志也都有一个 roll_pointer 属性（INSERT 操作对应的 undo 日志没有该属性，因为该记录并没有更早的版本），可以将这些undo日志都连起来，串成一个链表。对该记录每次更新后，都会将旧值放到一条undo日志中，就算是该记录的一个旧版本，随着更新次数的增多，所有的版本都会被roll_pointer属性连接成一个链表，这个链表称之为**版本链**。
+每次对记录进行改动，都会记录一条 undo log，每条 undo log 也都有一个 `roll_pointer` 属性，可以将这些 undo log 都连起来，串成一个链表。对该记录每次更新后，都会将旧值放到一条 undo log 中，就算是该记录的一个旧版本，随着更新次数的增多，所有的版本都会被 `roll_pointer` 属性连接成一个链表，这个链表称之为**版本链**。
 
 **版本链的头节点就是当前记录最新的值**。
 
-![versions-link.png]()
+![versions-link](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/versions-link.png)
 
 ### ReadView
 
@@ -126,17 +119,17 @@ ReadView 中主要包含 4 个比较重要的内容：
 
 **如果某个版本的数据对当前事务不可见的话，那就顺着版本链找到下一个版本的数据，继续按照上边的步骤判断可见性，依此类推，直到版本链中的最后一个版本**。如果最后一个版本也不可见的话，那么就意味着该条记录对该事务完全不可见，查询结果就不包含该记录。
 
-READ COMMITTED 和 REPEATABLE READ 隔离级别的的一个非常大的区别就是它们**生成 ReadView 的时机不同**。
+`READ COMMITTED` 和 `REPEATABLE READ` 隔离级别的的一个非常大的区别就是它们**生成 ReadView 的时机不同**。
 
-- READ COMMITTD 在**每一次**进行普通 SELECT 操作前都会生成一个 ReadView。
-- REPEATABLE READ 只在**第一次**进行普通 SELECT 操作前生成一个 ReadView，之后的查询操作都重复使用这个 ReadView 就好了。
+- `READ COMMITTD` 在**每一次**进行普通 `SELECT` 操作前都会生成一个 ReadView。
+- `REPEATABLE READ` 只在**第一次**进行普通 `SELECT` 操作前生成一个 ReadView，之后的查询操作都重复使用这个 ReadView 就好了。
 
 ## 大事务的影响
 
 - 并发情况下，数据库连接池容易被撑爆
 - 锁定太多的数据，造成大量的阻塞和锁超时
 - 执行时间长，容易造成主从延迟
-- 回滚所需要的时间比较长，如果大事务中有大量的 update 操作，回滚时也需要逐个去找 undo log 进行回滚。
+- 回滚所需要的时间比较长，如果大事务中有大量的 `update` 操作，回滚时也需要逐个去找 undo log 进行回滚。
 - undo log 膨胀，事务未提交，undo log 会一直存在。
 - 容易导致死锁
 
@@ -153,11 +146,11 @@ READ COMMITTED 和 REPEATABLE READ 隔离级别的的一个非常大的区别就
 ## 事务问题定位
 
 ```sql
-# 查询执行时间超过 1 秒的事务
+-- 查询执行时间超过 1 秒的事务
 SELECT * FROM information_schema.innodb_trx
 WHERE TIME_TO_SEC( timediff( now( ), trx_started ) ) > 1;
 
-# 强制结束事务
+-- 强制结束事务
 kill 线程 id (就是上面语句查出结果里的 trx_mysql_thread_id 字段的值)
 ```
 

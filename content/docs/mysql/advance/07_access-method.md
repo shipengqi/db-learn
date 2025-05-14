@@ -146,38 +146,3 @@ SELECT * FROM single_table WHERE key1 < 'a' OR key3 > 'z'
 
 Sort-Union的适用场景是单独根据搜索条件从某个二级索引中获取的记录数比较少，这样即使对这些二级索引记录按照主键值进行排序的成本也不会太高
 
-### 联合索引替代Intersection索引合并
-
-```sql
-SELECT * FROM single_table WHERE key1 = 'a' AND key3 = 'b';
-```
-
-这个查询之所以可能使用Intersection索引合并的方式执行，还不是因为idx_key1和idx_key3是两个单独的B+树索引，你要是把这两个列搞一个联合索引，那直接使用这个联合索引就把事情搞定了，何必用啥索引合并呢，就像这样：
-
-```sql
-ALTER TABLE single_table drop index idx_key1, idx_key3, add index idx_key1_key3(key1, key3);
-```
-
-## 索引下推
-
-满足最左前缀原则的时候，最左前缀可以用于在索引中定位记录。这时，你可能要问，那些不符合最左前缀的部分，会怎么样呢？
-
-我们还是以市民表的联合索引（name, age）为例。如果现在有一个需求：检索出表中“名字第一个字是张，而且年龄是10岁的所有男孩”。那么，SQL语句是这么写的：
-
-```sql
-select * from tuser where name like '张%' and age=10 and ismale=1;
-```
-
-这个语句在搜索索引树的时候，只能用 “张”，找到第一个满足条件的记录ID3。当然，这还不错，总比全表扫描要好。
-
-然后呢？
-
-当然是判断其他条件是否满足。
-
-在MySQL 5.6之前，只能从ID3开始一个个回表。到主键索引上找出数据行，再对比字段值。
-
-而MySQL 5.6 引入的**索引下推**优化（index condition pushdown)， 可以在**索引遍历过程中，对索引中包含的字段先做判断，直接过滤掉不满足条件的记录，减少回表次数**。
-
-![](../../../images/index-down.png)
-
-![](../../../images/index-down2.png)

@@ -5,7 +5,7 @@ weight: 8
 
 **`JOIN` 的本质就是把各个连接表中的记录都取出来依次匹配的组合加入结果集并返回给用户**。
 
-![join-sample]()
+![join-cartesian-product](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/join-cartesian-product.png)
 
 这个过程看起来就是把 `t1` 表的记录和 `t2` 的记录连起来组成新的更大的记录，所以这个查询过程称之为**连接查询**。
 

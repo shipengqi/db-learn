@@ -10,9 +10,7 @@ weight: 11
 - 隔离性（Isolation）：在事务并发执行时，他们内部的操作不能互相干扰。隔离性由 MySQL 的各种锁以及 MVCC 机制来实现。
 - 持久性（Durable）：一旦提交了事务，它对数据库的改变就应该是永久性的。持久性由 redo log 日志来实现。
 
-事务处理是一种机制，用来管理必须成批执行的 MySQL 操作，以保证数据库不包含不完整的操作结果。利用事务处理，可以保证一组操作不会中途停止，
-它们或者作为整体执行，或者完全不执行（除非明确指示）。如果没有错误发生，整组语句提交给（写到）数据库表。如果发生错误，则进行回退（撤销）
-以恢复数据库到某个已知且安全的状态。
+事务处理是一种机制，用来管理必须成批执行的 MySQL 操作，以保证数据库不包含不完整的操作结果。利用事务处理，可以保证一组操作不会中途停止，它们或者作为整体执行，或者完全不执行（除非明确指示）。如果没有错误发生，整组语句提交（写到）数据库表。如果发生错误，则进行回退（撤销）以恢复数据库到某个已知且安全的状态。
 
 关于事务处理需要知道的几个术语：
 
@@ -20,28 +18,6 @@ weight: 11
 - **回退**（rollback）指撤销指定 SQL 语句的过程；
 - **提交**（commit）指将未存储的 SQL 语句结果写入数据库表；
 - **保留点**（savepoint）指事务处理中设置的临时占位符（`place- holder`），你可以对它发布回退（与回退整个事务处理不同）
-
-事务并发执行遇到的问题：
-
-- 脏写（Dirty Write）：如果一个事务修改了另一个未提交事务修改过的数据，那就意味着发生了脏写。
-- 读脏数据（Dirty Read）：如果一个事务读到了另一个未提交事务修改过的数据，那就意味着发生了脏读。
-- 不可重复读（Unrepeatable Read）：如果一个事务能读到另一个已经提交的事务修改过的数据，并且其他事务每对该数据进行一次修改并提交后，该事务都能查询得到最新值，那就意味着发生了不可重复读。
-- 幻读（Phantom Read）：如果一个事务先根据某些条件查询出一些记录，之后另一个事务又向表中插入了符合这些条件的记录，原先的事务再次按照该条件查询时，能把另一个事务插入的记录也读出来，那就意味着发生了幻读。
-  - 不可重复读的重点是**修改**，幻读的重点在于**新增**或者**删除**。
-
-SQL 标准中的四种隔离级别，隔离级别越高事务隔离性越好，但性能就越低；隔离级别越低，越严重的问题就越可能发生：
-
-- read uncommit（读未提交）：脏读
-- read commit（读已提交）：不可重复读
-- repeatable read（可重复读）：幻读
-- serializable（串行）：解决上面所有问题，包括脏写
-
-| 事务隔离级别 | 脏读 | 不可重复读 | 幻读 |
-| --- | --- | --- | --- |
-| 读未提交 (read uncommitted) | 可能 | 可能 | 可能 |
-| 读已提交 (read committed) | 不可能 | 可能 | 可能 |
-| 可重复读 (repeatable read) | 不可能 | 不可能 | 可能 |
-| 串行化 (serializable) | 不可能 | 不可能 | 不可能 |
 
 ## 语法
 
@@ -61,10 +37,7 @@ BEGIN
 
 `START TRANSACTION` 语句后边可以跟随几个修饰符，就是它们几个，`START TRANSACTION READ ONLY;`，`START TRANSACTION READ ONLY, WITH CONSISTENT SNAPSHOT;`：
 
-`READ ONLY`：标识当前事务是一个只读事务，也就是属于该事务的数据库操作只能读取数据，而不能修改数据。
-
-其实只读事务中只是不允许修改那些其他事务也能访问到的表中的数据，对于临时表来说（我们使用`CREATE TMEPORARY TABL`E创建的表），由于它们只能在当前会话中可见，所以只读事务其实也是可以对临时表进行增、删、改操作的。
-
+- `READ ONLY`：标识当前事务是一个只读事务，也就是属于该事务的数据库操作只能读取数据，而不能修改数据。
 - `READ WRITE`：标识当前事务是一个读写事务，也就是属于该事务的数据库操作既可以读取数据，也可以修改数据。
 - `WITH CONSISTENT SNAPSHOT`：启动一致性读。
 
@@ -81,22 +54,17 @@ rollback;
 select * from ordertotals;
 ```
 
-先执行一条 `SELECT` 以显示该表不为空。然后开始一个事务处理，用一条 `DELETE` 语句删除 `ordertotals` 中的所有行。
-另一条 `SELECT` 语句验证 `ordertotals` 确实为空。这时用一条 `ROLLBACK` 语句回退 `START TRANSACTION` 之后的所有语句，最后
-一条 `SELECT` 语句显示该表不为空。
+先执行一条 `SELECT` 以显示该表不为空。然后开始一个事务处理，用一条 `DELETE` 语句删除 `ordertotals` 中的所有行。另一条 `SELECT` 语句验证 `ordertotals` 确实为空。这时用一条 `ROLLBACK` 语句回退 `START TRANSACTION` 之后的所有语句，最后一条 `SELECT` 语句显示该表不为空。
 
 **`ROLLBACK` 只能在一个事务处理内使用（在执行一条 `START TRANSACTION` 命令之后）**。
 
 ##### 哪些语句可以回退
 
-事务处理用来管理 `INSERT`、`UPDATE` 和 `DELETE` 语句。不能回退 `SELECT` 语句。（这样做也没有什么意义）不能回退 `CREATE` 或 `DROP`
-操作。事务处理块中可以使用这两条语句，但如果你执行回退，它们不会被撤销。
+`CREATE` 或 `DROP` 操作不能回退。事务处理块中可以使用这两条语句，但如果你执行回退，它们不会被撤销。
 
 #### COMMIT
 
-一般的 MySQL 语句都是直接针对数据库表执行和编写的。这就是所谓的**隐含提交**（implicit commit），即提交（写或保存）操作是自动进行的。
-
-**在事务处理块中，提交不会隐含地进行**。为进行明确的提交，使用 `COMMIT` 语句：
+**在事务处理块中，提交不会隐式地进行**。需要使用 `COMMIT` 语句显示提交：
 
 ```sql
 start transaction;
@@ -105,7 +73,7 @@ delete from orders where order_num = 20005;
 commit;
 ```
 
-> 当 `COMMIT` 或 `ROLLBACK` 语句执行后，事务会自动关闭（将来的更改会隐含提交）。
+> 当 `COMMIT` 或 `ROLLBACK` 语句执行后，事务会自动关闭（将来的更改会隐式提交）。
 
 #### 保留点
 
@@ -113,8 +81,7 @@ commit;
 
 为了支持回退部分事务处理，必须能在事务处理块中合适的位置放置占位符。这样，如果需要回退，可以回退到某个占位符。这些占位符称为**保留点**。
 
-创建占位符，可使用 `SAVEPOINT` 语句：`SAVEPOINT delete1;`。
-每个保留点都取标识它的唯一名字，以便在回退时，MySQL 知道要回退到何处。
+创建占位符，可使用 `SAVEPOINT` 语句：`SAVEPOINT delete1;`。每个保留点都取标识它的唯一名字，以便在回退时，MySQL 知道要回退到何处。
 
 回退到本例给出的保留点，可执行：`ROLLBACK TO delete1;`
 
@@ -153,7 +120,7 @@ mysql> UPDATE account SET balance = balance + 1 WHERE id = 2; # 更新错了
 Query OK, 1 row affected (0.00 sec)
 Rows matched: 1  Changed: 1  Warnings: 0
 
-mysql> ROLLBACK TO s1;  # 回滚到保存点s1处
+mysql> ROLLBACK TO s1;  # 回滚到保存点 s1 处
 Query OK, 0 rows affected (0.00 sec)
 
 mysql> SELECT * FROM account;
@@ -168,11 +135,11 @@ mysql> SELECT * FROM account;
 
 ## 自动提交
 
-MySQL中有一个系统变量 `autocommit`：
+MySQL 中有一个系统变量 `autocommit`：
 
-默认情况下，如果我们不显式的使用START TRANSACTION或者BEGIN语句开启一个事务，那么每一条语句都算是一个独立的事务，这种特性称之为事务的**自动提交**。
+默认情况下，如果不显式的使用 `START TRANSACTION` 或者 `BEGIN` 语句开启一个事务，那么每一条语句都算是一个独立的事务，这种特性称之为事务的**自动提交**。
 
-如果我们想关闭这种自动提交的功能，可以使用下边两种方法：
+如果想关闭这种自动提交的功能，可以使用下边两种方法：
 
 - 显式的的使用 `START TRANSACTION` 或者 `BEGIN` 语句开启一个事务。
 
@@ -184,34 +151,36 @@ MySQL中有一个系统变量 `autocommit`：
 SET autocommit = OFF;
 ```
 
-这样的话，我们写入的多条语句就算是属于同一个事务了，直到我们显式的写出COMMIT语句来把这个事务提交掉，或者显式的写出ROLLBACK语句来把这个事务回滚掉。
+这样的话，写入的多条语句就算是属于同一个事务了，直到显式的写出 `COMMIT` 语句来把这个事务提交掉，或者显式的写出 `ROLLBACK` 语句来把这个事务回滚掉。
 
 ## 隐式提交
 
-当我们使用START TRANSACTION或者BEGIN语句开启了一个事务，或者把系统变量 autocommit的 值设置为OFF时，事务就不会进行自动提交，但是如果我们输入了某些语句之后就会悄悄的提交掉，就像我们输入了COMMIT语句了一样，这种因为某些特殊的语句而导致事务提交的情况称为**隐式提交**。
+当使用 `START TRANSACTION` 或者 `BEGIN` 语句开启了一个事务，或者把系统变量 `autocommit` 的值设置为 `OFF` 时，事务就不会进行自动提交，但是如果输入了某些语句之后就会悄悄的提交掉，就像输入了 `COMMIT` 语句了一样，这种因为某些特殊的语句而导致事务提交的情况称为**隐式提交**。
 
 隐式提交的语句包括：
 
-- 定义或修改数据库对象的数据定义语言（Data definition language，缩写为：DDL）。
+- 定义或修改数据库对象的数据定义语言（Data definition language，缩写为：DDL）：
 
-所谓的数据库对象，指的就是数据库、表、视图、存储过程等等这些东西。当我们使用`CREATE、ALTER、DROP`等语句去修改这些所谓的数据库对象时，就会隐式的提交前边语句所属于的事务
+所谓的数据库对象，指的就是数据库、表、视图、存储过程等等这些东西。当使用 `CREATE、ALTER、DROP` 等语句去修改这些所谓的数据库对象时，就会隐式的提交前边语句所属于的事务。
 
-- 隐式使用或修改mysql数据库中的表
-当我们使用 `ALTER USER`、`CREATE USER`、`DROP USER`、`GRANT`、`RENAME USER`、`REVOKE`、`SET PASSWORD` 等语句时也会隐式的提交前边语句所属于的事务。
+- 隐式使用或修改 `mysql` 数据库中的表：
 
-- 事务控制或关于锁定的语句
-当我们在一个事务还没提交或者回滚时就又使用START TRANSACTION或者BEGIN语句开启了另一个事务时，会隐式的提交上一个事务
+当使用 `ALTER USER`、`CREATE USER`、`DROP USER`、`GRANT`、`RENAME USER`、`REVOKE`、`SET PASSWORD` 等语句时也会隐式的提交前边语句所属于的事务。
 
-或者当前的autocommit系统变量的值为OFF，我们手动把它调为ON时，也会隐式的提交前边语句所属的事务。
+- 事务控制或关于锁定的语句：
+
+当在一个事务还没提交或者回滚时就又使用 `START TRANSACTION` 或者 `BEGIN` 语句开启了另一个事务时，会隐式的提交上一个事务。
+
+或者当前的 `autocommit` 系统变量的值为 `OFF`，我们手动把它调为 `ON` 时，也会隐式的提交前边语句所属的事务。
 
 - 加载数据的语句
 
-比如我们使用LOAD DATA语句来批量往数据库中导入数据时，也会隐式的提交前边语句所属的事务。
+比如使用 `LOAD DATA` 语句来批量往数据库中导入数据时，也会隐式的提交前边语句所属的事务。
 
-- 关于MySQL复制的一些语句
+- 关于 MySQL 复制的一些语句
 
-使用START SLAVE、STOP SLAVE、RESET SLAVE、CHANGE MASTER TO等语句时也会隐式的提交前边语句所属的事务。
+使用 `START SLAVE`、`STOP SLAVE`、`RESET SLAVE`、`CHANGE MASTER TO` 等语句时也会隐式的提交前边语句所属的事务。
 
 - 其它的一些语句
 
-使用ANALYZE TABLE、CACHE INDEX、CHECK TABLE、FLUSH、 LOAD INDEX INTO CACHE、OPTIMIZE TABLE、REPAIR TABLE、RESET等语句也会隐式的提交前边语句所属的事务。
+使用 `ANALYZE TABLE`、`CACHE INDEX`、`CHECK TABLE`、`FLUSH`、`LOAD INDEX INTO CACHE`、`OPTIMIZE TABLE`、`REPAIR TABLE`、`RESET` 等语句也会隐式的提交前边语句所属的事务。

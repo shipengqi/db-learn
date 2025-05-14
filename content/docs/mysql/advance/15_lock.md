@@ -6,14 +6,13 @@ weight: 15
 ## 锁分类
 
 - 从性能上分为**乐观锁**（用版本对比或 CAS 机制）和**悲观锁**，
-  - 乐观锁适合读操作较多的场景
+  - 乐观锁适合读操作较多的场景。
   - 悲观锁适合写操作较多的场景，如果在写操作较多的场景使用乐观锁会导致大量的重试，长时间占用 CPU，降低性能。
 - 从对数据操作的粒度分，分为**表锁**、**页锁**、**行锁**。
 - 从对数据库操作的类型分，分为**读锁**和**写锁**(都属于悲观锁)，还有**意向锁**。
   - 读锁（共享锁，S 锁（**S**hared））：针对同一份数据，多个读操作可以同时进行而不会互相影响，比如：`select * from T where id=1 lock in share mode`
   - 写锁（排它锁，X 锁(e**X**clusive)）：当前写操作没有完成前，它会阻断其他写锁和读锁，数据修改操作都会加写锁，比如：`select * from T where id=1 for update`
-  - 意向锁（Intention Lock）：又称 I 锁，针对**表锁**，主要是为了提高加表锁的效率，是 mysql 数据库自己加的。当有事务给表的数据行加了共享锁或排他锁时，同时也会给表设置一个标识，代表已经有行锁了，其他事
-  务要想对表加表锁时，就不必逐行判断有没有行锁可能跟表锁冲突了，直接读这个标识就可以确定自己该不该加表锁。特别是表中的记录很多时，逐行判断加表锁的方式效率很低。而这个标识就是意向锁。
+  - 意向锁（Intention Lock）：又称 I 锁，针对**表锁**，主要是为了提高加表锁的效率，是 MySQL 数据库自己加的。**当有事务给表的数据行加了共享锁或排他锁时，同时也会给表设置一个标识，代表已经有行锁了，其他事务要想对表加表锁时，就不必逐行判断有没有行锁可能跟表锁冲突了，直接读这个标识就可以确定自己该不该加表锁**。特别是表中的记录很多时，逐行判断加表锁的方式效率很低。而这个标识就是意向锁。
     - 意向共享锁，IS 锁（**I**ntention **S**hared）：对整个表加共享锁之前，需要先获取到意向共享锁。
     - 意向排他锁，IX 锁（**I**ntention **X**clusive）：对整个表加排他锁之前，需要先获取到意向排他锁。
 
@@ -23,7 +22,7 @@ weight: 15
 
 ```sql
 ‐‐手动增加表锁
-lock table 表名称 read(write),表名称2 read(write);
+lock table 表名称 read(write),表名称2 read(write),表名称3 read;
 ‐‐查看表上加过的锁
 show open tables;
 ‐‐删除表锁
@@ -40,20 +39,19 @@ unlock tables;
 
 InnoDB 相对于 MYISAM 的最大不同有两点：
 
-- InnoDB 支持事务（TRANSACTION）
+- InnoDB 支持事务
 - InnoDB 支持行级锁
 
-注意，InnoDB 的行锁实际上是针**对索引字段加的锁**（在索引对应的索引项上做标记），**不是针对整个行记录加的锁**。并且该索引不能失效，否则会从行锁升级为表锁。**不管是以及索引还是二级索引，只要更新时使用了索引，就会对索引字段加锁，否则就会升级为表锁**。（RR 级别会升级为表锁，RC 级别不会升级为表锁）
+注意，InnoDB 的行锁实际上是针**对索引字段加的锁**（在索引对应的索引项上做标记），**不是针对整个行记录加的锁**。并且该索引不能失效（或者不存在索引），否则会从行锁升级为表锁。**不管是一级索引还是二级索引，只要更新时使用了索引，就会对索引字段加锁，否则就会升级为表锁**。（RR 级别会升级为表锁，RC 级别不会升级为表锁）
 
-比如我在 RR 级别执行如下 sql：
+比如在 RR 级别执行如下 SQL：
 
 ```sql
-select * from account where name = 'lilei' for update; ‐‐where 条件里的 name 字段无索引
+‐‐ name 字段无索引
+select * from account where name = 'lilei' for update; 
 ```
 
-由于 name 无索引，升级为表锁，则**其它 Session 对该表任意一行记录做修改，插入，删除的操作都会被阻塞住**。
-
-无索引的字段之所以会升级为表锁，是因为需要遍历整个聚簇索引，取出完整的记录，然后再判断是否满足条件。
+由于 `name` 无索引，升级为表锁，则**其它 session 对该表任意一行记录做修改，插入，删除的操作都会被阻塞住**。
 
 #### 关于 RR 级别行锁升级为表锁的原因分析
 
@@ -65,7 +63,7 @@ RC 读已提交级别不会升级为表锁，因为 RC 级别下，**不需要�
 
 间隙锁，锁的就是**两个值之间的空隙**，间隙锁是在**可重复读隔离级别下才会生效**。Mysql 默认级别是 RR，有幻读问题，**间隙锁是可以解决幻读问题的**。
 
-![gap-lock.png]()
+![gap-lock](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/gap-lock.png)
 
 上面的表中，间隙就有 id 为 `(1,4)`，`(4,112)`，`(115,正无穷)` 这三个区间，执行 sql：
 
@@ -77,7 +75,7 @@ select * from account where id = 10 for update;
 
 也就是说，**只要在间隙范围内锁了一条不存在的记录，整个间隙范围都会被锁住**，这样就能防止其它 Session 在这个间隙范围内插入数据，就解决了可重复读隔离级别的幻读问题。
 
-![gap-lock1.png]()
+![gap-lock1](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/gap-lock1.png)
 
 ### 临键锁（Next-Key Lock）
 
@@ -89,6 +87,23 @@ select * from account where id > 4 and id <= 122 for update;
 
 `(4,112)` 这个间隙和 `112` 这条记录都会被锁住，相当于 `(4,112]`。
 
+### 锁定读
+
+采用加锁方式解决脏读、不可重复读、幻读这些问题时，读取一条记录时需要获取一下该记录的 S 锁，其实这是不严谨的，有时候想在读取记录时就获取记录的 X 锁，来禁止别的事务读写该记录，MySQL 提供了两种比较特殊的 `SELECT` 语句格式：
+
+- 对读取的记录加 S 锁：
+
+```sql
+SELECT ... LOCK IN SHARE MODE;
+```
+
+- 对读取的记录加 X 锁：
+
+```sql
+SELECT ... FOR UPDATE;
+```
+
+也就是在普通的 `SELECT` 语句后边加 `FOR UPDATE`，如果当前事务执行了该语句，那么它会为读取到的记录加 X 锁，这样既不允许别的事务获取这些记录的S锁（比方说别的事务使用 `SELECT ... LOCK IN SHARE MODE` 语句来读取这些记录），也不允许获取这些记录的 X 锁。
 
 ### MyISAM 和 InnoDB 的锁
 
@@ -98,6 +113,7 @@ InnoDB 在执行查询语句 `SELECT` 时(非串行隔离级别)，不会加锁�
 
 读锁会阻塞写，但是不会阻塞读。而写锁则会把读和写都阻塞。
 
+InnoDB 存储引擎由于实现了行级锁定，虽然在锁定机制的实现方面所带来的性能损耗可能比表级锁定会要更高一下，但是在整体并发处理能力方面要远远优于MYISAM的表级锁定的。当系统并发量高的时候，InnoDB 的整体性能和 MYISAM 相比就会有比较明显的优势了。
 
 ## 锁等待分析
 
@@ -113,7 +129,7 @@ show status like 'innodb_row_lock%';
 - `Innodb_row_lock_time_max`：从系统启动到现在等待最久的一次所花的时间。
 - `Innodb_row_lock_waits`：系统启动后到现在总共等待的次数。
 
-在 MySQL 8.0，这些统计变量 不再更新或直接消失。
+在 MySQL 8.0，这些统计变量不再更新或直接消失。
 
 在 MySQL 8.0 之后，可以通过 `performance_schema` 数据库的表来查看锁的相关信息。
 
@@ -130,7 +146,7 @@ select * from information_schema.INNODB_LOCK_WAITS;
 kill <trx_mysql_thread_id>;
 ```
 
-### 死锁分析
+## 死锁分析
 
 ```sql
 ‐‐ 查看死锁，status 字段中的内容可以帮助进行死锁分析
@@ -140,209 +156,248 @@ show engine innodb status;
 示例：
 
 ```sql
+-- 插入测试数据
+CREATE TABLE hero (
+    id INT,
+    name VARCHAR(100),
+    country varchar(100),
+    PRIMARY KEY (id),
+    KEY idx_name (name)
+) Engine=InnoDB CHARSET=utf8;
+
+INSERT INTO hero VALUES
+    (1, 'l刘备', '蜀'),
+    (3, 'z诸葛亮', '蜀'),
+    (8, 'c曹操', '魏'),
+    (15, 'x荀彧', '魏'),
+    (20, 's孙权', '吴');
+
+
 -- 8.0 之后需要换成变量 transaction_isolation
 set tx_isolation='repeatable‐read';
 
 -- session 1 执行：
-select * from account where id=1 for update;
+begin;
+select * from hero where id=1 for update;
 -- session 2 执行：
-select * from account where id=2 for update;
+begin;
+select * from hero where id=3 for update;
 -- session 1 执行：
-select * from account where id=2 for update;
+select * from hero where id=3 for update;
 -- session 2 执行：
-select * from account where id=1 for update;
+select * from hero where id=1 for update;
 
 -- 查看近期死锁日志信息，根据 DEADLOCK 关键字搜索，分析：
 show engine innodb status;
 ```
 
-大多数情况 mysql 可以自动检测死锁并回滚产生死锁的那个事务，但是有些情况 mysql 没法自动检测死锁，这种情况我们可以通过日志分析找到对应事务线程 id，可以通过 kill 杀掉。
+大多数情况 mysql 可以自动检测死锁并回滚产生死锁的那个事务，但是有些情况 MySQL 没法自动检测死锁，这种情况可以通过日志分析找到对应事务线程 id，可以通过 kill 杀掉。
+
+```perl
+mysql> SHOW ENGINE INNODB STATUS\G
+...
+------------------------
+LATEST DETECTED DEADLOCK
+------------------------
+2025-05-14 14:53:26 0x2414
+*** (1) TRANSACTION:
+TRANSACTION 121629, ACTIVE 8 sec starting index read
+mysql tables in use 1, locked 1
+LOCK WAIT 3 lock struct(s), heap size 1128, 2 row lock(s)
+MySQL thread id 163, OS thread handle 7184, query id 332329 localhost ::1 root statistics
+select * from hero where id=3 for update
+
+*** (1) HOLDS THE LOCK(S):
+RECORD LOCKS space id 26 page no 4 n bits 72 index PRIMARY of table `asdb`.`hero` trx id 121629 lock_mode X locks rec but not gap
+Record lock, heap no 2 PHYSICAL RECORD: n_fields 5; compact format; info bits 0
+ 0: len 4; hex 80000001; asc     ;;
+ 1: len 6; hex 00000001daf9; asc       ;;
+ 2: len 7; hex 81000000a10110; asc        ;;
+ 3: len 7; hex 6ce58898e5a487; asc l      ;;
+ 4: len 3; hex e89c80; asc    ;;
 
 
-### 锁优化实践
+*** (1) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 26 page no 4 n bits 72 index PRIMARY of table `asdb`.`hero` trx id 121629 lock_mode X locks rec but not gap waiting
+Record lock, heap no 3 PHYSICAL RECORD: n_fields 5; compact format; info bits 0
+ 0: len 4; hex 80000003; asc     ;;
+ 1: len 6; hex 00000001daf9; asc       ;;
+ 2: len 7; hex 81000000a1011d; asc        ;;
+ 3: len 10; hex 7ae8afb8e8919be4baae; asc z         ;;
+ 4: len 3; hex e89c80; asc    ;;
 
-- 尽可能让所有数据检索都通过索引来完成，避免无索引行锁升级为表锁
-- 合理设计索引，尽量缩小锁的范围
-- 尽可能**减少检索条件范围**，避免间隙锁
-- 尽量**控制事务大小**，减少锁定资源量和时间长度，涉及事务加锁的 sql 尽量放在事务最后执行
-- 尽可能用低的事务隔离级别
 
-## 并发事务
+*** (2) TRANSACTION:
+TRANSACTION 121630, ACTIVE 5 sec starting index read
+mysql tables in use 1, locked 1
+LOCK WAIT 3 lock struct(s), heap size 1128, 2 row lock(s)
+MySQL thread id 164, OS thread handle 9416, query id 332330 localhost ::1 root statistics
+select * from hero where id=1 for update
 
-并发事务访问相同记录的情况大致可以划分为 3 种：
+*** (2) HOLDS THE LOCK(S):
+RECORD LOCKS space id 26 page no 4 n bits 72 index PRIMARY of table `asdb`.`hero` trx id 121630 lock_mode X locks rec but not gap
+Record lock, heap no 3 PHYSICAL RECORD: n_fields 5; compact format; info bits 0
+ 0: len 4; hex 80000003; asc     ;;
+ 1: len 6; hex 00000001daf9; asc       ;;
+ 2: len 7; hex 81000000a1011d; asc        ;;
+ 3: len 10; hex 7ae8afb8e8919be4baae; asc z         ;;
+ 4: len 3; hex e89c80; asc    ;;
 
-- 读-读情况：即并发事务相继读取相同的记录。不会引起什么问题，所以允许这种情况的发生。
-- 写-写情况：即并发事务相继对相同的记录做出改动。脏写的问题，任何一种隔离级别都不允许这种问题的发生。所以在多个未提交事务相继对一条记录做改动时，需要让它们排队执行，这个排队的过程其实是通过锁来实现的。
-- 读-写或写-读情况：也就是一个事务进行读取操作，另一个进行改动操作。这种情况下可能发生脏读、不可重复读、幻读的问题。
 
-方案一：读操作利用**多版本并发控制**（MVCC），写操作进行**加锁**。
+*** (2) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 26 page no 4 n bits 72 index PRIMARY of table `asdb`.`hero` trx id 121630 lock_mode X locks rec but not gap waiting
+Record lock, heap no 2 PHYSICAL RECORD: n_fields 5; compact format; info bits 0
+ 0: len 4; hex 80000001; asc     ;;
+ 1: len 6; hex 00000001daf9; asc       ;;
+ 2: len 7; hex 81000000a10110; asc        ;;
+ 3: len 7; hex 6ce58898e5a487; asc l      ;;
+ 4: len 3; hex e89c80; asc    ;;
 
-ReadView找到符合条件的记录版本（历史版本是由undo日志构建的），其实就像是在生成ReadView的那个时刻做了一次时间静止（就像用相机拍了一个快照），查询语句只能读到在生成ReadView之前已提交事务所做的更改，在生成ReadView之前未提交的事务或者之后才开启的事务所做的更改是看不到的。而**写操作肯定针对的是最新版本的记录**，叫做**当前读**，读记录的历史版本和改动记录的最新版本本身并不冲突，也就是采用MVCC时，读-写操作并不冲突。
+*** WE ROLL BACK TRANSACTION (2)
+...
 
-方案二：读、写操作都采用加锁的方式。
-
-如果我们的一些业务场景不允许读取记录的旧版本，而是每次都必须去读取记录的最新版本，比方在银行存款的事务中，你需要先把账户的余额读出来，然后将其加上本次存款的数额，最后再写到数据库中。在将账户余额读取出来后，就不想让别的事务再访问该余额，直到本次存款事务执行完成，其他事务才可以访问账户的余额。这样在读取记录的时候也就需要对其进行加锁操作，这样也就意味着**读操作和写操作也像写-写操作那样排队执行**。
-
-采用MVCC方式的话，读-写操作彼此并不冲突，性能更高，采用加锁方式的话，读-写操作彼此需要排队执行，影响性能。一般情况下我们当然愿意采用MVCC来解决读-写操作并发执行的问题，但是业务在某些特殊情况下，要求必须采用加锁的方式执行，那也是没有办法的事。
-
-### 一致性读（Consistent Reads）
-
-事务利用 MVCC 进行的读取操作称之为**一致性读**，也称之为**快照读**。
-
-### 锁定读（Locking Reads）
-
-#### 共享锁和独占锁
-
-- **共享锁**，英文名：Shared Locks，简称S锁。在事务要读取一条记录时，需要先获取该记录的S锁。
-- **独占锁**，也常称**排他锁**，英文名：Exclusive Locks，简称X锁。在事务要改动一条记录时，需要先获取该记录的X锁。
-
-假如事务T1首先获取了一条记录的S锁之后，事务T2接着也要访问这条记录：
-
-- 如果事务T2想要再获取一个记录的S锁，那么事务T2也会获得该锁，也就意味着事务T1和T2在该记录上同时持有S锁。
-- 如果事务T2想要再获取一个记录的X锁，那么此操作会被阻塞，直到事务T1提交之后将S锁释放掉。
-
-如果事务T1首先获取了一条记录的X锁之后，那么不管事务T2接着想获取该记录的S锁还是X锁都会被阻塞，直到事务T1提交。
-
-#### 锁定读的语句
-
-采用加锁方式解决脏读、不可重复读、幻读这些问题时，读取一条记录时需要获取一下该记录的S锁，其实这是不严谨的，有时候想在读取记录时就获取记录的X锁，来禁止别的事务读写该记录，为此设计MySQL的大叔提出了两种比较特殊的SELECT语句格式：
-
-- 对读取的记录加S锁：
-
-```sql
-SELECT ... LOCK IN SHARE MODE;
 ```
 
-- 对读取的记录加X锁：
+死锁信息，就是 `LATEST DETECTED DEADLOCK` 这一部分。
 
-```sql
-SELECT ... FOR UPDATE;
+第一句：
+
+```yaml
+2025-05-14 14:53:26 0x2414
 ```
 
-也就是在普通的SELECT语句后边加FOR UPDATE，如果当前事务执行了该语句，那么它会为读取到的记录加X锁，这样既不允许别的事务获取这些记录的S锁（比方说别的事务使用`SELECT ... LOCK IN SHARE MODE`语句来读取这些记录），也不允许获取这些记录的X锁
+死锁发生的时间是：`2025-05-14 14:53:26`，后边的一串十六进制 `0x2414` 表示的**操作系统为当前 session 分配的线程的线程 id**。
 
-### 多粒度锁
+然后是关于死锁发生时第一个事务的有关信息：
 
-**提高共享资源并发性的方式就是让锁定对象更有选择性。尽量只锁定需要修改的部分数据，而不是多有的资源**。只对会修改的数据进行精确的锁定。在给定的资源上，锁定的数据量越少，则系统的并发程度越高，只要不发生冲突即可。
+```yaml
+*** (1) TRANSACTION:
 
-针对记录的锁，也可以被称之为**行级锁**或者**行锁**，对一条记录加锁影响的也只是这条记录而已，我们就说这个锁的粒度比较细；其实一个事务也可以在表级别进行加锁，自然就被称之为**表级锁**或者**表锁**。
+# 事务 id 为 121629，事务处于 ACTIVE 状态已经 8 秒了，事务现在正在做的操作就是：“starting index read”
+TRANSACTION 121629, ACTIVE 8 sec starting index read
+# 此事务使用了 1 个表，为 1 个表上了锁
+mysql tables in use 1, locked 1
+# 此事务处于 LOCK WAIT 状态，拥有 3 个锁结构，heap size 是为了存储锁结构而申请的内存大小（可以忽略），其中有 2 个行锁的结构
+LOCK WAIT 3 lock struct(s), heap size 1128, 2 row lock(s)
+# 本事务所在线程的 id 是 163（MySQL 自己命名的线程 id），该线程在操作系统级别的 id 就是那一长串数字，当前查询的 id 为 332329（MySQL 内部使用，可以忽略），还有用户名主机信息
+MySQL thread id 163, OS thread handle 7184, query id 332329 localhost ::1 root statistics
+# 本事务发生阻塞的语句
+select * from hero where id=3 for update
 
-**IS、IX锁是表级锁，它们的提出仅仅为了在之后加表级别的S锁和X锁时可以快速判断表中的记录是否被上锁，以避免用遍历的方式来查看表中有没有上锁的记录，也就是说其实IS锁和IX锁是兼容的，IX锁和IX锁是兼容的**。
+# 表示该事务获取到的锁信息
+*** (1) HOLDS THE LOCK(S):
+RECORD LOCKS space id 26 page no 4 n bits 72 index PRIMARY of table `asdb`.`hero` trx id 121629 lock_mode X locks rec but not gap
+Record lock, heap no 2 PHYSICAL RECORD: n_fields 5; compact format; info bits 0
+# 主键值为 1
+ 0: len 4; hex 80000001; asc     ;;
+ 1: len 6; hex 00000001daf9; asc       ;;
+ 2: len 7; hex 81000000a10110; asc        ;;
+ 3: len 7; hex 6ce58898e5a487; asc l      ;;
+ 4: len 3; hex e89c80; asc    ;;
 
-## MySQL中的行锁和表锁
+# 本事务当前在等待获取的锁：
+*** (1) WAITING FOR THIS LOCK TO BE GRANTED:
+# 等待获取的表空间 ID 为 26，页号为 4，也就是表 hero 的P RIMAY 索引中的某条记录的锁
+# 该锁的类型是 X 锁（rec but not gap）
+RECORD LOCKS space id 26 page no 4 n bits 72 index PRIMARY of table `asdb`.`hero` trx id 121629 lock_mode X locks rec but not gap waiting
+# 记录在页面中的 heap_no 为 3，具体的记录信息如下：
+Record lock, heap no 3 PHYSICAL RECORD: n_fields 5; compact format; info bits 0
+# 这是主键值
+ 0: len 4; hex 80000003; asc     ;;
+# 这是 trx_id 隐藏列 
+ 1: len 6; hex 00000001daf9; asc       ;;
+# 这是 roll_pointer 隐藏列 
+ 2: len 7; hex 81000000a1011d; asc        ;;
+# 这是 name 列 
+ 3: len 10; hex 7ae8afb8e8919be4baae; asc z         ;;
+# 这是 country 列 
+ 4: len 3; hex e89c80; asc    ;;
+```
 
-对于MyISAM、MEMORY、MERGE这些存储引擎来说，它们只支持表级锁，而且这些引擎并不支持事务，所以使用这些存储引擎的锁一般都是针对当前会话来说的。
+从这个信息中可以看出，Session 1 中的事务为 2 条记录生成了锁结构，但是其中有一条记录上的 X 锁（rec but not gap）并没有获取到，没有获取到锁的这条记录主键值为 `80000003`，这其实是 InnoDB 内部存储使用的格式，其实就代表数字 `3`，也就是该事务在等待获取 `hero` 表聚簇索引主键值为 `3` 的那条记录的 X 锁。
 
-**因为使用MyISAM、MEMORY、MERGE这些存储引擎的表在同一时刻只允许一个会话对表进行写操作，所以这些存储引擎实际上最好用在只读，或者大部分都是读操作，或者单用户的情景下**。
+然后是关于死锁发生时第二个事务的有关信息：
 
-### InnoDB中的表级锁
+```yaml
+*** (2) TRANSACTION:
+TRANSACTION 121630, ACTIVE 5 sec starting index read
+mysql tables in use 1, locked 1
+LOCK WAIT 3 lock struct(s), heap size 1128, 2 row lock(s)
+MySQL thread id 164, OS thread handle 9416, query id 332330 localhost ::1 root statistics
+select * from hero where id=1 for update
 
-InnoDB存储引擎提供的表级S锁或者X锁是相当鸡肋，只会在一些特殊情况下，比方说崩溃恢复过程中用到。不过我们还是可以手动获取一下的，比方说在系统变量autocommit=0，innodb_table_locks = 1时，手动获取InnoDB存储引擎提供的表t的S锁或者X锁可以这么写：
+# 表示该事务获取到的锁信息
+*** (2) HOLDS THE LOCK(S):
+RECORD LOCKS space id 26 page no 4 n bits 72 index PRIMARY of table `asdb`.`hero` trx id 121630 lock_mode X locks rec but not gap
+Record lock, heap no 3 PHYSICAL RECORD: n_fields 5; compact format; info bits 0
+# 主键值为 3
+ 0: len 4; hex 80000003; asc     ;;
+ 1: len 6; hex 00000001daf9; asc       ;;
+ 2: len 7; hex 81000000a1011d; asc        ;;
+ 3: len 10; hex 7ae8afb8e8919be4baae; asc z         ;;
+ 4: len 3; hex e89c80; asc    ;;
 
-LOCK TABLES t READ：InnoDB存储引擎会对表t加表级别的S锁。
+*** (2) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 26 page no 4 n bits 72 index PRIMARY of table `asdb`.`hero` trx id 121630 lock_mode X locks rec but not gap waiting
+Record lock, heap no 2 PHYSICAL RECORD: n_fields 5; compact format; info bits 0
+# 主键值为 1
+ 0: len 4; hex 80000001; asc     ;;
+ 1: len 6; hex 00000001daf9; asc       ;;
+ 2: len 7; hex 81000000a10110; asc        ;;
+ 3: len 7; hex 6ce58898e5a487; asc l      ;;
+ 4: len 3; hex e89c80; asc    ;;
 
-LOCK TABLES t WRITE：InnoDB存储引擎会对表t加表级别的X锁。
+# 回滚事务
+*** WE ROLL BACK TRANSACTION (2)
+```
 
-不过请尽量避免在使用InnoDB存储引擎的表上使用LOCK TABLES这样的手动锁表语句
+Session 2 中的事务获取了 `hero` 表聚簇索引主键值为 `3` 的记录的 X 锁，等待获取 `hero` 表聚簇索引主键值为 `1` 的记录的 X 锁。
 
-表级别的IS锁、IX锁
+### 分析的思路
 
-当我们在对使用InnoDB存储引擎的表的某些记录加S锁之前，那就需要先在表级别加一个IS锁，当我们在对使用InnoDB存储引擎的表的某些记录加X锁之前，那就需要先在表级别加一个IX锁。IS锁和IX锁的使命只是为了后续在加表级别的S锁和X锁时判断表中是否有已经被加锁的记录，以避免用遍历的方式来查看表中有没有上锁的记录。
+1. 首先看一下发生死锁的事务等待获取锁的语句是什么。
+2. 找到发生死锁的事务中所有的语句之后，对照着事务获取到的锁和正在等待的锁的信息来分析死锁发生过程。
 
-表级别的**AUTO-INC锁**
+## 死锁检测和锁超时
 
-在使用MySQL过程中，我们可以为表的某个列添加AUTO_INCREMENT属性，之后在插入记录时，可以不指定该列的值，系统会自动为它赋上递增的值
+处理死锁的方式有两种：
 
-系统实现这种自动给AUTO_INCREMENT修饰的列递增赋值的原理主要是两个：
+- 死锁检测
+- 锁超时
 
-- 采用AUTO-INC锁，也就是在执行插入语句时就在表级别加一个AUTO-INC锁，然后为每条待插入记录的AUTO_INCREMENT修饰的列分配递增的值，在**该语句执行结束后，再把AUTO-INC锁释放掉**。这样一个事务在持有AUTO-INC锁的过程中，其他事务的插入语句都要被阻塞，可以保证一个语句中分配的递增值是连续的。
-- 采用一个**轻量级的锁**，在**为插入语句生成AUTO_INCREMENT修饰的列的值时获取一下这个轻量级锁，然后生成本次插入语句需要用到的AUTO_INCREMENT列的值之后，就把该轻量级锁释放掉**，并不需要等到整个插入语句执行完才释放锁。
+### 死锁检测
 
-当innodb_autoinc_lock_mode值为0时，一律采用AUTO-INC锁；当innodb_autoinc_lock_mode值为2时，一律采用轻量级锁；当innodb_autoinc_lock_mode值为1时，两种方式混着来（也就是在插入记录数量确定时采用轻量级锁，不确定时使用AUTO-INC锁）。不过当innodb_autoinc_lock_mode值为2时，可能会造成不同事务中的插入语句为AUTO_INCREMENT修饰的列生成的值是交叉的，在有主从复制的场景中是不安全的。
+```yaml
+innodb_deadlock_detect=ON
+```
 
-### InnoDB中的行级锁
+`innodb_deadlock_detect` 的默认值是 `on`，表示开启死锁检测。动死锁检测能够在发生死锁的时候，快速发现并进行处理，但是它也是有额外负担的。
 
-行锁，也称为记录锁，顾名思义就是在记录上加的锁。InnoDB行锁分成了各种类型。
+可以想象一下这个过程：每当一个事务被锁的时候，就要看看它所依赖的线程有没有被别人锁住，如此循环，最后判断是否出现了循环等待，也就是死锁。
 
-- Record Locks，正经记录锁，当一个事务获取了一条记录的S型正经记录锁后，其他事务也可以继续获取该记录的S型正经记录锁，但不可以继续获取X型正经记录锁；当一个事务获取了一条记录的X型正经记录锁后，其他事务既不可以继续获取该记录的S型正经记录锁，也不可以继续获取X型正经记录锁
-- Gap Locks，MySQL在REPEATABLE READ隔离级别下是可以解决幻读问题的，解决方案有两种，可以使用MVCC方案解决，也可以采用加锁方案解决。但是在使用加锁方案解决时有个大问题，就是事务在第一次执行读取操作时，那些幻影记录尚不存在，我们无法给这些幻影记录加上正经记录锁。不过这难不倒设计InnoDB的大叔，他们提出了一种称之为Gap Locks的锁，官方的类型名称为：LOCK_GAP，我们也可以简称为gap锁。比方说我们把number值为8的那条记录加一个gap锁的示意图如下：
+每个新来的被堵住的线程，都要判断会不会由于自己的加入导致了死锁，这是一个时间复杂度是 `O(n)` 的操作。假设有 1000 个并发线程要同时更新同一行，那么死锁检测操作就是 100 万这个量级的。虽然最终检测的结果是没有死锁，但是这期间要消耗大量的 CPU 资源。因此，你就会看到 CPU 利用率很高，但是每秒却执行不了几个事务。
 
-![](../../../images/lock-gap-locks.jpg)
-
-如图中为number值为8的记录加了gap锁，意味着不允许别的事务在number值为8的记录前边的间隙插入新记录，其实就是number列的值(3, 8)这个区间的新记录是不允许立即插入的。比方说有另外一个事务再想插入一条number值为4的新记录，它定位到该条新记录的下一条记录的number值为8，而这条记录上又有一个gap锁，所以就会阻塞插入操作，直到拥有这个gap锁的事务提交了之后，number列的值在区间(3, 8)中的新记录才可以被插入。
-
-这个**gap锁的提出仅仅是为了防止插入幻影记录而提出的**
-
-- Next-Key Locks，本质就是一个正经记录锁和一个gap锁的合体，它既能保护该条记录，又能阻止别的事务将新记录插入被保护记录前边的间隙。
-- Insert Intention Locks，我们说一个事务在插入一条记录时需要判断一下插入位置是不是被别的事务加了所谓的gap锁（next-key锁也包含gap锁，后边就不强调了），如果有的话，插入操作需要等待，直到拥有gap锁的那个事务提交。但是设计InnoDB的大叔规定事务在等待的时候也需要在内存中生成一个锁结构，表明有事务想在某个间隙中插入新记录，但是现在在等待。设计InnoDB的大叔就把这种类型的锁命名为Insert Intention Locks，官方的类型名称为：LOCK_INSERT_INTENTION，我们也可以称为插入意向锁。
-**插入意向锁并不会阻止别的事务继续获取该记录上任何类型的锁**
-
-- 隐式锁
-一个事务在执行INSERT操作时，如果即将插入的间隙已经被其他事务加了gap锁，那么本次INSERT操作会阻塞，并且当前事务会在该间隙上加一个插入意向锁，否则一般情况下INSERT操作是不加锁的。
-
-如果一个事务首先插入了一条记录（此时并没有与该记录关联的锁结构），然后另一个事务：
-
-立即使用SELECT ... LOCK IN SHARE MODE语句读取这条记录，也就是在要获取这条记录的S锁，或者使用SELECT ... FOR UPDATE语句读取这条记录，也就是要获取这条记录的X锁，该咋办？
-
-如果允许这种情况的发生，那么可能产生脏读问题。
-
-立即修改这条记录，也就是要获取这条记录的X锁，该咋办？
-
-如果允许这种情况的发生，那么可能产生脏写问题。
-
-情景一：对于聚簇索引记录来说，有一个trx_id隐藏列，该隐藏列记录着最后改动该记录的事务id。那么如果在当前事务中新插入一条聚簇索引记录后，该记录的trx_id隐藏列代表的的就是当前事务的事务id，如果其他事务此时想对该记录添加S锁或者X锁时，首先会看一下该记录的trx_id隐藏列代表的事务是否是当前的活跃事务，如果是的话，那么就帮助当前事务创建一个X锁（也就是为当前事务创建一个锁结构，is_waiting属性是false），然后自己进入等待状态（也就是为自己也创建一个锁结构，is_waiting属性是true）。
-
-情景二：对于二级索引记录来说，本身并没有trx_id隐藏列，但是在二级索引页面的Page Header部分有一个PAGE_MAX_TRX_ID属性，该属性代表对该页面做改动的最大的事务id，如果PAGE_MAX_TRX_ID属性值小于当前最小的活跃事务id，那么说明对该页面做修改的事务都已经提交了，否则就需要在页面中定位到对应的二级索引记录，然后回表找到它对应的聚簇索引记录，然后再重复情景一的做法。
-
-一个事务对新插入的记录可以不显式的加锁（生成一个锁结构），但是由于事务id这个牛逼的东东的存在，相当于加了一个隐式锁。别的事务在对这条记录加S锁或者X锁时，由于隐式锁的存在，会先帮助当前事务生成一个锁结构，然后自己再生成一个锁结构后进入等待状态。
-
-## 两阶段锁
-
-在InnoDB事务中，**行锁是在需要的时候才加上的，但并不是不需要了就立刻释放，而是要等到事务结束时才释放。这个就是两阶段锁协议**。
-
-**如果你的事务中需要锁多个行，要把最可能造成锁冲突、最可能影响并发度的锁尽量往后放**。
-
-假设你负责实现一个电影票在线交易业务，顾客A要在影院B购买电影票。我们简化一点，这个业务需要涉及到以下操作：
-
-从顾客A账户余额中扣除电影票价；
-
-给影院B的账户余额增加这张电影票价；
-
-记录一条交易日志。
-
-也就是说，要完成这个交易，我们需要update两条记录，并insert一条记录。当然，为了保证交易的原子性，我们要把这三个操作放在一个事务中。那么，你会怎样安排这三个语句在事务中的顺序呢？
-
-试想如果同时有另外一个顾客C要在影院B买票，那么这两个事务冲突的部分就是语句2了。因为它们要更新同一个影院账户的余额，需要修改同一行数据。
-
-根据两阶段锁协议，不论你怎样安排语句顺序，所有的操作需要的行锁都是在事务提交的时候才释放的。所以，如果你把语句2安排在最后，比如按照3、1、2这样的顺序，那么影院账户余额这一行的锁时间就最少。这就最大程度地减少了事务之间的锁等待，提升了并发度。
-
-## 死锁和死锁检测
-
-![](../../../images/dead-lock.jpg)
-
-事务A在等待事务B释放id=2的行锁，而事务B在等待事务A释放id=1的行锁。 事务A和事务B在互相等待对方的资源释放，就是进入了死锁状态。当出现死锁以后，有两种策略：
-
-1. 一种策略是，**直接进入等待，直到超时。这个超时时间可以通过参数 `innodb_lock_wait_timeout` 来设置**。
-2. 另一种策略是，**发起死锁检测，发现死锁后，主动回滚死锁链条中的某一个事务，让其他事务得以继续执行**。将参数 `innodb_deadlock_detect` 设置为 `on`，表示开启这个逻辑。
-
-`innodb_lock_wait_timeout` 的默认值是 `50s`，意味着如果采用第一个策略，当出现死锁以后，第一个被锁住的线程要过 `50s` 才会超时退出，然后其他线程才有可能继续执行。对于在线服务来说，这个等待时间往往是无法接受的。
-
-但是，我们又不可能直接把这个时间设置成一个很小的值，比如 `1s`。这样当出现死锁的时候，确实很快就可以解开，但如果不是死锁，而是简单的锁等待呢？所以，超时时间设置太短的话，会出现很多误伤。
-
-正常情况下我们还是要采用第二种策略，即：**主动死锁检测**，而且 `innodb_deadlock_detect` 的默认值本身就是 `on`。主动死锁检测在发生死锁的时候，是能够快速发现并进行处理的，但是它也是有额外负担的。
-
-你可以想象一下这个过程：每当一个事务被锁的时候，就要看看它所依赖的线程有没有被别人锁住，如此循环，最后判断是否出现了循环等待，也就是死锁。
-
-那如果是我们上面说到的所有事务都要更新同一行的场景呢？
-
-每个新来的被堵住的线程，都要判断会不会由于自己的加入导致了死锁，这是一个时间复杂度是O(n)的操作。假设有1000个并发线程要同时更新同一行，那么死锁检测操作就是100万这个量级的。虽然最终检测的结果是没有死锁，但是这期间要消耗大量的CPU资源。因此，你就会看到CPU利用率很高，但是每秒却执行不了几个事务。
-
-怎么解决由这种热点行更新导致的性能问题呢？问题的症结在于，死锁检测要耗费大量的CPU资源。
+怎么解决由这种热点行更新导致的性能问题？问题的症结在于，死锁检测要耗费大量的 CPU 资源。
 
 一种就是**如果你能确保这个业务一定不会出现死锁，可以临时把死锁检测关掉**。但是这种操作本身带有一定的风险，因为业务设计的时候一般不会把死锁当做一个严重错误，毕竟出现死锁了，就回滚，然后通过业务重试一般就没问题了，这是业务无损的。而关掉死锁检测意味着可能会出现大量的超时，这是业务有损的。
 
-另一个思路是**控制并发度**。根据上面的分析，你会发现如果并发能够控制住，比如同一行同时最多只有10个线程在更新，那么死锁检测的成本很低，就不会出现这个问题。一个直接的想法就是，在客户端做并发控制。但是，你会很快发现这个方法不太可行，因为客户端很多。我见过一个应用，有600个客户端，这样即使每个客户端控制到只有5个并发线程，汇总到数据库服务端以后，峰值并发数也可能要达到3000。
+另一个思路是**控制并发度**。根据上面的分析，如果并发能够控制住，比如同一行同时最多只有 10 个线程在更新，那么死锁检测的成本很低，就不会出现这个问题。一个直接的想法就是，在客户端做并发控制。但是，你会很快发现这个方法不太可行，因为客户端很多。我见过一个应用，有 600 个客户端，这样即使每个客户端控制到只有 5 个并发线程，汇总到数据库服务端以后，峰值并发数也可能要达到 3000。
 
-因此，这个并发控制要做在数据库服务端。如果你有中间件，可以考虑在中间件实现；如果你的团队有能修改MySQL源码的人，也可以做在MySQL里面。基本思路就是，**对于相同行的更新，在进入引擎之前排队。这样在InnoDB内部就不会有大量的死锁检测工作了**。
+可以考虑通过将一行改成逻辑上的多行来减少锁冲突。以一个影院账户为例，可以考虑放在多条记录上，比如 10 个记录，影院的账户总额等于这 10 个记录的值的总和。这样每次要给影院账户加金额的时候，随机选其中一条记录来加。这样每次冲突概率变成原来的 `1/10`，可以减少锁等待个数，也就减少了死锁检测的 CPU 消耗。
 
-你可以考虑通过将一行改成逻辑上的多行来减少锁冲突。还是以影院账户为例，可以考虑放在多条记录上，比如 10 个记录，影院的账户总额等于这 10 个记录的值的总和。这样每次要给影院账户加金额的时候，随机选其中一条记录来加。这样每次冲突概率变成原来的 1/10，可以减少锁等待个数，也就减少了死锁检测的 CPU 消耗。
+### 锁超时
+
+行锁的超时时间可以通过参数 `innodb_lock_wait_timeout` 来设置。
+
+`innodb_lock_wait_timeout` 的默认值是 `50s`。当出现死锁以后，第一个被锁住的线程要过 `50s` 才会超时退出，然后其他线程才有可能继续执行。对于在线服务来说，这个等待时间往往是无法接受的。
+
+但是，又不可能直接把这个时间设置成一个很小的值，比如 `1s`。这样当出现死锁的时候，确实很快就可以解开，但如果不是死锁，而是简单的锁等待呢？所以，超时时间设置太短的话，会出现很多误伤。要根据业务来设置一个合理的值。
+
+
+## 锁优化实践
+
+- 尽可能让所有数据检索都通过索引来完成，**避免无索引行锁升级为表锁**，
+- 合理设计索引，尽量缩小锁的范围。
+- 尽可能**减少检索条件范围**，避免间隙锁。
+- 尽量**控制事务大小**，减少锁定资源量和时间长度，涉及事务加锁的 sql 尽量放在事务最后执行。
+- 尽可能用低的事务隔离级别。
