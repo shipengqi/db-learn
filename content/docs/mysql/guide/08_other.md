@@ -20,7 +20,7 @@ and pod_id = 'TNT2';
 select cust_name from productcustomers where pod_id = 'TNT2';
 ```
 
-这就是**视图**的作用。`productcustomers` 就是一个视图，作为**视图，它不包含表中应该有的任何列或数据，它包含的是一个 SQL 查询**。
+这就是**视图**的作用，是一个虚拟的表。`productcustomers` 就是一个视图，作为**视图，它不包含表中应该有的任何列或数据，它包含的是一个 SQL 查询**。
 
 ### 为什么使用视图
 
@@ -30,8 +30,7 @@ select cust_name from productcustomers where pod_id = 'TNT2';
 - 保护数据。可以给用户授予表的特定部分的访问权限而不是整个表的访问权限。
 - 更改数据格式和表示。视图可返回与底层表的表示和格式不同的数据。
 
-视图创建之后，可以用与表基本相同的方式利用它们。可以对视图执行 `select` 操作，过滤和排序数据，将视图联结到其他视图或表，甚至能添加
-和更新数据。
+视图创建之后，可以用与表基本相同的方式利用它们。可以对视图执行 `select` 操作，过滤和排序数据，将视图联结到其他视图或表，甚至能添加和更新数据。
 
 **视图本身不包含数据，因此它们返回的数据是从其他表中检索出来的。在添加或更改这些表中的数据时，视图将返回改变过的数据**。
 
@@ -196,8 +195,7 @@ begin
 end;
 ```
 
-`onumber` 定义为 `IN`，因为需要传订单号给存储过程。`ototal` 定义为 `OUT`，因为要从存储过程返回合计。`select` 语句使用这两个参
-数，`where` 子句使用 `onumber` 选择正确的行，`INTO` 使用 `ototal` 存储计算出来的合计。
+`onumber` 定义为 `IN`，因为需要传订单号给存储过程。`ototal` 定义为 `OUT`，因为要从存储过程返回合计。`select` 语句使用这两个参数，`where` 子句使用 `onumber` 选择正确的行，`INTO` 使用 `ototal` 存储计算出来的合计。
 
 ```sql
 call ordertotal(2005, @total);
@@ -262,8 +260,7 @@ end;
 
 MySQL 检索操作返回一组称为结果集的行。这组返回的行都是与 SQL 语句相匹配的行（零行或多行）。
 
-有时，需要在检索出来的行中前进或后退一行或多行。这就是使用游标的原因。**游标**（cursor）是一个存储在 MySQL 服务器上的数据库查询，
-它**不是一条 select 语句，而是被该语句检索出来的结果集**。在存储了游标之后，应用程序可以根据需要滚动或浏览其中的数据。
+有时，需要在检索出来的行中前进或后退一行或多行。这就是使用游标的原因。**游标**（cursor）是一个存储在 MySQL 服务器上的数据库查询，它**不是一条 select 语句，而是被该语句检索出来的结果集**。在存储了游标之后，应用程序可以根据需要滚动或浏览其中的数据。
 
 > MySQL **游标只能用于存储过程（和函数）**。
 
@@ -358,84 +355,10 @@ create trigger newproduct after insert on products for each row select 'Procduct
 
 删除触发器使用：`drop trigger newproduct;`。为了**修改一个触发器，必须先删除它，然后再重新创建**。
 
-## 事务
-
-事务处理是一种机制，用来管理必须成批执行的 MySQL 操作，以保证数据库不包含不完整的操作结果。利用事务处理，可以保证一组操作不会中途停止，
-它们或者作为整体执行，或者完全不执行（除非明确指示）。如果没有错误发生，整组语句提交给（写到）数据库表。如果发生错误，则进行回退（撤销）
-以恢复数据库到某个已知且安全的状态。
-
-关于事务处理需要知道的几个术语：
-
-- **事务**（transaction）指一组 SQL 语句；
-- **回退**（rollback）指撤销指定 SQL 语句的过程；
-- **提交**（commit）指将未存储的 SQL 语句结果写入数据库表；
-- **保留点**（savepoint）指事务处理中设置的临时占位符（`place- holder`），你可以对它发布回退（与回退整个事务处理不同）
-
-### 控制事务处理
-
-管理事务处理的关键在于将 SQL 语句组分解为逻辑块，并明确规定数据何时应该回退，何时不应该回退。
-
-下面的语句来标识事务的开始：
-
-```sql
-start transaction
-```
-
-#### rollback
-
-`rollback` 命令用来回退（撤销）MySQL 语句：
-
-```sql
-select * from ordertotals;
-start transaction;
-delete from ordertotals;
-select * from ordertotals;
-rollback;
-select * from ordertotals;
-```
-
-先执行一条 `select` 以显示该表不为空。然后开始一个事务处理，用一条 `delete` 语句删除 `ordertotals` 中的所有行。
-另一条 `select` 语句验证 `ordertotals` 确实为空。这时用一条 `rollback` 语句回退 `start transaction` 之后的所有语句，最后
-一条 `select` 语句显示该表不为空。
-
-**`rollback` 只能在一个事务处理内使用（在执行一条 `start transaction` 命令之后）**。
-
-##### 哪些语句可以回退
-
-事务处理用来管理 `insert`、`update` 和 `delete` 语句。不能回退 `select` 语句。（这样做也没有什么意义）不能回退 `CREATE` 或 `DROP` 操作。事务处理块中可以使用这两条语句，但如果你执行回退，它们不会被撤销。
-
-#### commit
-
-一般的 MySQL 语句都是直接针对数据库表执行和编写的。这就是所谓的**隐含提交**（implicit commit），即提交（写或保存）操作是自动进行的。
-
-**在事务处理块中，提交不会隐含地进行**。为进行明确的提交，使用 `commit` 语句：
-
-```sql
-start transaction;
-delete from orderitems where order_num = 20005;
-delete from orders where order_num = 20005;
-commit;
-```
-
-> 当 `commit` 或 `rollback` 语句执行后，事务会自动关闭（将来的更改会隐含提交）。
-
-#### 保留点
-
-简单的 `rollback` 和 `commit` 语句就可以写入或撤销整个事务处理。复杂的事务处理可能需要部分提交或回退。
-
-为了支持回退部分事务处理，必须能在事务处理块中合适的位置放置占位符。这样，如果需要回退，可以回退到某个占位符。这些占位符称为**保留点**。
-
-创建占位符，可使用 `SAVEPOINT` 语句：`SAVEPOINT delete1;`。每个保留点都取标识它的唯一名字，以便在回退时，MySQL 知道要回退到何处。
-
-回退到本例给出的保留点，可执行：`rollback TO delete1;`
-
-> 保留点在事务处理完成（执行一条 `rollback` 或 `commit`）后自动释放。
-
 ## 用户管理
 
 **在实际开发中，决不能使用 `root`**。应该创建一系列的账号，有的用于管理，有的供用户使用，有的供开发人员使用，等等。
 
-MySQL 用户账号和信息存储在名为 `mysql` 的库中。一般不需要直接访问 `mysql` 数据库和表，但有时需要直接访问。需要直接访问它
-的时机之一是在需要获得所有用户账号列表时。
+MySQL 用户账号和信息存储在名为 `mysql` 的库中。一般不需要直接访问 `mysql` 数据库和表，但有时需要直接访问。需要直接访问它的时机之一是在需要获得所有用户账号列表时。
 
 `mysql` 库有一个名为 `user` 的表，它包含所有用户账号。`user` 表有一个名为 `user` 的列，它存储用户登录名。

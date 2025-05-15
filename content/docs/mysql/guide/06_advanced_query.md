@@ -1,5 +1,5 @@
 ---
-title: 复杂查询语句
+title: 复杂查询
 weight: 6
 ---
 

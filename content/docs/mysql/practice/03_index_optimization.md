@@ -1,6 +1,6 @@
 ---
-title: 索引使用和优化
-weight: 2
+title: Explain 和查询优化
+weight: 3
 ---
 
 ## Explain 分析
@@ -63,7 +63,7 @@ INSERT INTO `film_actor` (`id`, `film_id`, `actor_id`) VALUES (1,1,1),(2,1,2),(3
 explain select * from film where id = 2;
 ```
 
-![explain-simple-select]()
+![explain-simple-select](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/explain-simple-select.png)
 
 
 2. `primary`：查询中若包含任何复杂的子部分，最外层查询则被标记为 `primary`。
@@ -79,7 +79,7 @@ explain select (select 1 from actor where id = 1) from (select * from film where
 set session optimizer_switch='derived_merge=on';
 ```
 
-![explain-complex-select]()
+![explain-complex-select](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/explain-complex-select.png)
 
 可以看出来：
 
@@ -101,7 +101,7 @@ EXPLAIN SELECT * FROM (SELECT * FROM film WHERE id = 1) tmp;
 SHOW WARNINGS;
 ```
 
-![expalin-type-const]()
+![expalin-type-const](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/explain-type-const.png)
 
 `SHOW WARNINGS` 的 message 可以看到表示查询被优化成了 `select 1 AS 'id','film1' AS 'name' from dual`。
 
@@ -112,7 +112,7 @@ SHOW WARNINGS;
 EXPLAIN SELECT * FROM film_actor LEFT JOIN film ON film_actor.film_id = film.id;
 ```
 
-![expalin-type-eq_ref]()
+![expalin-type-eq_ref](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/explain-type-eq_ref.png)
 
 可以看到，两个 `select` 的 `id` 都是 1，说明关联的两张表没有明确的前后顺序，会一起去查询，不过真正执行的时候，会先执行上面的 `select`。
 
@@ -137,7 +137,7 @@ EXPLAIN SELECT * FROM actor WHERE id > 1;
 EXPLAIN SELECT * FROM film;
 ```
 
-![expalin-type-index]()
+![expalin-type-index](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/explain-type-index.png)
 
 这里扫描的是二级索引 `idx_name`，没有去扫描聚簇索引。MySQL 在优化时，**如果查询的字段在二级索引中全部都有，会优先使用二级索引**，而不会去扫描聚簇索引。因为一般情况下，聚簇索引的叶子节点存储的是完整的行数据，所要扫描的数据量会比较大，而二级索引的叶子节点存储的是主键值，所以扫描的行数会比较少。
 
@@ -210,9 +210,6 @@ EXPLAIN SELECT * FROM actor;
 #### partitions
 
 如果查询是基于分区表的话，partitions 字段会显示查询将访问的分区。
-
-
-## 索引的使用
 
 ## 查询优化
 
@@ -318,22 +315,27 @@ MySQL 的表关联常见有两种算法：
 EXPLAIN select * from t1 inner join t2 on t1.a= t2.a;
 ```
 
-![]()
+![explain-join1](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/explain-join1.png)
 
 从执行计划中可以看到：
 
-- 驱动表是 t2，被驱动表是 t1。先执行的就是驱动表(执行计划结果的 id 如果一样则按从上到下顺序执行 sql)；**优化器一般会优先选择小表做驱动表。所以使用 inner join 时，排在前面的表并不一定就是驱动表**。
-- 如果执行计划 Extra 中未出现 Using join buffer 则表示使用的 join 算法是 NLJ。
+- 驱动表是 `t2`，被驱动表是 `t1`。先执行的就是驱动表（执行计划结果的 id 如果一样则按从上到下顺序执行 sql）；
+- 如果执行计划 `Extra` 中未出现 `Using join buffer` 则表示使用的 join 算法是 NLJ。
+
+{{< callout type="info" >}}
+**优化器一般会优先选择小表做驱动表。所以使用 inner join 时，排在前面的表并不一定就是驱动表**
+{{< /callout >}}
 
 SQL 的大致流程如下：
-1. 从表 t2 中读取一行数据（如果 t2 表有查询过滤条件的，会从过滤结果里取出一行数据）；
-2. 从第 1 步的数据中，取出关联字段 a，到表 t1 中查找；
-3. 取出表 t1 中满足条件的行，跟 t2 中获取到的结果合并，作为结果返回给客户端；
+
+1. 从表 `t2` 中读取一行数据（如果 `t2` 表有查询过滤条件的，会从过滤结果里取出一行数据）；
+2. 从第 1 步的数据中，取出关联字段 `a`，到表 `t1` 中查找；
+3. 取出表 `t1` 中满足条件的行，跟 `t2` 中获取到的结果合并，作为结果返回给客户端；
 4. 重复上面 3 步。
 
-整个过程会读取 t2 表的所有数据(扫描 100 行)，然后遍历这每行数据中字段 a 的值，根据 t2 表中 a 的值索引扫描 t1 表中的对应行(扫描 100 次 t1 表的索引，1 次扫描可以认为最终只扫描 t1 表一行完整数据，也就是总共 t1 表也扫描了 100 行)。因此整个过程扫描了 200 行。
+整个过程会读取 `t2` 表的所有数据(扫描 100 行)，然后遍历这每行数据中字段 `a` 的值，根据 `t2` 表中 `a` 的值索引扫描 `t1` 表中的对应行(扫描 100 次 `t1` 表的索引，1 次扫描可以认为最终只扫描 `t1` 表一行完整数据，也就是总共 `t1` 表也扫描了 100 行)。因此整个过程扫描了 200 行。
 
-**如果被驱动表的关联字段没索引，使用 NLJ 算法性能会比较低，MySQL 会选择 Block Nested-Loop Join 算法**。
+**如果被驱动表的关联字段没索引，那就需要去聚簇索引扫描全表，所以使用 NLJ 算法性能会比较低，MySQL 会选择 Block Nested-Loop Join 算法**。
 
 #### 2. Block Nested-Loop Join 算法
 
@@ -343,43 +345,33 @@ SQL 的大致流程如下：
 EXPLAIN select * from t1 inner join t2 on t1.b = t2.b;
 ```
 
-![]()
+![explain-join2](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/explain-join2.png)
 
-`Extra` 中 的 `Using join buffer` (Block Nested Loop)说明该关联查询使用的是 BNL 算法。
+`Extra` 中 的 `Using join buffer` (Block Nested Loop) 说明该关联查询使用的是 BNL 算法。
 
-sql 的大致流程如下：
-1. 把 t2 的所有数据放入到 join_buffer 中
-2. 把表 t1 中每一行取出来，跟 join_buffer 中的所有数据做对比
-3. 返回满足 join 条件的数据
+SQL 的大致流程如下：
 
-
-整个过程对表 t1 和 t2 都做了一次全表扫描，因此扫描的总行数为 `10000 (表 t1 的数据总量) + 100 (表 t2 的数据总量) = 10100`。并且 join_buffer 里的数据是无序的，因此对表 t1 中的每一行，都要做 100 次判断，所以内存中的判断次数是 `100 * 10000= 100 万次`。
-
-join_buffer 的大小是由参数 `join_buffer_size` 设定的，默认值是 `256k`。如果放不下表 t2 的所有数据话，策略很简单，就是**分段放**。
-
-比如 t2 表有 1000 行记录， join_buffer 一次只能放 800 行数据，那么执行过程就是先往 join_buffer 里放 800 行记录，然后从 t1 表里取数据跟 join_buffer 中数据对比得到部分结果，然后清空 join_buffer，再放入 t2 表剩余 200 行记录，再次从 t1 表里取数据跟 join_buffer 中数据对比。所以就多扫了一次 t1 表。
-
-**被驱动表的关联字段没索引为什么要选择使用 BNL 算法而不使用 Nested-Loop Join 呢**？
-
-如果上面第二条 sql 使用 Nested-Loop Join，那么扫描行数为 `100 * 10000 = 100 万行`，由于没有 t1.b 是没有索引的，意味这要进行**全表扫描**，这个要在磁盘中扫描 t1 表的所有行。很显然，用 BNL 磁盘扫描次数少很多，相比于磁盘扫描，BNL 的内存计算会快得多。
+1. 把 `t2` 的所有数据放入到 `join_buffer` 中
+2. 把表 `t1` 中每一行取出来，跟 `join_buffer` 中的所有数据做对比
+3. 返回满足 join 条件的数据。
 
 
-对于关联 SQL 的优化
+整个过程对表 `t1` 和 `t2` 都做了一次全表扫描，因此扫描的总行数为 `10000 (表 t1 的数据总量) + 100 (表 t2 的数据总量) = 10100`。并且 `join_buffer` 里的数据是无序的，因此对表 `t1` 中的每一行，都要做 100 次判断，所以内存中的判断次数是 `100 * 10000= 100 万次`。
+
+#### 被驱动表的关联字段没索引为什么要选择使用 BNL？
+
+如果上面第二条 SQL 使用 Nested-Loop Join，由于没有 `t1.b` 是没有索引的，意味这要进行**全表扫描**，10000 行扫描 100 次就是 `100 * 10000 = 100 万行`。很显然，用 BNL 磁盘扫描次数少很多，相比于磁盘扫描，BNL 的内存计算会快得多。
+
+### 对于关联 SQL 的优化
 
 - **关联字段加索引**，让 MySQL 做 join 操作时尽量选择 NLJ 算法
-- **小表驱动大表**，写多表连接 SQL 时如果明确知道哪张表是小表可以用 straight_join 写法固定连接驱动方式，省去 mysql 优化器自己判断的时间。
+- **小表驱动大表**，写多表连接 SQL 时如果明确知道哪张表是小表可以用 `straight_join` 写法固定连接驱动方式，省去 mysql 优化器自己判断的时间。
 
-
-`straight_join` 解释：straight_join 功能同 join 类似，但能让左边的表来驱动右边的表，能改表优化器对于联表查询的执行顺序。
-比如：`select * from t2 straight_join t1 on t2.a = t1.a`; 代表指定 mysql 选着 t2 表作为驱动表。
-**`straight_join`只适用于 inner join**，并不适用于left join，right join。（因为 left join，right join 已经代表指定了表的执行顺序）
-尽可能让优化器去判断，因为大部分情况下 mysql 优化器是比人要聪明的。使用 straight_join 一定要慎重，因为部分情况下人为指定的执行顺序并不一定会比优化引擎要靠谱。
-
+> `straight_join` 功能同 join 类似，但能让左边的表来驱动右边的表，能改表优化器对于联表查询的执行顺序。比如：`select * from t2 straight_join t1 on t2.a = t1.a`; 代表指定 MySQL 选择 `t2` 表作为驱动表。**`straight_join`只适用于 inner join**，并不适用于 left join，right join。（因为 left join，right join 已经指定了表的执行顺序）。**尽可能让优化器去判断，因为大部分情况下 MySQL 优化器是比人要聪明的。使用 `straight_join` 一定要慎重，因为部分情况下人为指定的执行顺序并不一定会比优化引擎要靠谱**。
 
 **对于小表定义的明确**：
 
 在决定哪个表做驱动表的时候，应该是两个表按照各自的条件过滤，过滤完成之后，计算参与 join 的各个字段的总数据量，数据量小的那个表，就是“小表”，应该作为驱动表。
-
 
 **join buffer**：
 
@@ -387,7 +379,13 @@ join_buffer 的大小是由参数 `join_buffer_size` 设定的，默认值是 `2
 
 `join buffer` 就是执行连接查询前申请的一块固定大小的内存，先把**若干条驱动表结果集中的记录装在这个 `join buffer` 中**，然后开始扫描被驱动表，**每一条被驱动表的记录一次性和 join buffer 中的多条驱动表记录做匹配**，因为匹配的过程都是在内存中完成的，所以这样可以显著减少被驱动表的 I/O 代价。
 
-另外需要注意的是，驱动表的记录并不是所有列都会被放到join buffer中，只有查询列表中的列和过滤条件中的列才会被放到join buffer中，所以，**最好不要把 `*` 作为查询列表**，只需要把我们关心的列放到查询列表就好了，这样还可以在 `join buffer` 中放置更多的记录。
+`join_buffer` 的大小是由参数 `join_buffer_size` 设定的，默认值是 `256k`。如果放不下表 `t2` 的所有数据话，策略很简单，就是**分段放**。
+
+比如 `t2` 表有 1000 行记录， `join_buffer` 一次只能放 800 行数据，那么执行过程就是先往 `join_buffer` 里放 800 行记录，然后从 `t1` 表里取数据跟 `join_buffer` 中数据对比得到部分结果，然后清空 `join_buffer`，再放入 `t2` 表剩余 200 行记录，再次从 `t1` 表里取数据跟 `join_buffer` 中数据对比。所以就多扫了一次 `t1` 表。
+
+{{< callout type="info" >}}
+注意，驱动表的记录并不是所有列都会被放到 `join_buffer` 中，只有查询列表中的列和过滤条件中的列才会被放到 `join_buffer` 中，所以，**最好不要把 `*` 作为查询列表**，只需要把我们关心的列放到查询列表就好了，这样还可以在 `join buffer` 中放置更多的记录。
+{{< /callout >}}
 
 ####  Hash Join 原理（仅支持等值连接）
 
@@ -400,11 +398,11 @@ SELECT * FROM t1 JOIN t2 ON t1.id = t2.id;
 Hash Join 分两个阶段进行：
 
 1. Build Phase（构建哈希表）
-  - 优化器选择较小的一张表（如 t2）作为构建表（build input）。
-  - 把这张表的连接列（如 t2.id）作为 key，构建哈希表，存入内存。
+  - 优化器选择较小的一张表（如 `t2`）作为构建表（build input）。
+  - 把这张表的连接列（如 `t2.id`）作为 key，构建哈希表，存入内存。
 2. Probe Phase（探测匹配项）
-  - 遍历另一张较大的表 t1。
-  - 以连接键 t1.id 去刚刚构建的哈希表中查找匹配项。
+  - 遍历另一张较大的表 `t1`。
+  - 以连接键 `t1.id` 去刚刚构建的哈希表中查找匹配项。
 
 ```
 -- 探测并输出结果：
@@ -413,8 +411,7 @@ for each row in t1:
         output (t1, hash_table[t1.id])
 ```
 
-相对于传统的 Nested Loop Join（嵌套循环），Hash Join 将连接时间复杂度从 O(n*m) 降低到接近 O(n + m)，适合**无索引的中小表等值连接**。
-
+相对于传统的 Nested Loop Join（嵌套循环），Hash Join 将连接时间复杂度从 `O(n*m)` 降低到接近 `O(n + m)`，适合**无索引的中小表等值连接**。
 
 限制：
 
@@ -422,21 +419,26 @@ for each row in t1:
 - 大表内存不够会溢出，如果构建的哈希表过大，会使用磁盘上的临时表，性能降低
 
 
-**in 和 exsits 优化**:
-原则：**小表驱动大表**
+### in 和 exsits 优化
 
-in：当 B 表的数据集小于 A 表的数据集时，in 优于 exists `select * from A where id in (select id from B)`。
+原则：**小表驱动大表**。
+
+- `in`：当 B 表的数据集小于 A 表的数据集时，`in` 优于 `exists`。
+
+例如：`select * from A where id in (select id from B)`：
 
 ```
-#等价于：
+# 等价于：
 for(select id from B){
      select * from A where A.id = B.id
 }
 ```
 
-exists：当 B 表的数据集大于 A 表的数据集时，exists 优于 in `select * from A where exists (select 1 from B where B.id = A.id)`。
+- `exists`：当 B 表的数据集大于 A 表的数据集时，`exists` 优于 `in`。
 
-`EXISTS` (subquery)只返回TRUE或FALSE,因此子查询中的 `SELECT *` 也可以用 `SELECT 1` 替换,官方说法是实际执行时会忽略 `SELECT` 清单,因此没有区别
+例如：`select * from A where exists (select 1 from B where B.id = A.id)`。
+
+`EXISTS` (subquery) 只返回 TRUE 或 FALSE，因此子查询中的 `SELECT *` 也可以用 `SELECT 1` 替换，官方说法是实际执行时会忽略 `SELECT` 清单，因此没有区别。
 
 ```
 #等价于：
@@ -445,10 +447,7 @@ for(select * from A){
 }
 ```
 
-
-
 ### count(*) 查询优化
-
 
 ```sql
 EXPLAIN select count(1) from employees;
@@ -457,22 +456,37 @@ EXPLAIN select count(name) from employees;
 EXPLAIN select count(*) from employees;
 ```
 
-四个 sql 的执行计划一样，说明这四个 sql 执行效率应该差不多。
+![explain-count](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/explain-count.png)
 
+四个 SQL 的执行计划是一样的，也就说明这四个 SQL 执行效率应该差不多。
 
-字段有索引：`count(*)≈count(1)>count(字段)>count(主键 id)`，字段有索引，`count(字段)` 统计走二级索引，二级索引存储数据比主键索引少，所以 `count(字段)>count(主键 id)`
-字段无索引：`count(*)≈count(1)>count(主键 id)>count(字段)`，字段没有索引 `count(字段)` 统计走不了索引，`count(主键 id)` 还可以走主键索引，所以 `count(主键 id)>count(字段)`。
+- 字段有索引：`count(*)≈count(1)>count(字段)>count(主键 id)`，字段有索引，`count(字段)` 统计走二级索引，二级索引存储数据比主键索引少，所以 `count(字段)>count(主键 id)`
+- 字段无索引：`count(*)≈count(1)>count(主键 id)>count(字段)`，字段没有索引 `count(字段)` 统计走不了索引，`count(主键 id)` 还可以走主键索引，所以 `count(主键 id)>count(字段)`。
 
-`count(*)` mysql 是专门做了优化，并不会把全部字段取出来，不取值，按行累加，效率很高。
+`count(*)` MySQL 是专门做了优化，并不会把全部字段取出来，不取值，按行累加，效率很高。
 
-`count(1)` 跟 `count(字段)`执行过程类似，不过 `count(1)` 是用常量 1 做统计，`count(字段)` 还需要取出字段，所以理论上 `count(1)` 比 `count(字段)` 会快一点。
+`count(1)` 跟 `count(字段)` 执行过程类似，不过 `count(1)` 是用常量 1 做统计，`count(字段)` 还需要取出字段，所以理论上 `count(1)` 比 `count(字段)` 会快一点。
 
-为什么对于 `count(id)`，mysql 最终选择辅助索引而不是主键聚集索引？因为二级索引相对主键索引存储数据更少，检索性能应该更高。
+#### 为什么对于 `count(id)`，MySQL 最终选择辅助索引而不是主键聚集索引？
 
+因为二级索引相对主键索引存储数据更少，检索性能应该更高。
 
-不带 where 条件的常见优化方法：
+#### 不带 where 条件的常见优化方法
 
-1. 对于 myisam 存储引擎的表做不带 where 条件的 count 查询性能是很高的，因为 myisam 存储引擎的表的总行数会被 mysql 存储在磁盘上，查询不需要计算。
+1. 对于 MyISAM 存储引擎的表做不带 `where` 条件的 `count` 查询性能是很高的，因为 MyISAM 存储引擎的表的总行数会被 MySQL 存储在磁盘上，查询不需要计算。
 2. `show table status` 可以看到表的行数，但是这个行数是不准确的。性能很高。例如 `show table status like 'employees'`。
-3. 将总数维护到 Redis 里，插入或删除表数据行的时候同时维护 redis 里的表总行数 key 的计数值(用 incr 或 decr 命令)，但是这种方式可能不准，很难保证表操作和redis操作的**事务一致性**
-4. 增加数据库计数表，插入或删除表数据行的时候同时维护计数表，让他们在同一个事务里操作
+3. 将总数维护到 Redis 里，插入或删除表数据行的时候同时维护 Redis 里的表总行数 key 的计数值(用 `incr` 或 `decr` 命令)，但是这种方式可能不准，很难保证表操作和 Redis 操作的**事务一致性**
+4. 增加数据库计数表，插入或删除表数据行的时候同时维护计数表，让他们在同一个事务里操作。
+
+### 索引选择异常和处理
+
+一种方法是，采用 `force index` 强行选择一个索引。
+
+```sql
+set long_query_time=0;
+select * from t where a between 10000 and 20000; /*Q1*/
+select * from t force index(a) where a between 10000 and 20000;/*Q2*/
+```
+
+第二种方法就是，可以考虑修改语句，引导 MySQL 使用我们期望的索引。
+第三种方法是，在有些场景下，可以新建一个更合适的索引，来提供给优化器做选择，或删掉误用的索引。

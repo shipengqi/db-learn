@@ -160,7 +160,7 @@ binlog 写入磁盘机制主要通过 `sync_binlog` 参数控制。与 redo log 
 
 - 设置为 `0`，默认值，表示每次提交事务都只 write 到 Page Cache，由系统自行判断什么时候执行 `fsync` 写入磁盘。虽然性能得到提升，但是机器宕机，Page Cache 里面的 binlog 会丢失。
 - 设置为 `1`，表示每次提交事务都会执行 `fsync` 写入磁盘，这种方式最安全。
-- 设置为 `N` （`N>1`），表示每次提交事务都 write 到 page cache，但累积 N 个事务后才 `fsync` 写入磁盘，这种如果机器宕机会丢失 N 个事务的 binlog。
+- 设置为 `N` （`N>1`），表示每次提交事务都 write 到 Page Cache，但累积 `N` 个事务后才 `fsync` 写入磁盘，这种如果机器宕机会丢失 `N` 个事务的 binlog。
 
 binlog 日志文件重新生成的时机：
 

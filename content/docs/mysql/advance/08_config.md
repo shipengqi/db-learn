@@ -3,7 +3,7 @@ title: 配置选项
 weight: 8
 ---
 
-MySQL Server 的配置一般都有默认值，如默认存储引擎是 `InnoDB`，这些配置选项叫做**启动选项**，可以在命令行中指定启动参数，也可以通过配置文件指定。
+MySQL Server 的配置一般都有默认值，可以在命令行中指定启动参数，也可以通过配置文件指定。
 
 ## 在命令行上使用选项
 
@@ -132,7 +132,7 @@ default-storage-engine=MyISAM
 
 如果不想让 MySQL 到默认的路径下搜索配置文件（就是上表中列出的那些），可以在命令行指定 `defaults-file` 选项 `mysqld --defaults-file=/tmp/myconfig.txt`。这样，在程序启动的时候将只在 `/tmp/myconfig.txt` 路径下搜索配置文件。如果文件不存在或无法访问，则会发生错误。
 
-`defaults-file` 和 `defaults-extra-file` 的区别，使用 `defaults-extra-file` 可以指定额外的配置文件搜索路径。
+使用 `defaults-extra-file` 可以指定额外的配置文件搜索路径。
 
 #### 命令行和配置文件的优先级
 
@@ -184,8 +184,7 @@ SET [GLOBAL|SESSION] 系统变量名 = 值;
 SET [@@(GLOBAL|SESSION).]var_name = XXX;
 ```
 
-比如在服务端进程运行过程中把作用范围为 `GLOBAL` 的系统变量 `default_storage_engine` 的值修改为 `MyISAM`，也就是想让之后新连接到
-服务器的客户端都用 `MyISAM` 作为默认的存储引擎：
+比如在服务端进程运行过程中把作用范围为 `GLOBAL` 的系统变量 `default_storage_engine` 的值修改为 `MyISAM`，也就是想让之后新连接到服务器的客户端都用 `MyISAM` 作为默认的存储引擎：
 
 ```bash
 语句一：SET GLOBAL default_storage_engine = MyISAM;
@@ -202,8 +201,7 @@ SET [@@(GLOBAL|SESSION).]var_name = XXX;
 
 **`SESSION` 是默认的作用范围**。
 
-> 如果某个客户端改变了某个系统变量在 `GLOBAL` 作用范围的值，并不会影响该系统变量在当前已经连接的客户端作用范围为 `SESSION` 的值，只会影响
-后续连入的客户端在作用范围为 `SESSION` 的值。
+> 如果某个客户端改变了某个系统变量在 `GLOBAL` 作用范围的值，并不会影响该系统变量在当前已经连接的客户端作用范围为 `SESSION` 的值，只会影响后续连入的客户端在作用范围为 `SESSION` 的值。
 
 注意：
 
@@ -213,8 +211,7 @@ SET [@@(GLOBAL|SESSION).]var_name = XXX;
 
 ## 状态变量
 
-MySQL 服务器程序中维护了很多关于程序运行状态的变量，它们被称为**状态变量**。**它们的值只能由服务器程序自己来设置**。状态变量也有 `GLOBAL`
-和 `SESSION` 两个作用范围的，所以查看状态变量的语句可以这么写：
+MySQL 服务器程序中维护了很多关于程序运行状态的变量，它们被称为**状态变量**。**它们的值只能由服务器程序自己来设置**。状态变量也有 `GLOBAL` 和 `SESSION` 两个作用范围的，所以查看状态变量的语句可以这么写：
 
 ```sql
 SHOW [GLOBAL|SESSION] STATUS [LIKE 匹配的模式];
