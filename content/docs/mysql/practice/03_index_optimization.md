@@ -219,6 +219,27 @@ select * from employees limit 10000,10;
 
 从表 `employees` 中取出从 10001 行开始的 10 行记录。看似只查询了 10 条记录，实际这条 SQL 是先读取 10010 条记录，然后抛弃前 10000 条记录，然后返回后面 10 条想要的数据。因此要**查询一张大表比较靠后的数据，执行效率是非常低的**。
 
+### Using filesort 文件排序原理详解
+
+文件排序方式：
+
+- 单路排序：是一次性取出（聚簇索引）满足条件行的**所有字段**，然后在 sort buffer 中进行排序；trace 工具可以看到 `sort_mode` 信息里显示 `<sort_key, additional_fields>` 或者 `<sort_key,packed_additional_fields>`，`sort_key` 就表示排序的 `key`，`additional_fields` 表示表中的其他字段。
+- 双路排序（又叫**回表排序模式**）：是首先根据相应的条件取出（聚簇索引）相应的**排序字段**和可以直接定位行数据的**主键 ID**，然后在 sort buffer 中进行排序，排序完后需要回表去取回其它需要的字段；trace 工具可以看到 `sort_mode` 信息里显示 `<sort_key, rowid>`，`sort_key` 就表示排序的 `key`，`rowid` 表示主键 ID。占用内存空间小，但是需要多回表一次。
+
+判断使用哪种排序模式：
+
+- 如果字段的总长度（表中所有的列）小于 `max_length_for_sort_data` ，那么使用单路排序模式；
+- 如果字段的总长度大于 `max_length_for_sort_data` ，那么使用双路排序模式。
+
+如果 MySQL 排序内存 sort_buffer 配置的比较小并且没有条件继续增加了，可以适当把 `max_length_for_sort_data` 配置小点，让优化器选择使用双路排序算法，可以在 sort_buffer 中一次排序更多的行，只是需要再根据主键回到原表取数据。
+
+如果 MySQL 排序内存有条件可以配置比较大，可以适当增大 `max_length_for_sort_data` 的值，让优化器优先选择全字段排序(单路排序)，把需要的字段放到 sort_buffer 中，这样排序后就会直接从内存里返回查询结果了。
+
+所以，MySQL 通过 `max_length_for_sort_data` 这个参数来控制排序，在不同场景使用不同的排序模式，从而提升排序效率。
+
+> 注意，如果全部使用 sort_buffer 内存排序一般情况下效率会高于磁盘文件排序，但不能因为这个就随便增大 sort_buffer(默认 1M)，MySQL 很多参数设置都是做过优化的，不要轻易调整。
+
+**磁盘排序，最终还是要加载到内存中进行排序的，只不过由于数据量太大，需要先创建临时文件，然后在一块更大的内存中再加载临时文件进行排序，不会在 sort_buffer 中进行排序了**。
 
 ### 常见的分页场景优化技巧
 
@@ -418,6 +439,42 @@ for each row in t1:
 - **只支持等值连接**，例如 `ON a.id = b.id`，不能用范围条件如 `>`、`<`。
 - 大表内存不够会溢出，如果构建的哈希表过大，会使用磁盘上的临时表，性能降低
 
+### is null,is not null 一般情况下也无法使用索引
+
+### 不在索引列上做任何操作（计算、函数、（自动 or 手动）类型转换），会导致索引失效而转向全表扫描
+
+```sql
+SELECT * FROM person_info WHERE left(name,3) = 'LiLei';
+```
+
+索引列上做了函数操作，得到的结果在索引树上是无法匹配的，所以索引失效了。`left(name,3)` 有点类似 `LiL%` 的效果，但是 MySQL 并没有对这种情况做优化，所以索引失效了。
+
+### 范围查询优化
+
+```sql
+select * from employees where id >=1 and id <=20000;
+```
+
+mysql 内部优化器会根据检索比例、表大小等多个因素整体评估是否使用索引。比如这个例子，可能是由于单次数据量查询过大导致优化器最终选择不走索引。
+
+优化方法：可以将大的范围拆分成多个小范围：
+
+```sql
+select * from employees where id >=1 and id <=5000;
+select * from employees where id >=5001 and id <=10000;
+select * from employees where id >=10001 and id <=15000;
+select * from employees where id >=15001 and id <=20000;
+```
+
+## 让索引列在比较表达式中单独出现
+
+假设为整数列 `my_col` 建立索引：
+
+`WHERE my_col * 2 < 4` 是以 `my_col * 2` 这样的表达式的形式出现的，存储引擎会依次**遍历所有的记录**，计算这个表达式的值是不是小于 4。
+
+`WHERE my_col < 4/2` `my_col` 列是以单独列的形式出现的，这样的情况可以直接使用 B+ 树索引。
+
+**如果索引列在比较表达式中不是以单独列的形式出现，而是以某个表达式，或者函数调用形式出现的话，是用不到索引的**。
 
 ### in 和 exsits 优化
 

@@ -284,3 +284,42 @@ ALTER TABLE first_table DROP COLUMN third_column, DROP COLUMN fourth_column, DRO
 ```sql
 ALTER TABLE 表名 ENGINE=新的存储引擎;
 ```
+
+
+### 创建和删除索引
+
+**添加索引**：
+
+```sql
+ALTER TABLE 表名 ADD [INDEX|KEY] 索引名 (需要被索引的单个列或多个列);
+```
+
+示例：
+
+```sql
+ALTER TABLE index_demo ADD INDEX idx_c2_c3 (c2, c3);
+```
+
+在创建表的时候就添加索引，例如：
+
+```sql
+CREATE TABLE index_demo(
+    c1 INT,
+    c2 INT,
+    c3 CHAR(1),
+    PRIMARY KEY(c1),
+    INDEX idx_c2_c3 (c2, c3)
+);
+```
+
+**删除索引**：
+
+```sql
+ALTER TABLE 表名 DROP [INDEX|KEY] 索引名;
+```
+
+示例：
+
+```sql    
+ALTER TABLE index_demo DROP INDEX idx_c2_c3; 
+```
