@@ -3,7 +3,7 @@ title: Redis 入门
 weight: 1
 ---
 
-[Redis 中文官网的介绍](http://www.redis.cn/)：
+[Redis 中文官网](http://www.redis.cn/)。
 
 ## 数据类型
 
