@@ -110,7 +110,7 @@ UPDATE t SET key1 = NULL WHERE key1 < 80;
 
 更新后的 `idx_key1` 索引示意图：
 
-![id-key-index-demo2](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/id-key-index-demo.png)
+![id-key-index-demo2](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/id-key-index-demo2.png)
 
 再执行查询：
 
@@ -128,7 +128,7 @@ SELECT * FROM t WHERE key1 != 80;
 
 优化器在真正执行查询前，会首先少量的访问一下索引，调查一下 `key1` 在 `(NULL, 80)` 和 `(80, +∞)` 这两个区间内记录有多少条：
 
-![id-key-index-demo2](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/id-key-index-demo.png)
+![id-key-index-demo2](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/id-key-index-demo2.png)
 
 可以看出，需要扫描的二级索引记录占总记录条数的比例是 `2/16`，它觉得这个查询使用二级索引来执行比较靠谱，所以会使用这个 `idx_key1` 索引来执行查询。
 

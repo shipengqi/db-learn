@@ -191,7 +191,7 @@ select * from hero where id=1 for update;
 show engine innodb status;
 ```
 
-大多数情况 mysql 可以自动检测死锁并回滚产生死锁的那个事务，但是有些情况 MySQL 没法自动检测死锁，这种情况可以通过日志分析找到对应事务线程 id，可以通过 kill 杀掉。
+大多数情况 MySQL 可以自动检测死锁并回滚产生死锁的那个事务，但是有些情况 MySQL 没法自动检测死锁，这种情况可以通过日志分析找到对应事务线程 id，可以通过 kill 杀掉。
 
 ```perl
 mysql> SHOW ENGINE INNODB STATUS\G

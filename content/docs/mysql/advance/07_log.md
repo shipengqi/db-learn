@@ -181,7 +181,7 @@ purge master logs before '2023‐01‐21 14:00:00';
 
 ### 查看 binlog 日志文件
 
-MySQL 提供了 mysqlbinlog 命令，可以查看 binlog 日志：
+MySQL 提供了 `mysqlbinlog` 命令，可以查看 binlog 日志：
 
 ```bash
 # 查看 binlog（命令行方式，不用登录 MySQL）
