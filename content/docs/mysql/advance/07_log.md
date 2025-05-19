@@ -150,8 +150,7 @@ show variables like '%log_bin%';
 `binlog_format` 可以设置 binlog 日志的记录格式，MySQL 支持三种格式类型：
 
 - `STATEMENT`：基于 SQL 语句的复制，每一条会修改数据的 SQL 都会记录到 master 机器的 binlog 中，这种方式日志量小，节约 IO 开销，提高性能，但是对于一些执行过程中才能确定结果的函数，比如 `UUID()`、`SYSDATE()` 等函数如果随 SQL 同步到 slave 机器去执行，则结果跟 master 机器执行的不一样。
-- `ROW`：基于行的复制，日志中会记录成每一行数据被修改的形式，然后在 slave 端再对相同的数据进行修改记录下每一行数据修改的细节，可以解决函数、存储过程等在 slave 机器的复制问题，但这种方式日志量较
-大，性能不如 `STATEMENT`。举个例子，假设 `update` 语句更新 `10` 行数据，`STATEMENT` 方式就记录这条 `update` 语句，而 `Row` 方式会记录被修改的 10 行数据。
+- `ROW`：基于行的复制，日志中会记录成每一行数据被修改的形式，然后在 slave 端再对相同的数据进行修改记录下每一行数据修改的细节，可以解决函数、存储过程等在 slave 机器的复制问题，但这种方式日志量较大，性能不如 `STATEMENT`。举个例子，假设 `update` 语句更新 `10` 行数据，`STATEMENT` 方式就记录这条 `update` 语句，而 `Row` 方式会记录被修改的 10 行数据。
 - `MIXED`：混合模式复制，实际就是前两种模式的结合，在 `MIXED` 模式下，MySQL 会根据执行的每一条具体的 SQL 语句来区分对待记录的日志形式，也就是在 `STATEMENT` 和 `ROW` 之间选择一种，如果 SQL 里有函数或一些在执行时才知道结果的情况，会选择 `ROW`，其它情况选择 `STATEMENT`，推荐使用这一种。
 
 ### binlog 的写入机制
@@ -475,4 +474,54 @@ show variables like '%log_error%';
 show variables like '%general_log%';
 -- 打开通用查询日志
 SET GLOBAL general_log=on;
+```
+
+## 慢查询日志
+
+慢查询日志是 MySQL 提供的一种日志记录，它用来记录在 MySQL 中响应时间超过阈值的语句，具体指运行时间超过 `long_query_time` 值的 SQL 才会被记录到慢查询日志中。
+
+**如果不是调优需要的话，不建议启动该参数**，因为开启慢查询日志会或多或少带来一定的性能影响。
+
+```sql
+show variables like '%slow_query%';
+```
+
+- `long_query_time`：慢查询日志的阈值，默认值为 `10`，单位为秒。意思是记录运行 10 秒以上的语句。
+- `log_queries_not_using_indexes`：未使用索引的查询也被记录到慢查询日志中（可选项）。
+- `log_output`：日志存储方式。`log_output='FILE'` 表示将日志存入文件，默认值是 `'FILE'`。`log_output='TABLE'` 表示将日志存入数据库。
+- `log_slow_admin_statements`：表示，是否将慢管理语句例如ANALYZE TABLE和ALTER TABLE等记入慢查询日志。
+
+开启慢查询日志：
+
+```sql  
+-- 1 表示开启，0 表示关闭
+SET GLOBAL slow_query_log=1; 
+```
+
+### mysqldumpslow
+
+MySQL 提供了日志分析工具 `mysqldumpslow`，可以用来分析慢查询日志，找出执行时间比较长的 SQL 语句。
+
+比如，得到返回记录集最多的 10 个 SQL。
+
+```bash
+mysqldumpslow -s r -t 10 /database/mysql/mysql06_slow.log
+```
+
+得到访问次数最多的 10 个 SQL：
+
+```bash
+mysqldumpslow -s c -t 10 /database/mysql/mysql06_slow.log
+```
+
+得到按照时间排序的前 10 条里面含有左连接的查询语句：
+
+```bash
+mysqldumpslow -s t -t 10 -g “left join” /database/mysql/mysql06_slow.log
+```
+
+建议在使用这些命令时结合 `|` 和 `more` 使用，否则有可能出现刷屏的情况：
+
+```bash
+mysqldumpslow -s r -t 20 /mysqldata/mysql/mysql06-slow.log | more
 ```
