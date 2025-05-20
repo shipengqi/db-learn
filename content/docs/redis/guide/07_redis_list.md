@@ -629,3 +629,44 @@ OK
 redis> LRANGE new-alpha 0 -1
 (empty list or set)
 ```
+
+![redis-list]()
+
+
+## 应用场景
+
+### 栈
+
+Redis 列表结构常用来作为栈使用，使用 `LPUSH` 命令添加元素到列表头部，使用 `LPOP` 命令移除列表尾部的元素。这样，列表的尾部就是栈的顶部。
+
+`Stack = LPSUH + LPOP`
+
+先入后出
+
+
+### 队列
+
+Redis 列表结构常用来作为队列使用，使用 `LPUSH` 命令添加元素到列表头部，使用 `RPOP` 命令移除列表尾部的元素。这样，列表的头部就是队列的头部。
+
+`Queue = LPUSH + RPOP`
+
+先入先出
+
+### 阻塞队列
+
+Redis 列表结构常用来作为阻塞队列使用，使用 `LPUSH` 命令添加元素到列表头部，使用 `BRPOP` 命令移除列表尾部的元素。这样，列表的头部就是队列的头部。
+`BRPOP` 命令会阻塞连接，直到等待超时或发现可弹出元素为止。
+
+`Blocking Queue = LPUSH + BRPOP`
+
+### 微信公众号和微博 Feed 流
+
+假设一个用户关注了 MacTalk，备胎说车等大 V，以 `msg:{userid}` 作为列表的 `key`，关注的大 V 每发一条消息，将想这个列表中放入消息 ID：
+
+1. MacTalk 发微博，消息 ID 为 10018，那么 `LPUSH  msg:{userid}  10018`
+2. 备胎说车发微博，消息 ID 为 10086，那么 `LPUSH  msg:{userid} 10086`
+3. 查看最新微博消息 `LRANGE  msg:{userid}  0  4`，`0` 是列表的开始位置，也就是最新的元素。
+
+推送消息的方式有两种，一种是 push 推送模式，一种 pull 拉去模式。
+
+

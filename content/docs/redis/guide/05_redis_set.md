@@ -476,3 +476,58 @@ redis> SMEMBERS my_songs
 ```bash
 SSCAN key cursor [MATCH pattern] [COUNT count]
 ```
+
+## 应用场景
+
+### 微信抽奖
+
+1. 点击参与抽奖加入集合
+
+SADD act:{activity id} {userid}
+
+2. 查看参与抽奖所有用户
+
+SMEMBERS act:{activity id}	  
+
+3. 抽取 count 名中奖者
+
+```bash
+# 从集合中随机获取 count 个元素，不删除抽中元素
+SRANDMEMBER act:{activity id} [count]  
+
+# 从集合中随机获取 count 个元素，删除抽中的元素
+# 适用于中奖者不能重复参与其他奖项
+SPOP key [count]
+```
+
+### 微信微博点赞，收藏，标签
+
+1. 点击点赞，加入集合
+
+SADD like:{message id} {userid}
+
+2. 取消点赞
+
+SREM like:{message id} {userid}
+
+3. 检查某个用户是否点赞，一般自己点赞过的消息，会点亮点赞的图标
+
+SISMEMBER like:{message id} {userid}
+
+4. 查看点赞用户列表
+
+SMEMBERS like:{message id}
+
+5. 获取点赞用户数量
+
+SCARD like:{message id}
+
+### 集合操作
+
+SINTER set1 set2 set3 交集
+
+SUNION set1 set3 set3 并集
+
+SDIFF set1 set2 set3 差集
+
+#### 集合实现微博微信关注模型

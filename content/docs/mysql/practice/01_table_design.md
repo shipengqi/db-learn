@@ -648,3 +648,7 @@ SELECT
     loginInfo->>"$.wxchat" wxchat
 FROM UserLogin;
 ```
+
+## 大类型
+
+尽量少用 `BLOB` 和 `TEXT` 等大类型，如果实在要用可以考虑将 `BLOB` 和 `TEXT` 字段单独存一张表，用 `id` 关联。

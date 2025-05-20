@@ -137,7 +137,7 @@ redis> HMGET pet dog cat fake_pet
 2) "nounou"
 3) (nil)        # 不存在,返回nil值
 
-# 非Hash结构
+# 非 Hash 结构
 redis> set istring "Hello"
 OK
 redis> hmget istring notexsitfield
@@ -406,3 +406,58 @@ redis> HSTRLEN myhash f3
 ```bash
 HSCAN key cursor [MATCH pattern] [COUNT count]
 ```
+
+
+## 应用场景
+
+### 缓存对象
+
+`Hash` 结构可以用来存储一个对象，对象的每个属性都可以视为 `Hash` 结构的一个字段。
+
+```bash
+HMSET user {id}:name "xiaoming" {id}:age 18
+
+HMGET user {id}:name {id}:age
+```
+
+![hmset-demo]()
+
+
+问题：
+
+如果一张用户表，有上千万条，再使用 `Hash` 结构存储，就会占用大量的内存。这就是 Big Key 的问题。执行 `HGETALL` 命令，这个命令要执行很长时间，由于单线程的原因，其他命令无法执行，会阻塞 Redis 服务器。
+
+
+### 购物车
+
+电商购物车：
+
+1. 以用户 `id` 为 key
+2. 商品 `id` 为 field
+3. 商品数量为 value
+
+
+购物车操作：
+
+- 添加商品 `hset cart:1001 10088 1`，`1001` 是用户 `id`，`10088` 是商品 `id`，`1` 是商品数量。 
+- 增加数量 `hincrby cart:1001 10088 1`
+- 商品总数 `hlen cart:1001`
+- 删除商品 `hdel cart:1001 10088`
+- 获取购物车所有商品 `hgetall cart:1001`
+
+购物车数据最终还是要存储到数据库中。
+
+
+
+## 优缺点
+
+优点：
+
+1）同类数据归类整合储存，方便数据管理
+2）相比 string 操作消耗内存与 cpu 更小
+3）相比 string 储存更节省空间
+
+缺点：
+
+- 过期功能不能使用在 field 上，只能用在 key 上
+- Redis 集群架构下不适合大规模使用

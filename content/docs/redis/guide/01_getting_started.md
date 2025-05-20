@@ -3,19 +3,17 @@ title: Redis 入门
 weight: 1
 ---
 
-[Redis 中文官网](http://www.redis.cn/)。
-
 ## 数据类型
 
-Redis 一共支持 5 种数据类型：
+Redis 有 5 种基础数据结构：
 
-- [字符串(Strings)](03_redis_string.md)
-- [哈希(Hashs)](04_redis_hash.md)
-- [列表(Lists)](07_redis_list.md)
-- [集合(Sets)](05_redis_set.md)
-- [有序集合(SortedSets)](06_redis_sortedset.md)
+- 字符串 (string)
+- 哈希 (hash)
+- 列表 (list)
+- 集合 (set)
+- 有序集合 (zset)
 
-### String（字符串）
+### 字符串 (string)
 
 `String` 类型是最常用，也是最简单的的一种类型，`string` 类型是二进制安全的。也就是说 `string` 可以包含任何数据。比如 `jpg 图片`
 或者 `序列化的对象` 。一个键**最大能存储 `512MB`**。
