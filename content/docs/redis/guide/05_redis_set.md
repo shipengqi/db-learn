@@ -479,6 +479,8 @@ SSCAN key cursor [MATCH pattern] [COUNT count]
 
 ## 应用场景
 
+![redis-set]()
+
 ### 微信抽奖
 
 1. 点击参与抽奖加入集合
@@ -531,3 +533,48 @@ SUNION set1 set3 set3 并集
 SDIFF set1 set2 set3 差集
 
 #### 集合实现微博微信关注模型
+
+1) 关羽关注的人: 
+
+guanyuSet-> {guojia, xushu}
+
+2) 杨过关注的人:
+
+yangguoSet--> {guanyu, baiqi, guojia, xushu}
+
+3) 郭嘉关注的人: 
+
+guojiaSet-> {guanyu, yangguo, baiqi, xushu, xunyu}
+
+4) 关羽和杨过老师共同关注: 
+
+SINTER guanyuSet yangguoSet--> {guojia, xushu}
+
+
+进入杨过老师的主页：
+
+5) 关羽关注的人也关注 `他(杨过老师)`: 
+
+SISMEMBER guojiaSet yangguo 
+SISMEMBER xushuSet yangguo
+
+6) 关羽可能认识的人: 
+
+SDIFF yangguoSet guanyuSet->{guanyu, baiqi}
+
+
+#### 集合操作实现电商商品筛选
+
+向不同分类的集合中添加商品：
+
+SADD  brand:huawei  P40
+SADD  brand:xiaomi  mi-10
+SADD  brand:iPhone iphone12
+SADD os:android  P40  mi-10
+SADD cpu:brand:intel  P40  mi-10
+SADD ram:8G  P40  mi-10  iphone12
+
+筛选：
+
+SINTER  os:android  cpu:brand:intel  ram:8G -> {P40，mi-10}
+

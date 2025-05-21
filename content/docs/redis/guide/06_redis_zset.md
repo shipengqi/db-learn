@@ -1,10 +1,9 @@
 ---
-title: Redis 数据类型 Sorted Set
+title: Redis 数据类型 ZSet
 weight: 6
 ---
 
-Redis 的有序集合和 `Set` 一样也是 `String` 类型元素的集合,且不允许重复的成员。 Redis 提供的最为特色的数据结构。不同的是每个元素都
-会关联一个 `double` 类型的分数。redis 正是通过分数来为集合中的成员进行从小到大的排序。zset 的成员是唯一的,但分数(score)却可以重复。
+Redis 的有序集合和 `Set` 一样也是 `String` 类型元素的集合,且不允许重复的成员。 Redis 提供的最为特色的数据结构。不同的是每个元素都会关联一个分数。Redis 正是通过分数来为集合中的成员进行从小到大的排序。zset 的成员是唯一的,但分数 (score) 却可以重复。
 
 Redis 的 `ZSET` 类似 `Java` 的 `SortedSet` 和 `HashMap` 的结合体，既保证了内部 `value` 的唯一性，还可以给每个  `value` 赋予
 一个 `score`，代表这个 `value` 的排序权重。当集合移除了最后一个元素之后，该 `key` 会被自动被删除，内存被回收。
@@ -687,3 +686,28 @@ redis > ZRANGE sum_point 0 -1 WITHSCORES
 ```bash
 ZSCAN key cursor [MATCH pattern] [COUNT count]
 ```
+
+
+## 应用场景
+
+![redis-zset]()
+
+### 排行榜
+
+1）点击新闻
+
+`ZINCRBY  hotNews:20190819  1  守护香港` 表示当有一个用户点击了新闻 `守护香港`，那么将该新闻加入到集合 `hotNews:20190819` 中，并且 `score` 值加 `1`。
+
+
+2）展示当日排行前十
+
+`ZREVRANGE  hotNews:20190819  0  9  WITHSCORES` `ZREVRANGE` 是按照 `score` 值从大到小排序，`0 9` 表示从下标 `0` 到下标 `9`（也就是取迁 10），`WITHSCORES` 表示返回 `score` 值。
+
+3）七日搜索榜单计算
+
+`ZUNIONSTORE  hotNews:20190813-20190819  7 hotNews:20190813  hotNews:20190814... hotNews:20190819` `ZUNIONSTORE` 是求并集，`7` 表示求 `7` 个集合的并集，`hotNews:20190813  hotNews:20190814... hotNews:20190819` 就是给定的 7 个集合。并集结果保存到 `hotNews:20190813-20190819` 集合中。
+
+
+4）展示七日排行前十
+
+`ZREVRANGE hotNews:20190813-20190819  0  9  WITHSCORES`
