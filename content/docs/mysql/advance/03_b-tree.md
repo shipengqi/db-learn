@@ -341,7 +341,7 @@ SELECT name, birthday, phone_number FROM person_info WHERE name > 'Asa' AND name
 2. 根据索引中的主键值，定位并读取完整的行记录；
 3. 存储引擎把记录交给 Server 层去检测该记录是否满足 `WHERE` 条件。
 
-使用ICP的情况下，查询过程：
+使用 ICP 的情况下，查询过程：
 
 1. 存储引擎读取索引记录（不是完整的行记录）；
 2. 判断 `WHERE` 条件部分能否用索引中的列来做检查，条件不满足，则处理下一行索引记录；

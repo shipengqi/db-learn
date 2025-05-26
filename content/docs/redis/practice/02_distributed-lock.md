@@ -1,6 +1,6 @@
 ---
 title: 分布式锁
-wight: 1
+wight: 2
 ---
 
 分布式锁是用来解决并发问题的。比如一个操作要修改用户的状态，修改状态需要先读出用户的状态，在内存里进行修改，改完了再存回去。如果这样的操作同时进行了，就会出现并发问题，因为读取和保存状态这两个操作不是原子的。
@@ -86,7 +86,7 @@ end
 
 redisson 是一个在 Redis 的基础上提供了许多分布式服务。其中就包含了各种分布式锁的实现。
 
-![redisson]()
+![redisson](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redisson.png)
 
 redisson 自旋尝试加锁的逻辑，如果加锁失败，会拿到当前锁的剩余时间 ttl，然后让出 CPU 让其它线程执行，等待 ttl 时间后再继续尝试加锁。加锁失败的同时还会去定义一个 Redis channel，监听锁释放的消息，当锁释放后会收到消息，然后重新尝试加锁。
 
@@ -150,7 +150,7 @@ Redis 一般都是集群架构，很少有使用单机部署的。但是分布�
 
 加锁时，它会向过半节点发送 `set(key, value, nx=True, ex=xxx)` 指令，只要过半节点 `set` 成功，那就认为加锁成功。释放锁时，需要向所有节点发送 `del` 指令。不过 Redlock 算法还需要考虑出错重试、时钟漂移等很多细节问题，同时因为 Redlock 需要向多个节点进行读写，意味着相比单实例 Redis 性能会下降一些。
 
-![redlock]()
+![redlock](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redlock.png)
 
 但是 RedLock 并不是一个推荐的方案，因为 RedLock 还存在一些问题：
 
@@ -161,6 +161,9 @@ Redis 一般都是集群架构，很少有使用单机部署的。但是分布�
 
 如果非要这种高一致性的锁，那么可以使用 Zookeeper 来实现。
 
+## 可重入锁
+
+如果一个锁支持**同一个线程的多次加锁**，那么这个锁就是可重入的。
 
 ## 优化
 

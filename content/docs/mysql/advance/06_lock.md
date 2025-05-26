@@ -77,6 +77,33 @@ select * from account where id = 10 for update;
 
 ![gap-lock1](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/gap-lock1.png)
 
+#### 为什么说间隙锁可以解决幻读问题
+
+例如还是下面这些数据：
+
+![gap-lock](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/gap-lock.png)
+
+```sql
+set tx_isolation='repeatable‐read';
+
+
+-- 事务1
+START TRANSACTION;
+SELECT * FROM account; -- 快照读，看到 6 条记录
+
+-- 此时事务 2 插入一条 name=小郭 的新记录并提交
+insert into account values(5,'小郭',12256487569,'洛阳');
+
+SELECT * FROM account; -- 仍然看到 6 条记录（快照读）
+update account set address='信阳' where id = 5；; -- 当前读
+SELECT * FROM account; -- 看到 7 条记录
+COMMIT;
+```
+
+可以看到，事务 1 最后看到了 7 条记录。还是有幻读问题的。
+
+但是如果在 `(4,112)` 这个区间加一把 **间隙锁**，这个间隙就不会允许其他事务再插入数据，就不会出现幻读问题了。
+
 ### 临键锁（Next-Key Lock）
 
 **临键锁 = 间隙锁 + 行锁**，既能锁住某条记录，又能阻止别的事务将新记录插入被锁记录前边的间隙。
