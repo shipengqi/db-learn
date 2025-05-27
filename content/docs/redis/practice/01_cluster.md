@@ -363,3 +363,148 @@ mset {user1}:1:name zhuge {user1}:1:age 18
 3. 槽位越小，节点少的情况下，压缩率高
 
 Redis 主节点的配置信息中，它所负责的哈希槽是通过一张 bitmap 的形式来保存的，在传输过程中，会对 bitmap 进行压缩，但是如果 bitmap 的填充率 `slots / N` 很高的话(`N` 表示节点数)，bitmap 的压缩率就很低。如果节点数很少，而哈希槽数量很多的话，bitmap 的压缩率就很低。
+
+
+## Redis 7.0
+
+Redis 7.0 对主从复制进行了优化，性能有了很大的提升。
+
+### Redis 7.0 之前的主从复制的问题
+
+#### 多从库时主库内存占用过多
+
+Redis 的主从复制主要分为两步：
+
+- **全量同步**，主库通过 `fork` 子进程产生内存快照，然后将数据序列化为 RDB 格式同步到从库，使从库的数据与主库某一时刻的数据一致。
+- **命令传播**：全量同步期间，master 会继续接收客户端的请求，它会把这些可能**修改数据集的请求缓存在内存中**。当从库与主库完成全量同步后，进入命令传播阶段，主库将变更数据的命令发送到从库，从库将执行相应命令，使从库与主库数据持续保持一致。
+
+![redis-replication]()
+
+**复制积压区**，可以理解为是一个备份，因为主从复制的过程中，如果从库的连接突然断开了，那么从库对应的**从库复制缓冲区**会被释放掉，包括其他的网络资源。等到从库重新连接时，重新开始复制，就刻意从复制积压区找到断开连接时数据复制的位置，从这个断开的位置开始继续复制。
+
+如上图所示，对于 Redis 主库，当用户的写请求到达时，主库会将变更命令分别写入所有**从库复制缓冲区**（OutputBuffer)，以及**复制积压区** (ReplicationBacklog)。
+
+该实现一个明显的问题是内存占用过多，所有从库的连接在主库上是独立的，也就是说**每个从库 OutputBuffer 占用的内存空间也是独立的**，那么**主从复制消耗的内存就是所有从库缓冲区内存大小之和**。如果我们设定从库的 `client-output-buffer-limit` 为 1GB，如果有三个从库，则在主库上可能会消耗 3GB 的内存用于主从复制。另外，真实环境中从库的数量不是确定的，这也导致 Redis 实例的内存消耗不可控。
+
+{{< callout type="info" >}}
+当全量复制的时间过长或者 `client-output-buffer-limit` 设置的 buffer 过小，会导致增量的指令在 buffer 中被覆盖，导致全量复制后无法进行增量复制，然后会再次发起快照同步，如此极有可能会陷入快照同步的死循环。
+{{< /callout >}}
+
+#### OutputBuffer 拷贝和释放的堵塞问题
+
+Redis 为了提升多从库全量复制的效率和减少 fork 产生 RDB 的次数，会尽可能的让多个从库共用一个 RDB，从代码 (`replication.c`) 上看：
+
+![redis-copy-output-buffer]()
+
+当已经有一个从库触发 RDB BGSAVE 时，后续需要全量同步的从库会共享这次 BGSAVE 的 RDB，为了从库复制数据的完整性，会将第一个触发 RDB BGSAVE 从库的 OutputBuffer 拷贝到后续请求全量同步从库的 OutputBuffer 中。
+
+代码中的 `copyClientOutputBuffer` 可能存在堵塞问题，因为 OutputBuffer 链表上的数据可达数百 MB 甚至数 GB 之多，对其拷贝的耗时可能达到百毫秒甚至秒级的时间，而且该堵塞问题没法通过日志或者 latency 观察到，但对 Redis 性能影响却很大，甚至造成 Redis 阻塞。
+
+同样地，当 OutputBuffer 大小触发 limit 限制时，Redis 就是关闭该从库链接，而在释放 OutputBuffer 时，也需要释放数百 MB 甚至数 GB 的数据，其耗时对 Redis 而言也很长。
+
+而且如果重新设置 ReplicationBacklog 大小时，Redis 会重新申请一块内存，然后将 ReplicationBacklog 中的内容拷贝过去，这也是非常耗时的操作。
+
+#### ReplicationBacklog 的限制
+
+复制积压缓冲区 ReplicationBacklog 是 Redis 实现部分重同步的基础，如果从库可以进行增量同步，则主库会从 ReplicationBacklog 中拷贝从库缺失的数据到其 OutputBuffer。拷贝的数据量最大当然是 ReplicationBacklog 的大小，为了避免拷贝数据过多的问题，通常不会让该值过大，一般百兆左右。但在大容量实例中，为了避免由于主从网络中断导致的全量同步，又希望该值大一些，这就存在矛盾了。
+
+#### Redis 7.0 主从复制的优化
+
+每个从库都有自己的 OutputBuffer，但其存储的内容却是一样的，一个最直观的想法就是主库在命令传播时，将这些命令放在一个全局的复制数据缓冲区中，多个从库共享这份数据。复制积压缓冲区（ReplicationBacklog）中的内容与从库 OutputBuffer 中的数据也是一样的，所以该方案中，ReplicationBacklog 和从库一样共享一份复制缓冲区的数据，也避免了 ReplicationBacklog 的内存开销。
+
+**共享复制缓存区**方案中复制缓冲区 (ReplicationBuffer) 的表示采用**链表**的表示方法，将 ReplicationBuffer 数据切割为多个 16KB 的数据块 (`replBufBlock`)，然后使用链表来维护起来。为了维护不同从库的对 ReplicationBuffer 的使用信息，在 `replBufBlock` 中存在字段：
+
+- `refcount`：block 被引用的次数。
+- `id`：block 的 id。
+- `repl_offset`：block 中数据的偏移量。
+
+ReplicationBuffer 由多个 `replBufBlock` 组成链表，当**复制积压区**或从库对某个 block 使用时，便对正在使用的 `replBufBlock` 增加引用计数，上图中可以看到，复制积压区正在使用的 replBufBlock `refcount` 是 1，从库 A 和 B 正在使用的 `replBufBlock` 的 `refcount` 是 2。当从库使用完当前的 `replBufBlock`（已经将数据发送给从库）时，就会对其 `refcount` 减 1 而且移动到下一个 `replBufBlock`，并对其 `refcount` 加 1。
+
+##### 堵塞问题和限制问题的解决
+
+多从库消耗内存过多的问题通过共享复制缓存区方案得到了解决，对于 OutputBuffer 拷贝和释放的堵塞问题和 ReplicationBacklog 的限制问题是否解决了？
+
+首先来看 OutputBuffer 拷贝和释放的堵塞问题问题，这个问题很好解决，因为 ReplicationBuffer 是个链表实现，当前从库的 OutputBuffer 只需要维护共享 ReplicationBuffer 的引用信息即可。所以无需进行数据深拷贝，只需要更新引用信息，即对正在使用的 `replBufBlock` 的 `refcount` 加 1，这仅仅是一条简单的赋值操作，非常轻量。
+
+OutputBuffer 释放问题呢？在当前的方案中释放从库 OutputBuffer 就变成了对其正在使用的 `replBufBlock` 的 `refcount` 减 1，也是一条赋值操作，不会有任何阻塞。
+
+对于 ReplicationBacklog 的限制问题也很容易解决了，因为 ReplicatonBacklog 也只是记录了对 ReplicationBuffer 的引用信息，对 ReplicatonBacklog 的拷贝也仅仅成了找到正确的 `replBufBlock`，然后对其 `refcount` 加 1。这样的话就不用担心 ReplicatonBacklog 过大导致的拷贝堵塞问题。而且对 ReplicatonBacklog 大小的变更也仅仅是配置的变更，不会清掉数据。
+
+
+##### ReplicationBuffer 的裁剪和释放
+
+ReplicationBuffer 不可能无限增长，Redis 有相应的逻辑对其进行裁剪，简单来说，Redis 会从头访问 `replBufBlock` 链表，如果发现 `replBufBlock` 的 `refcount` 为 0，则会释放它，直到迭代到第一个 `replBufBlock` 的 `refcount` 不为 0 才停止。所以想要释放 ReplicationBuffer，只需要减少相应 `replBufBlock` 的 `refcount`，会减少 `refcount` 的主要情况有：
+
+1. 当从库使用完当前的 `replBufBlock` 会对其 `refcount` 减 1；
+2. 当从库断开链接时会对正在引用的 `replBufBlock` 的 `refcount` 减 1，无论是因为超过 `client-output-buffer-limit` 导致的断开还是网络原因导致的断开；
+3、当 ReplicationBacklog 引用的 `replBufBlock` 数据量超过设置的该值大小时，会对正在引用的 `replBufBlock` 的 `refcount` 减 1，以尝试释放内存；
+
+不过当一个从库引用的 `replBufBlock` 过多，它断开时释放的 `replBufBlock `可能很多，也可能造成堵塞问题，所以 Redis7 里会限制一次释放的个数，未及时释放的内存在系统的定时任务中渐进式释放。
+
+##### 数据结构的选择
+
+当从库尝试与主库进行增量重同步时，会发送自己的 `repl_offset`，主库在每个 `replBufBlock` 中记录了该其第一个字节对应的 `repl_offset`，但如何高效地从数万个 `replBufBlock` 的链表中找到特定的那个？
+
+链表只能直接从头到位遍历链表查找对应的 `replBufBlock`，这个操作必然会耗费较多时间而堵塞服务。
+
+Redis 7 使用 rax 树实现了对 `replBufBlock` 固定区间间隔的索引，每 64 个记录一个索引点。一方面，rax 索引占用的内存较少；另一方面，查询效率也是非常高，理论上查找比较次数不会超过 100，耗时在 1 毫秒以内。
+
+
+##### RAX 树
+
+Redis 中还有其他地方使用了 Rax 树，比如 streams 这个类型里面的 consumer group (消费者组) 的名称还有和 Redis 集群名称存储。
+
+RAX 叫做**基数树（前缀压缩树）**，就是有相同前缀的字符串，其前缀可以作为一个公共的父节点，什么又叫前缀树？
+
+**Trie 树**
+
+即**字典树**，也有的称为前缀树，是一种树形结构。广泛应用于统计和排序大量的字符串（但不仅限于字符串），所以经常被搜索引擎系统用于文本词频统计。它的优点是最大限度地减少无谓的字符串比较，查询效率比较高。
+
+Trie 的核心思想是空间换时间，利用字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。
+
+先看一下几个场景问题：
+
+1. 我们输入 n 个单词，每次查询一个单词，需要回答出这个单词是否在之前输入的 n 单词中出现过。
+
+答：当然是用 map 来实现。
+
+2. 我们输入 n 个单词，每次查询一个单词的前缀，需要回答出这个前缀是之前输入的 n 单词中多少个单词的前缀？
+
+答：还是可以用 map 做，把输入 n 个单词中的每一个单词的前缀分别存入 map 中，然后计数，这样的话复杂度会非常的高。若有 n 个单词，平均每个单词的长度为 c，那么复杂度就会达到 `n*c`。
+
+因此我们需要更加高效的数据结构，这时候就是 Trie 树的用武之地了。现在我们通过例子来理解什么是 Trie 树。现在我们对 cat、cash、apple、aply、ok 这几个单词建立一颗Trie 树。
+
+![redis-trie]()
+
+从图中可以看出：
+
+1. 每一个节点代表一个字符
+2. 有相同前缀的单词在树中就有公共的前缀节点。
+3. 整棵树的根节点是空的。
+4. 每个节点结束的时候用一个特殊的标记来表示，这里用 `-1` 来表示结束，从根节点到 `-1` 所经过的所有的节点对应一个英文单词。
+5. 查询和插入的时间复杂度为 `O(k)`，k 为字符串长度，当然如果大量字符串没有共同前缀时还是很耗内存的。
+
+所以，总的来说，Trie 树把很多的公共前缀独立出来共享了。这样避免了很多重复的存储。想想字典集的方式，一个个的key被单独的存储，即使他们都有公共的前缀也要单独存储。相比字典集的方式，Trie 树显然节省更多的空间。
+
+Trie 树其实依然比较浪费空间，比如前面所说的“如果大量字符串没有共同前缀时”。比如这个字符串列表："deck", "did", "doe", "dog", "doge" , "dogs"。"deck" 这一个分支，有没有必要一直往下来拆分吗？还有 "did"，存在着一样的问题。像这样的不可分叉的单支分支，其实完全可以合并，也就是压缩。
+
+**Radix 树：压缩后的 Trie 树**
+
+所以 Radix 树就是压缩后的 Trie 树，因此也叫**压缩 Trie 树**。比如上面的字符串列表完全可以这样存储：
+
+![redis-rax]()
+
+同时在具体存储上，Radix 树的处理是以 bit（或二进制数字）来读取的。一次被对比 r 个 bit。
+
+比如 "dog", "doge" , "dogs"，按照人类可读的形式，dog 是 dogs 和 doge 的子串。但是如果按照计算机的二进制比对：
+
+
+dog: 01100100 01101111 01100111
+
+doge: 01100100 01101111 01100111 011<font color="red">0</font>0101
+
+dogs: 01100100 01101111 01100111 011<font color="red">1</font>0011
+
+
+
+可以发现 dog 和 doge 是在第二十五位的时候不一样的。dogs 和 doge 是在第二十八位不一样的。也就是说，从二进制的角度还可以进一步进行压缩。把第二十八位前面相同的 `011` 进一步压缩。

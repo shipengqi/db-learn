@@ -90,6 +90,50 @@ Create Table: CREATE TABLE `t` (
 
 **在数据库设计中，非常强调定长存储，因为定长存储的性能更好**。
 
+### IP 地址字段设计
+
+IP 也是可以使用整型来存储的，因为 IP 地址本身是一个**变长字段**，如果使用 `INT` 存储，就是占用固定的 4 个字节。这种方法比使用字符串更节省空间且查询效率更高。
+
+存储 IP 地址的表结构：
+
+```sql
+CREATE TABLE `network_logs` (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ip_address INT UNSIGNED,  -- 存储转换后的IP整数值
+    -- 其他字段...
+    INDEX (ip_address)        -- 为提高查询效率添加索引
+);
+```
+
+**一定要使用 `INT UNSIGNED` 类型，使用 `INT UNSIGNED` 可以存储 0 到 4294967295 的值，正好对应 IPv4 的 32 位地址空间**。所以这种方法只适用于 IPv4 地址，IPv6地址需要其他存储方式。
+
+```sql
+-- 将IP字符串转为整型
+SELECT INET_ATON('192.168.1.1');  -- 返回: 3232235777
+
+-- 将整型转为 IP 字符串
+SELECT INET_NTOA(3232235777);     -- 返回: '192.168.1.1'
+
+-- 插入记录
+INSERT INTO network_logs (ip_address) VALUES (INET_ATON('192.168.1.1'));
+
+-- 查询记录
+-- 查询特定IP
+SELECT * FROM network_logs WHERE ip_address = INET_ATON('192.168.1.1');
+
+-- 查询时显示IP字符串格式
+SELECT id, INET_NTOA(ip_address) AS ip FROM network_logs;
+```
+
+也可以在**应用程序中先转换再存储，减少数据库的计算负担**。
+
+
+#### 性能优势
+
+- 存储空间：整型(4 字节) vs 字符串(`7-15`字节)
+- 查询效率：整型比较比字符串比较快得多
+- 索引效率：整型索引更小更高效
+
 ### 小数类型
 
 浮点类型 `Float` 和 `Double`，不是高精度，也不是 SQL 标准的类型，**不推荐使用**。

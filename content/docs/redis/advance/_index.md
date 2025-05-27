@@ -63,3 +63,5 @@ maxmemory:0                         # 配置中设置的最大可使用内存值
 maxmemory_human:0B                  # 配置中设置的最大可使用内存值
 maxmemory_policy:noeviction         # 当达到maxmemory时的淘汰策略
 ```
+
+

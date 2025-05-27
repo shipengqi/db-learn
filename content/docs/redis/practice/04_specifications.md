@@ -1,6 +1,6 @@
 ---
 title: 开发规范
-wight: 4
+weight: 4
 ---
 
 
