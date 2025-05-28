@@ -1,6 +1,6 @@
 ---
-title: 延时队列
-weight: 6
+title: List
+weight: 4
 ---
 
 RabbitMQ 和 Kafka 是常用的消息队列中间件，但是这种专业的消息队列中间件使用复杂。
