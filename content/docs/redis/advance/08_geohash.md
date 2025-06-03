@@ -3,13 +3,15 @@ title: GeoHash
 weight: 8
 ---
 
+## GeoHash 算法
+
 GeoHash 是一种地理位置编码的方法。GeoHash 算法将二维的经纬度数据映射到一维的整数，这样所有的元素都将在挂载到一条线上，距离靠近的二维坐标映射到一维后，两点之间距离也会很接近。当我们想要计算**附近的人**时，首先将目标位置映射到这条线上，然后在这个一维的线上获取附近的点就行了。
 
 地图元素的位置数据使用**二维的经纬度**表示，经度范围 `(-180, 180]`，纬度范围 `(-90, 90]`，纬度正负以赤道为界，北正南负，经度正负以本初子午线 (英国格林尼治天文台) 为界，东正西负。
 
 如果纬度范围 `[-90, 0)` 用二进制 0 表示，`(0, 90]` 用二进制 1 表示。经度范围 `[-180, 0)` 用二进制 0 表示，`(0, 180]` 用二进制 1 表示。那么地球可以分为 4 个区域：
 
-![geo-earth](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/geo-earth.png)
+<img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/geo-earth.png" width="280px">
 
 - `00` 第一个 0 表示纬度 `[-90, 0)`，第二个 0 表示经度 `[-180, 0)`。
 - `10` 0 表示纬度 `[-90, 0)`，1 表示经度 `(0, 180]`。
@@ -18,7 +20,7 @@ GeoHash 是一种地理位置编码的方法。GeoHash 算法将二维的经纬�
 
 分成 4 个区域之后，大概可以知道在地球的哪个方位了。如果想要更精确的定位，就可以继续切分，比如把 `00` 继续分成 4 个区域。
 
-![geo-earth2](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/geo-earth2.png)
+<img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/geo-earth2.png" width="280px">
 
 - `00` 分成了 4 个区域，这四个区域前面的 `00` 就是父区域的编码。子区域的四个编码还是 `00`、`01`、`10`、`11`，再加上父区域的编码作为前缀，就得到了 `0000`、`0001`、`0010`、`0011`。
 - 有共同前缀的区域，可以理解为距离也是比价近的。
