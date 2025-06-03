@@ -1,5 +1,6 @@
 ---
 title: 保护 Redis
+weight: 12
 ---
 
 ## 指令安全

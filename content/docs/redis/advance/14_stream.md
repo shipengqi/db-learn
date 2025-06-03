@@ -1,5 +1,6 @@
 ---
 title: Stream
+weight: 14
 ---
 
 Redis 5.0 最大的新特性就是多出了一个数据结构 Stream，它是一个新的强大的支持多播的可持久化的消息队列（MQ），借鉴了 Kafka 的设计。

@@ -70,8 +70,7 @@ show variables like '%innodb_log_file_size%';
 
 - `0`：表示每次事务提交时都只是把 redo log 留在 redo log buffer 中，效率最高，但是如果数据库宕机可能会丢失数据。
 - `1`：默认值，表示每次事务提交时都将 redo log 直接持久化到磁盘，数据最安全，不会因为数据库宕机丢失数据，但是效率稍微差一点，线上系统推荐这个设置。
-- `2`：这是一个折中的选择，表示每次事务提交时都只是把 redo log 写到操作系统的缓存 Page Cache 里，这种情况如果数据库宕机是不会丢失数据的，但是操作系统如果宕机了，Page Cache 里的数据还没来得及写入磁盘文件的话就
-会丢失数据。
+- `2`：这是一个折中的选择，表示每次事务提交时都只是把 redo log 写到操作系统的缓存 Page Cache 里，这种情况如果数据库宕机是不会丢失数据的，但是操作系统如果宕机了，Page Cache 里的数据还没来得及写入磁盘文件的话就会丢失数据。
 
 ![redo-log-policy](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redo-log-policy.png)
 

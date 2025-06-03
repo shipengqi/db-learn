@@ -51,7 +51,10 @@ MySQL 的默认隔离级别为 `REPEATABLE READ`。
 | 可重复读 (repeatable read) | 不可能 | 不可能 | 可能 |
 | 串行化 (serializable) | 不可能 | 不可能 | 不可能 |
 
-**MySQL 在 `REPEATABLE READ` 隔离级别下，是可以禁止幻读问题的发生的（需要配合间隙锁）**。
+**MySQL 在 `REPEATABLE READ` 隔离级别下，是可以禁止幻读问题的发生的（需要配合间隙锁）**：
+
+**MVCC** (多版本并发控制)：处理快照读。
+**间隙锁** (Gap Lock)：处理当前读。
 
 ### 设置事务的隔离级别
 

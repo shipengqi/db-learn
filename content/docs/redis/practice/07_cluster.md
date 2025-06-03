@@ -1,6 +1,6 @@
 ---
 title: 集群
-weight: 1
+weight: 7
 ---
 
 ## CAP 原理

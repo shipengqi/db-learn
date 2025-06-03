@@ -1,6 +1,6 @@
 ---
 title: HyperLogLog
-weight: 7
+weight: 9
 ---
 
 如果你负责开发维护一个大型的网站，有一天老板找产品经理要网站每个网页每天的 UV（用户访问量，一个用户一天不论访问一次还是多次，都只算一次）数据，然后让你来开发这个统计模块，如何实现？
@@ -83,7 +83,7 @@ HyperLogLog **基于概率论中伯努利试验并结合了极大似然估算方
 
 举个例子来理解 HyperLogLog 算法，有一天 Fox 老师和 Mark 老师玩抛硬币的游戏，规则是 Mark 老师负责抛硬币，每次抛的硬币可能正面，可能反面，每当抛到正面为一回合，Mark 老师可以自己决定进行几个回合。最后需要告诉 Fox 老师最长的那个回合抛了多少次以后出现了正面，再由 Fox 老师来猜 Mark 老师一共进行了几个回合。
 
-![hll]()
+![hll](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/hll.png)
 
 进行了 n 个回合试验，比如上图：
 
