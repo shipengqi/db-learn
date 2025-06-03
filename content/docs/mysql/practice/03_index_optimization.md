@@ -540,7 +540,7 @@ EXPLAIN select count(*) from employees;
 
 1. 对于 MyISAM 存储引擎的表做不带 `where` 条件的 `count` 查询性能是很高的，因为 MyISAM 存储引擎的表的总行数会被 MySQL 存储在磁盘上，查询不需要计算。
 2. `show table status` 可以看到表的行数，但是这个行数是不准确的。性能很高。例如 `show table status like 'employees'`。
-3. 将总数维护到 Redis 里，插入或删除表数据行的时候同时维护 Redis 里的表总行数 key 的计数值(用 `incr` 或 `decr` 命令)，但是这种方式可能不准，很难保证表操作和 Redis 操作的**事务一致性**
+3. 将总数维护到 Redis 里，插入或删除表数据行的时候同时维护 Redis 里的表总行数 key 的计数值(用 `incr` 或 `decr` 命令)，但是这种方式可能不准，很难保证表操作和 Redis 操作的**事务一致性**。
 4. 增加数据库计数表，插入或删除表数据行的时候同时维护计数表，让他们在同一个事务里操作。
 
 ### 索引选择异常和处理
