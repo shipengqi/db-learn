@@ -22,7 +22,7 @@ module:
 Start server:
 
 ```sh
-hugo server -D
+hugo serve -D
 ```
 
 Manually deploy:

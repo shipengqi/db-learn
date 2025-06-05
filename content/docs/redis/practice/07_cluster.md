@@ -15,6 +15,20 @@ weight: 7
 
 一句话概括 CAP 原理就是——网络分区发生时，一致性和可用性两难全。
 
+### AP 架构
+
+AP 架构是选择了**可用性**和**分区容忍性**。
+
+在 AP 架构中，分布式系统会设计成在网络分区发生时，仍然可以对外提供服务，即使此时数据的一致性无法满足。
+
+### CP 架构
+
+CP 架构是选择了**一致性**和**分区容忍性**。
+
+在 CP 架构中，分布式系统会设计成在网络分区发生时，为了保证数据的一致性，失去联系的节点暂停对外提供服务，直到网络状况完全恢复正常再继续对外提供服务。
+
+Zookeeper 是一个典型的 CP 架构的分布式系统。
+
 ### 最终一致性
 
 Redis 保证**最终一致性**，从节点会努力追赶主节点，最终从节点的状态会和主节点的状态将保持一致。如果网络断开了，主从节点的数据将会出现大量不一致，一旦网络恢复，从节点会采用多种策略努力追赶上落后的数据，继续尽力保持和主节点一致。
@@ -54,8 +68,8 @@ redis-cli -p 6380
 
 ### 主从同步原理
 
-1. 如果你为 master 配置了一个 slave，不管这个 slave 是否是第一次连接上 master，它都会发送一个 PSYNC 命令给 master 请求复制数据。
-2. master 收到 PSYNC 命令后，会在后台进行数据持久化通过 bgsave 生成最新的 rdb 快照文件（这里的 rdb 与开不开启 rdb 持久化没有关系），持久化期间，master 会继续接收客户端的请求，它会把这些可能**修改数据集的请求缓存在内存中**。
+1. 如果你为 master 配置了一个 slave，不管这个 slave 是否是第一次连接上 master，它都会发送一个 `PSYNC` 命令给 master 请求复制数据。
+2. master 收到 `PSYNC` 命令后，会在后台进行数据持久化通过 **`bgsave` 生成最新的 rdb 快照文件**（这里的 rdb 与开不开启 rdb 持久化没有关系），持久化期间，master 会继续接收客户端的请求，它会把这些可能**修改数据集的请求缓存在内存中**。
 3. 当持久化进行完毕以后，master 会把这份 rdb 文件数据集发送给 slave。
 4. slave 会把接收到的数据进行持久化生成 rdb，然后再加载到内存中。
 5. 然后，master 再将之前缓存在内存中的命令发送给 slave。
@@ -63,13 +77,13 @@ redis-cli -p 6380
 
 **为什么不使用 AOF 来做数据同步？**
 
-因为 RDB 更快。
+因为 RDB 更快。RDB 是内存快照，而 AOF 是增量日志，重放是需要时间的，所以 RDB 更适合做数据同步。
 
 #### 部分复制
 
 就是说一个 slave 之前连接了 master，已经有部分数据了，后面又和 master 断开了连接，然后又重新连接上 master，master 会把断开连接期间修改的数据发送给 slave。
 
-master 会在其内存中创建一个复制数据用的缓存队列，缓存最近一段时间的数据，master 和它所有的 slave 都维护了复制的数据下标 offset 和 master 的进程 ID，因此，当网络连接断开重连后，slave 会请求 master 继续进行未完成的复制，从所记录的数据下标开始。如果 master 进程 ID 变化了，或者从节点数据下标 offset 太旧，已经不在 master 的缓存队列里了，那么将会进行一次全量数据的复制。
+master 会在其内存中创建一个复制数据用的缓存队列，缓存最近一段时间的数据，**master 和它所有的 slave 都维护了复制的数据下标 offset 和 master 的进程 ID**，因此，当网络连接断开重连后，slave 会请求 master 继续进行未完成的复制，从所记录的数据下标开始。如果 **master 进程 ID 变化了，或者从节点数据下标 offset 太旧**，已经不在 master 的缓存队列里了，那么**将会进行一次全量数据的复制**。
 
 ### 从从同步
 
@@ -129,7 +143,7 @@ sentinel known-sentinel mymaster 192.168.0.60 26380 52d0a5d70c1f90475b4fc03b6ce7
 sentinel known-sentinel mymaster 192.168.0.60 26381 e9f530d3882f8043f76ebb8e1686438ba8bd5ca6  # 代表感知到的其它哨兵节点
 ```
 
-当 Redis 主节点如果挂了，哨兵集群会重新选举出新的 Redis 主节点，同时会修改所有 Sentinel 节点配置文件的集群元数据信息，比如 6379 的 Redis 如果挂了，假设选举出的新主节点是 6380，则 Sentinel 文件里的集群元数据信息会变成如下所示：
+**当 Redis 主节点如果挂了，哨兵集群会重新选举出新的 Redis 主节点，同时会修改所有 Sentinel 节点配置文件的集群元数据信息**，比如 6379 的 Redis 如果挂了，假设选举出的新主节点是 6380，则 Sentinel 文件里的集群元数据信息会变成如下所示：
 
 ```bash
 sentinel known-replica mymaster 192.168.0.60 6379 # 代表主节点的从节点信息
@@ -154,6 +168,7 @@ Redis 主从采用异步复制，意味着当主节点挂掉时，从节点可�
 min-slaves-to-write 1  # 表示主节点必须至少有一个从节点在进行正常复制，否则就停止对外写服务
 min-slaves-max-lag 10 # 单位是秒，表示如果 10s 没有收到从节点的反馈，就意味着从节点同步异常
 ```
+
 ## Redis Cluster
 
 Redis 3.0 以前的版本要实现集群一般是借助哨兵来监控 master 节点的状态，如果 master 节点异常，则会做主从切换，将某一台 slave 作为 master，哨兵的配置略微复杂，并且性能和高可用性等各方面表现一般，特别是在主从切换的瞬间存在**访问瞬断**的情况，而且**哨兵模式只有一个主节点对外提供服务**，没法支持很高的并发，且**单个主节点内存也不宜设置得过大，否则会导致持久化文件过大，影响数据恢复或主从同步的效率**，一般推荐小于 10G。
@@ -378,7 +393,7 @@ Redis 的主从复制主要分为两步：
 - **全量同步**，主库通过 `fork` 子进程产生内存快照，然后将数据序列化为 RDB 格式同步到从库，使从库的数据与主库某一时刻的数据一致。
 - **命令传播**：全量同步期间，master 会继续接收客户端的请求，它会把这些可能**修改数据集的请求缓存在内存中**。当从库与主库完成全量同步后，进入命令传播阶段，主库将变更数据的命令发送到从库，从库将执行相应命令，使从库与主库数据持续保持一致。
 
-![redis-replication]()
+![redis-replication](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redis-replication.png)
 
 **复制积压区**，可以理解为是一个备份，因为主从复制的过程中，如果从库的连接突然断开了，那么从库对应的**从库复制缓冲区**会被释放掉，包括其他的网络资源。等到从库重新连接时，重新开始复制，就刻意从复制积压区找到断开连接时数据复制的位置，从这个断开的位置开始继续复制。
 
@@ -394,7 +409,7 @@ Redis 的主从复制主要分为两步：
 
 Redis 为了提升多从库全量复制的效率和减少 fork 产生 RDB 的次数，会尽可能的让多个从库共用一个 RDB，从代码 (`replication.c`) 上看：
 
-![redis-copy-output-buffer]()
+![redis-copy-output-buffer](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redis-copy-output-buffer.png)
 
 当已经有一个从库触发 RDB BGSAVE 时，后续需要全量同步的从库会共享这次 BGSAVE 的 RDB，为了从库复制数据的完整性，会将第一个触发 RDB BGSAVE 从库的 OutputBuffer 拷贝到后续请求全量同步从库的 OutputBuffer 中。
 
@@ -474,7 +489,7 @@ Trie 的核心思想是空间换时间，利用字符串的公共前缀来降低
 
 因此我们需要更加高效的数据结构，这时候就是 Trie 树的用武之地了。现在我们通过例子来理解什么是 Trie 树。现在我们对 cat、cash、apple、aply、ok 这几个单词建立一颗Trie 树。
 
-![redis-trie]()
+![redis-trie](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redis-trie.png)
 
 从图中可以看出：
 
@@ -492,7 +507,7 @@ Trie 树其实依然比较浪费空间，比如前面所说的“如果大量字
 
 所以 Radix 树就是压缩后的 Trie 树，因此也叫**压缩 Trie 树**。比如上面的字符串列表完全可以这样存储：
 
-![redis-rax]()
+![redis-rax](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redis-rax.png)
 
 同时在具体存储上，Radix 树的处理是以 bit（或二进制数字）来读取的。一次被对比 r 个 bit。
 
