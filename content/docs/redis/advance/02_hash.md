@@ -5,7 +5,7 @@ weight: 2
 
 Redis 中除了 `hash` 结构的数据会用到字典外，整个 Redis 数据库的所有 key 和 value 也组成了一个全局字典，还有带过期时间的 key 集合也是一个字典。`zset` 集合中存储 value 和 score 值的映射关系也是通过字典实现的。
 
-`set` 的结构底层实现也是字典，只不过所有的 value 都是 NULL，其它的特性和字典一模一样。
+**`set` 的结构底层实现也是字典，只不过所有的 value 都是 NULL**，其它的特性和字典一模一样。
 
 ```c
 struct RedisDb {
@@ -62,9 +62,9 @@ struct dictht {
 
 
 {{< callout type="info" >}}
-rehash 进行期间，查找某个 key 的操作，Redis 会先去 `ht[0]` 数组上进行查找操作，如果 `ht[0]` 不存在，就会去 `ht[1]` 数组上进行查找操作。如果 `ht[0]` 存在 key，就会把对应的 key 搬到 `ht[1]` 数组上。而且会把 key 所在的桶的整个链表全部迁移到 `ht[1]` 数组上。删除和更新都都依赖于查找，先必须把元素找到，才可以进行数据结构的修改操作。
+rehash 进行期间，查找某个 key 的操作，Redis 会先去 `ht[0]` 数组上进行查找操作，如果 `ht[0]` 不存在，就会去 `ht[1]` 数组上进行查找操作。如果 `ht[0]` 存在 key，就会把对应的 key 搬到 `ht[1]` 数组上。而且会把 key 所在的桶的整个链表全部迁移到 `ht[1]` 数组上。删除和更新都依赖于查找，先必须把元素找到，才可以进行数据结构的修改操作。
 
-Redis 还有一个循环定时器去不断的去执行 rehash 操作，即使没有命令执行，也会不断的执行 rehash 操作。
+**Redis 还有一个循环定时器去不断的去执行 rehash 操作，即使没有命令执行，也会不断的执行 rehash 操作**。
 {{< /callout >}}
  
 ![redisdb-dict](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redisdb-dict.jpg)

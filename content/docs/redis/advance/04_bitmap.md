@@ -104,7 +104,7 @@ login_11_09: 1 0 0 1 1 0 0 1 1 1 0 1 0 0 0 1
 login_11_10: 1 1 0 1 0 1 0 1 1 1 0 1 0 0 0 1
 login_11_11: 1 1 0 1 0 0 0 1 1 1 0 1 0 0 0 1
 ----------------------------------------------
-             0 0 0 1 0 0 0 1 1 1 0 1 0 0 0 1 # 按位与运算，连续登录的天数
+             0 0 0 1 0 0 0 1 1 1 0 1 0 0 0 1 # 按位与运算，连续登录的人数
              1 1 0 1 1 1 0 1 1 1 0 1 0 0 0 1 # 按位或运算，只要有一天登录，就为 1，可以用来统计周活，月活等
 ```
 
@@ -117,9 +117,9 @@ redis> setbit login_11_10 101 1 # 模拟用户 101 签到
 (integer) 0
 redis> setbit login_11_10 102 1 # 模拟用户 102 签到
 (integer) 0
-redis> bitop and login_11_10-11 login_11_10 login_11_11 # 按位与运算，连续登录的天数，and 表示按位与运算，结果保存在 login_11_10-11 中
+redis> bitop and login_11_10-11 login_11_10 login_11_11 # 按位与运算，连续登录的人数，and 表示按位与运算，结果保存在 login_11_10-11 中
 (integer) 13
-redis> bitcount login_11_10-11 # 统计连续登录的天数
+redis> bitcount login_11_10-11 # 统计连续登录的人数
 (integer) 3
 redis> bitop or login_11_10-11-active login_11_10 login_11_11 # 按位或运算，只要有一天登录，就为 1，or 表示按位或运算，结果保存在 login_11_10-11-active 中
 (integer) 13

@@ -78,7 +78,7 @@ end
 
 这段 Lua 脚本在执行的时候要把前面的 `tag` 作为 `ARGV[1]` 的值传进去，把 `key` 作为 `KEYS[1]` 的值传进去。
 
-### 锁续命方案
+### 锁续命（Watchdog）方案
 
 上面的方案，只是相对安全一点，因为如果真的超时了，当前线程的逻辑没有执行完，其它线程也会乘虚而入。
 
@@ -88,7 +88,221 @@ redisson 是一个在 Redis 的基础上提供了许多分布式服务。其中�
 
 ![redisson](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redisson.png)
 
-redisson 自旋尝试加锁的逻辑，如果加锁失败，会拿到当前锁的剩余时间 ttl，然后让出 CPU 让其它线程执行，等待 ttl 时间后再继续尝试加锁。加锁失败的同时还会去定义一个 Redis channel，监听锁释放的消息，当锁释放后会收到消息，然后重新尝试加锁。
+redisson 自旋尝试加锁的逻辑，如果加锁失败，会拿到当前锁的剩余时间 ttl，然后让出 CPU 让其它线程执行，等待 ttl 时间后再继续尝试加锁。加锁失败的同时还会去订阅一个 Redis channel，监听锁释放的消息，当锁释放后会收到消息，然后重新尝试加锁。
+
+### Go 实现锁续命
+
+
+核心设计思路
+
+- 后台定时续期：获取锁成功后启动一个 goroutine 定期续期
+- 线程(协程)标识验证：续期时验证锁是否仍由当前协程持有
+- 自动停止机制：锁释放或协程退出时自动停止续期
+
+```go
+package redistlock
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/go-redis/redis/v8"
+)
+
+const (
+	defaultWatchdogInterval = 10 * time.Second // 默认续期间隔
+	defaultLockTimeout     = 30 * time.Second // 默认锁超时时间
+)
+
+type DistLock struct {
+	client         *redis.Client
+	key            string
+	value          string // 唯一标识，格式: UUID:goroutineID
+	watchdogActive bool
+	stopWatchdog   chan struct{}
+	mutex          sync.Mutex
+}
+
+// NewDistLock 创建一个新的分布式锁实例
+func NewDistLock(client *redis.Client, key string) *DistLock {
+	return &DistLock{
+		client:       client,
+		key:          key,
+		value:        generateLockValue(),
+		stopWatchdog: make(chan struct{}),
+	}
+}
+
+// generateLockValue 生成锁的唯一标识值
+func generateLockValue() string {
+	// 生成随机 UUID 部分
+	buf := make([]byte, 16)
+	_, _ = rand.Read(buf)
+	uuid := hex.EncodeToString(buf)
+	
+	// 获取当前 goroutine ID
+	goid := getGoroutineID()
+	
+	return fmt.Sprintf("%s:%d", uuid, goid)
+}
+
+// 获取 goroutine ID (简化实现)
+func getGoroutineID() uint64 {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	idField := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))[0]
+	id, _ := strconv.ParseUint(idField, 10, 64)
+	return id
+}
+
+// Lock 获取分布式锁
+func (dl *DistLock) Lock(ctx context.Context, timeout time.Duration) error {
+	dl.mutex.Lock()
+	defer dl.mutex.Unlock()
+
+	// 尝试获取锁
+	acquired, err := dl.client.SetNX(ctx, dl.key, dl.value, defaultLockTimeout).Result()
+	if err != nil {
+		return err
+	}
+
+	if acquired {
+		// 启动看门狗
+		dl.startWatchdog(ctx)
+		return nil
+	}
+
+	// 等待锁释放或超时
+	if timeout > 0 {
+		expire := time.Now().Add(timeout)
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				acquired, err := dl.client.SetNX(ctx, dl.key, dl.value, defaultLockTimeout).Result()
+				if err != nil {
+					return err
+				}
+				if acquired {
+					dl.startWatchdog(ctx)
+					return nil
+				}
+				if time.Now().After(expire) {
+					return errors.New("lock timeout")
+				}
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+	}
+
+	return errors.New("lock acquisition failed")
+}
+
+// startWatchdog 启动看门狗续期机制
+func (dl *DistLock) startWatchdog(ctx context.Context) {
+	if dl.watchdogActive {
+		return
+	}
+
+	dl.watchdogActive = true
+	go func() {
+		ticker := time.NewTicker(defaultWatchdogInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				// 续期操作
+				renewed, err := dl.renewLock(ctx)
+				if err != nil || !renewed {
+					// 续期失败，可能是锁已释放或已失去所有权
+					dl.mutex.Lock()
+					dl.watchdogActive = false
+					dl.mutex.Unlock()
+					return
+				}
+			case <-dl.stopWatchdog:
+				// 收到停止信号
+				dl.mutex.Lock()
+				dl.watchdogActive = false
+				dl.mutex.Unlock()
+				return
+			case <-ctx.Done():
+				// 上下文取消
+				dl.mutex.Lock()
+				dl.watchdogActive = false
+				dl.mutex.Unlock()
+				return
+			}
+		}
+	}()
+}
+
+// renewLock 续期锁
+func (dl *DistLock) renewLock(ctx context.Context) (bool, error) {
+	// 使用 Lua 脚本保证原子性
+	script := `
+	if redis.call("get", KEYS[1]) == ARGV[1] then
+		return redis.call("pexpire", KEYS[1], ARGV[2])
+	else
+		return 0
+	end
+	`
+	result, err := dl.client.Eval(ctx, script, []string{dl.key}, dl.value, defaultLockTimeout.Milliseconds()).Result()
+	if err != nil {
+		return false, err
+	}
+
+	if val, ok := result.(int64); ok {
+		return val == 1, nil
+	}
+	return false, nil
+}
+
+// Unlock 释放锁
+func (dl *DistLock) Unlock(ctx context.Context) error {
+	dl.mutex.Lock()
+	defer dl.mutex.Unlock()
+
+	// 先停止看门狗
+	if dl.watchdogActive {
+		close(dl.stopWatchdog)
+		dl.watchdogActive = false
+		dl.stopWatchdog = make(chan struct{})
+	}
+
+	// 使用 Lua 脚本保证原子性
+	script := `
+	if redis.call("get", KEYS[1]) == ARGV[1] then
+		return redis.call("del", KEYS[1])
+	else
+		return 0
+	end
+	`
+	_, err := dl.client.Eval(ctx, script, []string{dl.key}, dl.value).Result()
+	return err
+}
+
+// IsLocked 检查锁是否仍被当前实例持有
+func (dl *DistLock) IsLocked(ctx context.Context) (bool, error) {
+	val, err := dl.client.Get(ctx, dl.key).Result()
+	if err == redis.Nil {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return val == dl.value, nil
+}
+```
 
 ## Redis Lua 脚本
 
@@ -148,7 +362,7 @@ Redis 一般都是集群架构，很少有使用单机部署的。但是分布�
 
 为了使用 Redlock，需要提供多个 Redis 实例，这些实例之前**相互独立没有主从关系**。同很多分布式算法一样，redlock 也使用**大多数机制**。
 
-加锁时，它会向过半节点发送 `set(key, value, nx=True, ex=xxx)` 指令，只要过半节点 `set` 成功，那就认为加锁成功。释放锁时，需要向所有节点发送 `del` 指令。不过 Redlock 算法还需要考虑出错重试、时钟漂移等很多细节问题，同时因为 Redlock 需要向多个节点进行读写，意味着相比单实例 Redis 性能会下降一些。
+加锁时，它会向过半节点发送 `set(key, value, nx=True, ex=xxx)` 指令，只要过半节点 `set` 成功，那就认为加锁成功。释放锁时，需要向所有节点发送 `del` 指令。不过 Redlock 算法还需要考虑出错重试、时钟漂移等很多细节问题，同时**因为 Redlock 需要向多个节点进行读写，意味着相比单实例 Redis 性能会下降**一些。
 
 ![redlock](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redlock.png)
 
@@ -159,7 +373,7 @@ Redis 一般都是集群架构，很少有使用单机部署的。但是分布�
 3. 如果主节点太多，那么加锁和释放锁的时间就会比较长。
 
 
-如果非要这种高一致性的锁，那么可以使用 Zookeeper 来实现。
+如果**非要这种高一致性的锁，那么可以使用 Zookeeper 来实现**。
 
 ## 可重入锁
 

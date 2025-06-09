@@ -160,18 +160,9 @@ sentinel monitor mymaster 192.168.0.60 6380 2
 
 当 6379 的 Redis 实例再次启动时，哨兵集群根据集群元数据信息就可以将 6379 端口的 Redis 节点作为从节点加入集群。
 
-### 消息丢失
-
-Redis 主从采用异步复制，意味着当主节点挂掉时，从节点可能没有收到全部的同步消息，这部分未同步的消息就丢失了。如果主从延迟特别大，那么丢失的数据就可能会特别多。Sentinel 无法保证消息完全不丢失，但是也尽可能保证消息少丢失。它有两个选项可以限制主从延迟过大。
-
-```
-min-slaves-to-write 1  # 表示主节点必须至少有一个从节点在进行正常复制，否则就停止对外写服务
-min-slaves-max-lag 10 # 单位是秒，表示如果 10s 没有收到从节点的反馈，就意味着从节点同步异常
-```
-
 ## Redis Cluster
 
-Redis 3.0 以前的版本要实现集群一般是借助哨兵来监控 master 节点的状态，如果 master 节点异常，则会做主从切换，将某一台 slave 作为 master，哨兵的配置略微复杂，并且性能和高可用性等各方面表现一般，特别是在**主从切换的瞬间存在访问瞬断**的情况，而且**哨兵模式只有一个主节点对外提供服务**，没法支持很高的并发，且**单个主节点内存也不宜设置得过大，否则会导致持久化文件过大，影响数据恢复或主从同步的效率**，一般推荐小于 10G。
+Redis 3.0 以前的版本要实现集群一般是借助哨兵来监控 master 节点的状态，如果 master 节点异常，则会做主从切换，将某一台 slave 作为 master，哨兵的配置略微复杂，并且性能和高可用性等各方面表现一般，特别是在**主从切换的瞬间存在访问瞬断**的情况，而且**哨兵模式只有一个主节点对外提供服务**，没法支持很高的并发，且**单个主节点内存也不宜设置得过大，否则会导致持久化文件过大，影响数据恢复或主从同步的效率（有可能会陷入快照同步的死循环）**，一般推荐小于 10G。
 
 ### Redis Cluster 架构
 
@@ -248,6 +239,97 @@ Redis 集群需要至少三个 master 节点，这里搭建三个 master 节点�
 **为什么要保存到这个文件中？**
 
 因为如果整个集群如果关掉了，再次启动的时候是不能再使用 `--cluster create` 命令的，只需要把每个节点的 Redis 重新启动即可。Redis 启动的时候会读取这个配置文件中的节点信息，然后再重新组件集群。
+
+#### 增加节点
+
+在 `/usr/local/redis-cluster` 下创建 8007 和 8008 文件夹，并拷贝 8001 文件夹下的 `redis.conf` 文件到 8007 和 8008 这两个文件夹下。
+
+```
+mkdir 8007 8008
+cd 8001
+cp redis.conf /usr/local/redis-cluster/8007/
+cp redis.conf /usr/local/redis-cluster/8008/
+
+# 修改 8007 文件夹下的 redis.conf 配置文件
+vim /usr/local/redis-cluster/8007/redis.conf
+# 修改如下内容
+port 8007
+dir /usr/local/redis-cluster/8007/
+cluster-config-file nodes-8007.conf
+
+# 修改 8008 文件夹下的 redis.conf 配置文件
+vim /usr/local/redis-cluster/8008/redis.conf
+# 修改内容如下
+port 8008
+dir /usr/local/redis-cluster/8008/
+cluster-config-file nodes-8008.conf
+
+# 启动 8007 和 8008 俩个服务并查看服务状态
+/usr/local/redis-5.0.3/src/redis-server /usr/local/redis-cluster/8007/redis.conf
+/usr/local/redis-5.0.3/src/redis-server /usr/local/redis-cluster/8008/redis.conf
+ps -el | grep redis
+```
+
+配置 8007 为集群主节点：
+
+```bash
+/usr/local/redis-5.0.3/src/redis-cli -a zhuge --cluster add-node 192.168.0.61:8007 192.168.0.61:8001
+```
+
+使用 `add-node` 命令新增一个主节点 8007 (master)，前面的 `ip:port` 为新增节点，后面的 `ip:port` 为已知存在节点，看到日志最后有 "[OK] New node added correctly" 提示代表新节点加入成功。
+
+当**添加节点成功以后，新增的节点不会有任何数据**，因为它**还没有分配任何的 slot**，我们需要为新节点手工分配 slot：
+
+```bash
+# 查看集群状态
+/usr/local/redis-5.0.3/src/redis-cli -a zhuge -c -h 192.168.0.61 -p 8001
+192.168.0.61:8001> cluster nodes
+
+# 为 8007 分配 hash 槽，找到集群中的任意一个主节点，对其进行重新分片工作
+/usr/local/redis-5.0.3/src/redis-cli -a zhuge --cluster reshard 192.168.0.61:8001
+```
+
+输出如下：
+
+```bash
+# 需要多少个槽移动到新的节点上，自己设置，比如 600 个槽
+How many slots do you want to move (from 1 to 16384)? 600
+# 把这 600 个 hash 槽移动到哪个节点上去，需要指定节点 id
+What is the receiving node ID? 2728a594a0498e98e4b83a537e19f9a0a3790f38
+Please enter all the source node IDs.
+  Type 'all' to use all the nodes as source nodes for the hash slots.
+  Type 'done' once you entered all the source nodes IDs.
+Source node 1:all
+# 输入 all 为从所有主节点 (8001,8002,8003) 中分别抽取相应的槽数指定到新节点中，抽取的总槽数为 600 个
+ ... ...
+Do you want to proceed with the proposed reshard plan (yes/no)? yes
+# 输 入yes 确认开始执行分片任务
+```
+
+添加从节点 8008 到集群中去并查看集群状态：
+
+```bash
+/usr/local/redis-5.0.3/src/redis-cli -a zhuge --cluster add-node 192.168.0.61:8008 192.168.0.61:8001
+```
+
+还是一个 master 节点，没有被分配任何的 hash 槽。**新加入的节点默认就是 master 节点**。
+
+执行 `replicate` 命令来指定当前节点(从节点)的主节点 id 为哪个,首先需要连接新加的 8008 节点的客户端，然后使用集群命令进行操作，把当前的 8008 (slave) 节点指定到一个主节点下：
+
+```bash
+/usr/local/redis-5.0.3/src/redis-cli -a zhuge -c -h 192.168.0.61 -p 8008
+192.168.0.61:8008> cluster replicate 2728a594a0498e98e4b83a537e19f9a0a3790f38  #后面这串 id 为 8007 的节点 id
+```
+
+#### 集群相关命令
+
+- `create`：创建一个集群环境。
+- `call`：可以执行 Redis 命令。
+- `add-node`：将一个节点添加到集群里，第一个参数为新节点的 `ip:port` ，第二个参数为集群中任意一个已经存在的节点的 `ip:port`。
+- `del-node`：移除一个节点。**删除主节点**，必须先把该主节点的 hash 槽移动到其他主节点上，然后才能删除。
+- `reshard`：重新分片。
+- `check`：检查集群状态 。
+
 
 ### Redis 集群原理
 
@@ -343,13 +425,13 @@ min-slaves-to-write 1 
 
 ### 集群是否完整才能对外提供服务
 
-当 `redis.conf` 的配置 `cluster-require-full-coverage` 为 `no` 时，表示当负责一个插槽的 master 节点下线且没有相应的 slave 节点进行故障恢复时，集群仍然可用，如果为 `yes` 则集群不可用。
+当 `redis.conf` 的配置 `cluster-require-full-coverage` 为 `no` 时，表示当负责一部分插槽的 master 节点下线且没有相应的 slave 节点进行故障恢复时，集群仍然可用，如果为 `yes` 则集群不可用。
 
 ### Redis 集群为什么至少需要三个 master 节点，并且推荐节点数为奇数？
 
 因为新 master 的选举需要大于半数的集群 master 节点同意才能选举成功，如果只有两个 master 节点，当其中一个挂了，是达不到选举新 master 的条件的。
 
-奇数个 master 节点可以在满足选举该条件的基础上节省一个节点，比如三个 master 节点和四个 master 节点的集群相比，如果都挂了一个 master 节点，三个 master 节点的集群只需要两个节点就可以选举，而四个 master 节点的集群需要三个节点（过半）才能选举 。所以三个 master 节点和四个 master 节点的集群都只能挂一个节点。如果都挂了两个 master 节点都没法选举新 master 节点了，所以奇数的master节点更多的是从节省机器资源角度出发说的。
+奇数个 master 节点可以在满足选举该条件的基础上节省一个节点，比如三个 master 节点和四个 master 节点的集群相比，如果都挂了一个 master 节点，三个 master 节点的集群只需要两个节点就可以选举，而四个 master 节点的集群需要三个节点（过半）才能选举 。所以**三个 master 节点和四个 master 节点的集群都只能挂一个节点**。如果都挂了两个 master 节点都没法选举新 master 节点了，所以奇数的 master 节点更多的是从节省机器资源角度出发说的。
 
 
 ### Redis 集群对批量操作命令的支持

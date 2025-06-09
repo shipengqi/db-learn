@@ -86,7 +86,6 @@ select * from account where id = 10 for update;
 ```sql
 set tx_isolation='repeatable‐read';
 
-
 -- 事务1
 START TRANSACTION;
 SELECT * FROM account; -- 快照读，看到 6 条记录
@@ -95,7 +94,7 @@ SELECT * FROM account; -- 快照读，看到 6 条记录
 insert into account values(5,'小郭',12256487569,'洛阳');
 
 SELECT * FROM account; -- 仍然看到 6 条记录（快照读）
-update account set address='信阳' where id = 5；; -- 当前读
+update account set address='信阳' where id = 5; -- 当前读
 SELECT * FROM account; -- 看到 7 条记录
 COMMIT;
 ```
@@ -426,5 +425,5 @@ innodb_deadlock_detect=ON
 - 尽可能让所有数据检索都通过索引来完成，**避免无索引行锁升级为表锁**，
 - 合理设计索引，尽量缩小锁的范围。
 - 尽可能**减少检索条件范围**，避免间隙锁。
-- 尽量**控制事务大小**，减少锁定资源量和时间长度，涉及事务加锁的 sql 尽量放在事务最后执行。
+- 尽量**控制事务大小**，减少锁定资源量和时间长度，涉及事务加锁的 SQL 尽量放在事务最后执行。
 - 尽可能用低的事务隔离级别。

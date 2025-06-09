@@ -47,7 +47,7 @@ redis> object encoding testhash
 "hashtable"
 ```
 
-可以看出，hash 中的元素时乱序的，这是因为这个时候 hash 底层的存储结构已经从 `ziplist` 变成了 `hashtable`。`f4` 这个元素的长度超过了 `hash-max-ziplist-value` 的 64 字节`。
+可以看出，hash 中的元素时乱序的，这是因为这个时候 hash 底层的存储结构已经从 `ziplist` 变成了 `hashtable`。`f4` 这个元素的长度超过了 `hash-max-ziplist-value` 的 64 字节。
 
 ## 数据结构
 
@@ -159,7 +159,7 @@ redis> object encoding testset
 "intset"
 ```
 
-可以看到上面的 `set` 中的元素是有序的，为什么不是无序的？因为 `set` 底层的存储结构是 `intset`，`intset` 是一个紧凑的数组结构。有序的数组查询的时间复杂度是 `O(logn)`，因为可以使用二分查找。
+可以看到上面的 `set` 中的元素是有序的，为什么不是无序的？因为 `set` 底层的存储结构是 `intset`，**`intset` 是一个紧凑的数组结构**。**有序的数组**查询的时间复杂度是 `O(logn)`，因为**可以使用二分查找**。
 
 ```bash
 redis> sadd testset a

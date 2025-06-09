@@ -5,9 +5,10 @@ title: Database learning
 ## 主要内容
 
 {{< cards cols="2" >}}
-{{< card link="/db-learn/docs/mysql" title="MySQL" icon="mysql" subtitle="MySQL 的使用、实践和原理。" >}}
-{{< card link="/db-learn/docs/redis" title="Redis" icon="redis" subtitle="Redis 的使用、实践和原理。" >}}
-{{< card link="/db-learn/docs/mongodb" title="MongoDB" icon="mongo" subtitle="MongoDB 的使用、实践和原理。" >}}
+{{< card link="/db-learn/docs/mysql" title="MySQL" icon="mysql" subtitle="" >}}
+{{< card link="/db-learn/docs/redis/guide/01_getting_started" title="Redis" icon="redis" subtitle="" >}}
+{{< card link="/db-learn/docs/mongo" title="MongoDB" icon="mongo" subtitle="" >}}
+{{< card link="/db-learn/docs/es" title="Elasticsearch" icon="es" subtitle="" >}}
 {{< /cards >}}
 
 
