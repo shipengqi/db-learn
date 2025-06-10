@@ -17,9 +17,17 @@ typedef struct redisObject {
     unsigned encoding:4;
     // 指向底层实现数据结构的指针
     void *ptr;
-    // ...
+    unsigned lru:LRU_BITS;  // LRU时间或LFU数据（24位）
+    int refcount;           // 引用计数
 } robj;
 ```
+
+- `lru (24 bits)`: 用于实现内存回收策略。
+  - 在 LRU 模式下：记录对象最后一次被访问的时间
+  - 在 LFU 模式下：
+    - 16 bits: 最近访问时间（分钟级）
+    - 8 bits: 访问频率计数器（logarithmic counter）
+- `refcount`: 引用计数，用于内存管理。当 `refcount` 为 0 时，对象会被释放。
 
 
 ```bash
@@ -48,6 +56,8 @@ redis> object encoding long
 - `int`
 - `embstr`
 - `raw`
+
+## String Encoding
 
 ### raw
 

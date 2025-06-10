@@ -239,7 +239,7 @@ MySQL 默认的行格式就是 `Dynamic`。
 
 2. 内存对齐优化
 
-定长字段在内存中按固定对齐方式存储，CPU 缓存命中率更高，加速排序、聚合等操作。
+定长字段在内存中**按固定对齐方式存储，CPU 缓存命中率更高**，加速排序、聚合等操作。
 
 3. 避免行溢出
 
@@ -265,7 +265,7 @@ InnoDB 管理存储空间的基本单位是**页**，一个页的大小一般是
 | `Page Directory` | 页面目录 | 不确定 | 页中的某些记录的相对位置 |
 | `File Trailer` | 文件尾部 | 8 字节 | 校验页是否完整 |
 
-![innodb-page](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/innodb-page.png)
+<img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/innodb-page.png" width="280px">
 
 ## 记录在页中的存储
 
@@ -312,7 +312,7 @@ Records: 4  Duplicates: 0  Warnings: 0
 **是的**，确实还在磁盘上。这些被删除的记录之所以不立即从磁盘上移除，是因为移除它们之后把其他的记录在磁盘上重新排列需要性能消耗，所以**只是打一个删除标记**而已，所有被删除掉的记录都会组成一个所谓的**垃圾链表**，在这个链表中的记录占用的空间称之为所谓的**可重用空间**，之后**如果有新记录插入到表中的话，可以把这些被删除的记录占用的存储空间覆盖掉**。
 
 {{< callout type="info" >}}
-Page Header 部分有一个称之为 `PAGE_FREE` 的属性，它指向由被删除记录组成的**垃圾链表**中的**头节点**。
+Page Header 部分有一个称之为 **`PAGE_FREE` 的属性**，它指向由被删除记录组成的**垃圾链表**中的**头节点**。
 
 删除一条记录需要经历两个阶段：
 

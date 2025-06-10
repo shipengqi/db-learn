@@ -729,7 +729,25 @@ db.books.find({title:"book-1"}).explain("queryPlanner")
 
 输出结果：
 
-```bash
+```javascript
+{
+   "queryPlanner" : {
+      "plannerVersion" : 1,
+      "namespace" : "test.books",
+      "indexFilterSet" : false,
+      "parsedQuery" : {
+         "title" : {
+            "$eq" : "book-1"
+         }
+      },
+      "winningPlan" : {
+         "stage" : "COLLSCAN", // 全表扫描
+         "direction" : "forward"
+      },
+      "rejectedPlans" : []
+   }
+   // ...
+}
 ```
 
 
@@ -758,13 +776,66 @@ db.books.createIndex({title:1})
 db.books.find({title:"book-1"}).explain("executionStats")
 ```
 
-`winningPlan` 包含的属性：
+运行结果：
+
+```javascript
+{
+   "queryPlanner" : {
+      // ...
+      "winningPlan" : {
+         "stage" : "FETCH", // 使用索引
+         "inputStage" : {
+            "stage" : "IXSCAN", // 索引扫描
+            "keyPattern" : {
+               "title" : 1
+            },
+            "indexName" : "title_1",
+            "isMultiKey" : false,
+            "multiKeyPaths" : {
+               "title" : [ ]
+            },
+            "isUnique" : false,
+            "isSparse" : false,
+            "isPartial" : false,
+            "indexVersion" : 2,
+            "direction" : "forward",
+            "indexBounds" : {
+               "title" : [
+                  "[\"book-1\", \"book-1\"]"
+               ]
+            }
+         }
+      },
+      "rejectedPlans" : [ ]
+   },
+   "executionStats" : {
+      "executionSuccess" : true,
+      "nReturned" : 1, // 返回记录数
+      "executionTimeMillis" : 1, // 执行时间
+      "totalKeysExamined" : 1, // 索引扫描的次数
+      "totalDocsExamined" : 1, // 扫描的文档数
+      // ...
+   }
+}
+```
 
 | 字段名称 | 描述 |
 | --- | --- |
-| `inputStage` | 用来描述子 stage，并且为其父 stage 提供文档和索引关键字 |
-| `inputStage.stage` | 子查询方式 |
-| `inputStage.keyPattern` | 所扫描的 index 内容 |
+| `winningPlan.inputStage` | 用来描述子 stage，并且为其父 stage 提供文档和索引关键字 |
+| `winningPlan.inputStage.stage` | 子查询方式 |
+| `winningPlan.inputStage.keyPattern` | 所扫描的 index 内容 |
+| `winningPlan.inputStage.indexName` | 索引名称 |
+| `winningPlan.inputStage.isMultiKey` | 是否是多键索引。如果索引建立在 array 上，则是 `true` |
+| `executionStats.executionSuccess` | 是否执行成功 |
+| `executionStats.nReturned` | 返回记录数 |
+| `executionStats.executionTimeMillis` | 语句执行时间 |
+| `executionStats.executionStages.executionTimeMillisEstimate` | 检索文档获取数据的时间 |
+| `executionStats.totalKeysExamined` | 索引扫描的次数 |
+| `executionStats.totalDocsExamined` | 扫描的文档数 |
+| `executionStats.executionStages.isEOF` | 是否到达 steam 结尾，1 或者 true 代表已到达结尾 |
+| `executionStats.executionStages.works` | 工作单元数，一个查询会分解成小的工作单元 |
+| `executionStats.executionStages.advanced` | 优先返回的结果数 |
+| `executionStats.executionStages.docsExamined` | 文档检查数 |
 
 ### allPlansExecution
 
@@ -788,6 +859,7 @@ db.books.find({title:"book-1"}).explain("executionStats")
       ...
    ]
 ```
+
 ### stage 状态
 
 | 状态 | 描述 |
