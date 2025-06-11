@@ -161,7 +161,7 @@ rs0:SECONDARY> db.user.find()
 
 ```bash
 # 设置从节点可读
-rs0:SECONDARY> rs.secondaryOk() # 这个方法以弃用，使用 db.getMongo().setReadPref("primaryPreferred") 代替
+rs0:SECONDARY> rs.secondaryOk()
 rs0:SECONDARY> db.user.find()
 ```
 
@@ -632,11 +632,11 @@ MongoDB 是**允许通过备节点进行复制**的，这会发生在以下的�
 ```javascript
 cfg = rs.config()
 cfg.settings.chainingAllowed = false
-rs.reconfig（cfg)
+rs.reconfig(cfg)
 ```
 
 - **使用 `replSetSyncFrom` 命令临时更改当前节点的同步源**，比如在初始化同步时将同步源指向备节点来降低对主节点的影响。
 
 ```javascript
-db.adminCommand( { replSetSyncFrom: "hostname:port" })
+db.adminCommand({ replSetSyncFrom: "hostname:port" })
 ```

@@ -152,10 +152,10 @@ db.user.insertOne({name:"小明"},{writeConcern:{w:3,wtimeout:3000}})
 
 在读取数据的过程中我们需要关注以下两个问题： 
 
-- 从哪里读？（要不要做读写分离，是优先主节点还是优先从节点）
-- 什么样的数据可以读？ 
+- **从哪里读？**（要不要做读写分离，是优先主节点还是优先从节点）
+- **读哪些数据？**
 
-**`readPreference` 决定使用哪一个节点来满足正在发起的读请求**。可选值包括：
+**`readPreference` （读偏好）决定使用哪一个节点来满足正在发起的读请求**。可选值包括：
 
 - `primary`: 只选择主节点，默认模式； 
 - `primaryPreferred`：优先选择主节点，如果主节点不可用则选择从节点； 
@@ -165,10 +165,321 @@ db.user.insertOne({name:"小明"},{writeConcern:{w:3,wtimeout:3000}})
 
 **合理的 ReadPreference 可以极大地扩展复制集的读性能，降低访问延迟**。
 
+![mongodb-read-preference]()
+
+`readPreference` 场景举例：
+
+- 用户下订单后马上将用户转到订单详情页 ———— `primary/primaryPreferred`。因为此时从节点可能还没复制到新订单；
+- 用户查询自己下过的订单 ———— `secondary/secondaryPreferred`。查询历史订单对时效性通常没有太高要求； 
+- 生成报表 ———— `secondary`。报表对时效性要求不高，但资源需求大，可以在从节点单独处理，避免对线上用户造成影响； 
+- 将用户上传的图片分发到全世界，让各地用户能够就近读取 ———— `nearest`。每个地区的应用选择最近的节点读取数据。
+
+`readPreference` 配置：
+
+通过 MongoDB 的连接串参数：
+
+```bash
+mongodb://host1:27107,host2:27107,host3:27017/?replicaSet=rs0&readPreference=secondary
+```
+
+通过 MongoDB 驱动程序 API：
+
+```javascript
+MongoCollection.withReadPreference(ReadPreference readPref)
+```
+
+Mongo Shell：
+
+```javascript
+db.collection.find().readPref("secondary")
+```
+
+##### 从节点读测试
+
+1. 主节点写入 `{count:1}`, 观察该条数据在各个节点均可见 
+
+```bash
+mongosh --host rs0/localhost:28017
+rs0:PRIMARY> db.user.insert({count:3},{writeConcern:{w:1}})
+```
+{{< callout type="warn" >}}
+在 primary 节点中调用 `readPref("secondary")` 查询从节点用直连方式（`mongosh localhost:28017`）会查到数据，需要通过 `mongosh --host rs0/localhost:28017` 方式连接复制集，参考：https://jira.mongodb.org/browse/SERVER-22289
+{{< /callout >}}
+
+2. 在两个从节点分别执行 `db.fsyncLock()` 来锁定写入（同步）
+
+```bash
+mongosh localhost:28018
+rs0:SECONDARY> rs.secondaryOk()
+rs0:SECONDARY> db.fsyncLock()
+```
+
+{{< callout type="info" >}}
+`db.fsyncLock()` 可以用来锁住数据同步，需要使用 `db.fsyncUnlock()` 来解锁。可以用来模拟数据同步阻塞的场景。
+{{< /callout >}}
+
+3. 主节点写入 `{count:2}`
+
+```bash
+rs0:PRIMARY> db.user.insert({count:2},{writeConcern:{w:1}})
+rs0:PRIMARY> db.user.find() # 可以读到 {count:2}
+rs0:PRIMARY> db.user.find().readPref("secondary") # {count:2} 不可见
+```
+
+4. 解除从节点锁定 `db.fsyncUnlock()`
+
+```bash
+rs0:SECONDARY> db.fsyncUnlock() 
+```
+
+5. 主节点中查从节点数据
+
+```bash
+rs0:PRIMARY> db.user.find().readPref("secondary") # {count:2} 可见
+```
+
+##### Tag
+
+**`readPreference` 只能控制使用一类节点。Tag 则可以将节点选择控制到一个或几个节点**。考虑以下场景：
+
+- 一个 5 个节点的复制集；
+- 3 个节点硬件较好，专用于服务线上客户；
+- 2 个节点硬件较差，专用于生成报表；
+
+可以使用 Tag 来达到这样的控制目的：
+
+- 为 3 个较好的节点打上 `{purpose: "online"}`；
+- 为 2 个较差的节点打上 `{purpose: "analyse"}`；
+- 在线应用读取时指定 `online`，报表读取时指定 `analyse`。
+
+![mongodb-read-tag]()
+
+```javascript
+// 为复制集节点添加标签
+conf = rs.conf()
+conf.members[1].tags = { purpose: "online"}
+conf.members[4].tags = { purpose: "analyse"}
+rs.reconfig(conf)
+
+// 查询
+db.collection.find({}).readPref( "secondary", [ {purpose: "online"} ] )
+```
+
+
+{{< callout type="info" >}}
+- **指定 `readPreference` 时也应注意高可用问题**。例如将 `readPreference` 指定 `primary`，则发生故障转移不存在 primary 期间将没有节点可读。如果业务允许，则应选择 `primaryPreferred`；
+- 使用 Tag 时也会遇到同样的问题，**如果只有一个节点拥有一个特定 Tag，则在这个节点失效时将无节点可读**。这在有时候是期望的结果，有时候不是。例如：
+  - **如果报表使用的节点失效，即使不生成报表，通常也不希望将报表负载转移到其他节点上，此时只有一个节点有报表 Tag 是合理的选择**；
+  - 如果线上节点失效，通常希望有替代节点，所以应该保持多个节点有同样的 Tag；
+- Tag 有时需要与优先级、选举权综合考虑。例如做报表的节点通常不会希望它成为主节点，则优先级应为 0。
+{{< /callout >}}
+
+
 #### readConcern
+
+在 **`readPreference` 选择了指定的节点后，`readConcern` 决定这个节点上的数据哪些是可读的**，类似于关系数据库的**隔离级别**。可选值包括：
+
+- `available`：**读取所有可用的数据**。
+- `local`：**读取所有可用且属于当前分片的数据**。
+- `majority`：**读取在大多数节点上提交完成的数据**。**数据读一致性的充分保证**。
+- `linearizable`：可线性化读取文档，仅支持从主节点读。
+- `snapshot`：**读取最近快照中的数据，仅可用于多文档事务**，最高隔离级别，类似 MySQL 中的**串行化隔离级别**。
+
+##### local 和 available
+
+**在复制集中 local 和 available 是没有区别的，两者的区别主要体现在分片集上**。
+
+考虑以下场景：
+
+- 一个 chunk x 正在从 shard1 向 shard2 迁移；
+- 整个迁移过程中 chunk x 中的部分数据会在 shard1 和 shard2 中同时存在，但源分片 shard1 仍然是 chunk x 的负责方：
+  - 所有对 chunk x 的读写操作仍然进入 shard1；
+  - config 中记录的信息 chunk x 仍然属于 shard1；
+- 此时如果读 shard2，则会体现出 `local` 和 `available` 的区别：
+  - `local`：只取应该由 shard2 负责的数据（不包括 x）；
+  - `available`：shard2 上有什么就读什么（包括 x）；
+
+{{< callout type="info" >}}
+- 虽然看上去总是应该选择 `local`，但毕竟对结果集进行过滤会造成额外消耗。在一些无关紧要的场景（例如统计）下，也可以考虑 `available`。
+- MongoDB <=3.6 不支持对从节点使用 `{readConcern: "local"}`。
+- **从主节点读取数据时默认 `readConcern` 是 `local`，从从节点读取数据时默认 `readConcern` 是 `available`（向前兼容原因）**。
+{{< /callout >}}
+
+
+##### majority
+
+**只读取大多数据节点上都提交了的数据**。
+
+如何实现？
+
+节点上维护多个 x 版本（MVCC 机制），MongoDB 通过维护多个快照来链接不同的版本：
+
+- **每个被大多数节点确认过的版本都是一个快照**；
+- 快照持续到没有人使用为止才被删除；
+
+**测试 readConcern: majority vs local**：
+
+
+1. 将复制集中的两个从节点使用 `db.fsyncLock()` 锁住写入（模拟同步延迟）
+2. 测试
+
+```bash
+rs0:PRIMARY> db.user.insert({count:10},{writeConcern:{w:1}})
+rs0:PRIMARY> db.user.find().readConcern("local") # 可以读到 {count:10}
+rs0:PRIMARY> db.user.find().readConcern("majority") # 都不到 {count:10}，因为其他两个节点阻塞住了，没有同步到数据，不符合 majority 的要求
+```
+
+`update` 与 `remove` 与上同理。
+
+##### majority 与脏读
+
+MongoDB 中的回滚：
+
+- 写操作到达大多数节点之前都是不安全的，一旦主节点崩溃，而从节点还没复制到该次操作，刚才的写操作就丢失了；
+- 把一次写操作视为一个事务，从事务的角度，可以认为事务被回滚了。
+
+所以从分布式系统的角度来看，事务的提交被提升到了分布式集群的多个节点级别的“提交”，而不再是单个节点上的“提交”。
+
+在可能发生回滚的前提下考虑脏读问题：
+
+- 如果在一次写操作到达大多数节点前读取了这个写操作，然后因为系统故障该操作回滚了，则发生了脏读问题；
+
+**使用 `{readConcern: "majority"}` 可以有效避免脏读**。
+
+##### 如何安全的读写分离
+
+考虑如下场景: 
+
+1. 向主节点写入一条数据;
+2. 立即从从节点读取这条数据。
+
+**如何保证自己能够读到刚刚写入的数据?**
+
+下述方式有可能读不到刚写入的数据：
+
+```javascript
+db.orders.insert({oid:101,sku:"kite",q:1})
+db.orders.find({oid:101}).readPref("secondary")
+```
+
+**使用 `writeConcern+readConcern majority` 来解决**：
+
+```javascript
+db.orders.insert({oid:101,sku:"kite",q:1},{writeConcern:{w:"majority"}})
+db.orders.find({oid:101}).readPref("secondary").readConcern("majority")
+```
+
+##### linearizable
+
+**只读取大多数节点确认过的数据。和 `majority` 最大差别是保证绝对的操作线性顺序** ：
+
+![mongodb-linearizable]()
+
+- 在写操作自然时间后面的发生的读，一定可以读到之前的写。
+- **只对读取单个文档时有效**。
+- 可能导致非常慢的读，因此总是建议配合使用 `maxTimeMS`。
+
+##### snapshot
+
+`{readConcern: "snapshot"}` 只在多文档事务中生效。将一个事务的 `readConcern` 设置为 `snapshot`，将保证在事务中的读：
+
+- 不出现脏读；
+- 不出现不可重复读；
+- 不出现幻读。
+
+因为所有的读都将使用同一个快照，直到事务提交为止该快照才被释放。
 
 #### 事务的隔离级别
 
+- 事务完成前，事务外的操作对该事务所做的修改不可访问
+
+```javascript
+// 主节点
+db.tx.insertMany([{ x: 1 }, { x: 2 }])
+var session = db.getMongo().startSession()
+// 开启事务
+session.startTransaction()
+
+var coll = session.getDatabase("test").getCollection("tx")
+// 事务内修改 {x:1, y:1}
+coll.updateOne({x: 1}, {$set: {y: 1}})
+// 事务内查询 {x:1}
+coll.findOne({x: 1})  // {x:1, y:1}
+
+// 事务外查询 {x:1}
+db.tx.findOne({x: 1})  // {x:1}
+
+// 提交事务
+session.commitTransaction()
+
+// 或者回滚事务
+session.abortTransaction()
+```
+
+- 如果事务内使用 `{readConcern: "snapshot"}`，则可以达到可重复读 Repeatable Read
+
+```javascript
+var session = db.getMongo().startSession()
+session.startTransaction({ readConcern: {level: "snapshot"}, writeConcern: {w: "majority"}})
+
+var coll = session.getDatabase('test').getCollection("tx")
+
+coll.findOne({x: 1}) 
+db.tx.updateOne({x: 1}, {$set: {y: 2}})
+db.tx.findOne({x: 1})
+coll.findOne({x: 1})  
+
+session.abortTransaction()
+```
+
 ### 事务超时
 
+在执行事务的过程中，如果操作太多，或者存在一些长时间的等待，则可能会产生异常：`Transaction has been aborted`。
+
+原因在于，**默认情况下 MongoDB 会为每个事务设置 1 分钟的超时时间，如果在该时间内没有提交，就会强制将其终止**。该超时时间可以通过 `transactionLifetimeLimitSecond` 变量设定。
+
 ### 事务的错误处理
+
+ MongoDB 的事务错误处理机制不同于关系数据库： 
+- 当一个事务开始后，如果事务要修改的文档在事务外部被修改过，则事务修改这个文档时会触发 Abort 错误，因为此时的修改冲突了。这种情况下，只需要简单地重做事务就可以了； 
+- 如果一个事务已经开始修改一个文档，在事务以外尝试修改同一个文档，则事务以外的修改会等待事务完成才能继续进行。
+
+#### 写冲突测试
+
+开 3 个 mongo shell 均执行下述语句：
+
+```javascript
+var session = db.getMongo().startSession()
+session.startTransaction({ readConcern: {level: "majority"}, writeConcern: {w: "majority"}})
+var coll = session.getDatabase('test').getCollection("tx")
+```
+
+窗口 1： 正常结束
+
+```javascript
+coll.updateOne({x: 1}, {$set: {y: 1}})
+```
+
+窗口 2：异常 – `WriteConflict error`
+
+解决方案：重启事务
+
+```javascript
+coll.updateOne({x: 1}, {$set: {y: 2}})
+```
+
+窗口 3：事务外更新，需等待 
+
+```javascript
+db.tx.updateOne({x: 1}, {$set: {y: 3}})
+```
+
+### 注意事项
+
+- 可以实现和关系型数据库类似的事务场景 
+- 必须使用与 MongoDB 4.2及以上 兼容的驱动； 
+- 事务默认必须在 60 秒（可调）内完成，否则将被取消； 
+- **涉及事务的分片不能使用仲裁节点**； 
+- 事务会影响 chunk 迁移效率。正在迁移的 chunk 也可能造成事务提交失败（重试 即可）；
+- **多文档事务中的读操作必须使用主节点读**； 
+- **`readConcern` 只应该在事务级别设置，不能设置在每次读写操作上**。
