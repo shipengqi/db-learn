@@ -43,8 +43,6 @@ Redis 官方推荐使用 [spiped](http://www.tarsnap.com/spiped.html) 工具，�
 
 ### spiped 原理
 
-![](../../../images/spiped.jpg)
-
 spiped 会在客户端和服务器各启动一个 spiped 进程。
 
 spiped 进程 A 负责接受来自 Redis Client 发送过来的请求数据，加密后传送到右边的 spiped 进程 B。spiped B 将接收到的数据解密后传

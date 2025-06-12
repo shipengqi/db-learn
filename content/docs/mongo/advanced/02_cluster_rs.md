@@ -39,7 +39,7 @@ MySQL 和 Redis 都实现了 Master-Slave 的主从架构，**普通的主从架
 
 PSS模式由一个 Primary 节点和两个 Secondary 节点所组成。 
 
-![mongodb-pss]()
+![mongodb-pss](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-pss.png)
 
 此模式始终提供两个完整的副本，如果 Primary 节点不可用，则复制集会自动选择一个 Secondary 节点作为新的 Primary 节点。旧的 Primary 节点在可用时重新加入复制集。
 
@@ -47,7 +47,7 @@ PSS模式由一个 Primary 节点和两个 Secondary 节点所组成。
 
 PSA 模式由一个 Primary 节点、一个 Secondary 节点和**一个仲裁者节点（Arbiter）**组成。
 
-![mongodb-psa]()
+![mongodb-psa](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-psa.png)
 
 其中，**Arbiter 节点不存储数据副本，也不提供业务的读写操作**。Arbiter 节点**发生故障不影响业务，仅影响选举投票**。此模式仅提供数据的一个完整副本，如果主节点不可用，则复制集将选择备节点作为主节点。
 
@@ -426,7 +426,7 @@ mongosh --retryWrites
 
 在复制集架构中，**主节点与备节点之间是通过 oplog 来同步数据的**，这里的 **oplog 是一个特殊的固定集合**，当主节点上的一个写操作完成后，会向 oplog 集合写入一条对应的日志，而备节点则通过这个 oplog 不断拉取到新的日志，在本地进行回放以达到数据同步的目的。
 
-![mongodb-oplog]()
+![mongodb-oplog](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-oplog.png)
 
 #### 什么是 oplog
 

@@ -24,7 +24,8 @@ weight: 3
 
 MongoDB 分片集群（Sharded Cluster）是对数据进行水平扩展的一种方式。**MongoDB 使用分片集群来支持大数据集和高吞吐量的业务场景**。在分片模式下，存储不同的切片数据的节点被称为**分片节点**，一个分片集群内包含了多个分片节点。当然，除了分片节点，集群中还需要一些配置节点、路由节点，以保证分片机制的正常运作。
 
-![mongodb-shards-arch]()
+![mongodb-shards-arch](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-arch.png)
+
 
 比 Redis 的集群架构更加复杂，多了路由，配置节点。
 
@@ -115,7 +116,8 @@ Totals
 
 通过分片功能，可以将一个非常大的集合分散存储到不同的分片上，如图：
 
-![mongodb-shards-strategy]()
+![mongodb-shards-strategy](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-strategy.png)
+
 
 假设这个集合大小是 1TB，那么拆分到 4 个分片上之后，每个分片存储 256GB 的数据。这个当然是最理想化的场景，**实际上很难做到如此绝对的平衡**。一个集合在拆分后如何存储、读写，与该集合的分片策略设定是息息相关的。每个分片不可能直接存储一个 256GB 的数据，这些数据会分成多个 chunk，每个 chunk 存储一部分数据，保证每一个分片一共是 256GB 的数据。
 
@@ -125,7 +127,8 @@ Totals
 
 chunk 的意思是数据块，**一个 chunk 代表了集合中的“一段数据”**，例如，用户集合（`db.users`）在切分成多个 chunk 之后如图所示：
 
-![mongodb-shards-chunk]()
+![mongodb-shards-chunk](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-chunk.png)
+
 
 **chunk 所描述的是范围区间**，例如，`db.users` 使用了 `userId` 作为分片键，那么 chunk 就是 `userId` 的各个值（或哈希值）的连续区间。**集群在操作分片集合时，会根据分片键找到对应的 chunk，并向该 chunk 所在的分片发起操作请求**，而 chunk 的分布在一定程度上会影响数据的读写路径，这由以下两点决定：
 
@@ -143,7 +146,7 @@ chunk 的意思是数据块，**一个 chunk 代表了集合中的“一段数�
 - chunk1 包含 x 的取值在 `[minKey，-75)` 的所有文档。
 - chunk2 包含 x 取值在 `[-75，25)` 之间的所有文档，依此类推。
 
-![mongodb-shards-range]()
+![mongodb-shards-range](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-range.png)
 
 **范围分片能很好的满足范围查询的需求**，比如要查询 x 在 `[-30, 10]` 之间的所有文档，这是 mongos 直接将请求定位到 chunk2 所在的分片服务器上，就能查询出所有符合条件的文档。**范围分片的缺点在于，如果 Shard Key 有明显的递增或递减的趋势，则新插入的文档会分布到同一个 chunk，此时写压力会集中到一个节点，从而导致单点的性能瓶颈**。
 
@@ -158,7 +161,8 @@ chunk 的意思是数据块，**一个 chunk 代表了集合中的“一段数�
 
 **哈希分片会实现根据分片键 Shard Key 计算出一个新的哈希值（64 位整数），再根据哈希值按照范围分片的策略进行 chunk 切分**。适用于日志，物联网等高并发场景。
 
-![mongodb-shards-hash]()
+![mongodb-shards-hash](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-hash.png)
+
 
 哈希分片与范围分片是互补的，**由于哈希算法保证了随机性，所以文档可以更加离散的分布到不同的 chunk 上，这避免了范围分片的集中写问题**。然而，**在执行一些范围查询时，哈希分片的效率不如范围分片**。因为所有的范围查询都必然导致对多有的 chunk 进行检索，如果集群有 10 个分片，那么 mongos 将需要对 10 个分片进行查询。哈希分片与范围分片的另一个区别是，**哈希分片只能选择单个字段，而范围分片允许采用组合式的多个字段作为分片键**。
 
@@ -258,7 +262,8 @@ sh.addTagRange("other.systemLogs",{shardKey:MinKey},{shardKey:MaxKey},"olap")
 
 **在默认情况下，一个 chunk 的大小为 64 MB（MongoDB 6.0默认是 128M）**，该参数由配置的 `chunksize` 参数指定。如果持续地向该 chunk 写入数据，并导致数据量超过了 chunk 大小，则 MongoDB 会自动进行分裂，将该 chunk 切分为两个相同大小的 chunk。
 
-![mongodb-shards-split]()
+![mongodb-shards-split](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-split.png)
+
 
 **chunk 分裂是基于分片键进行的，如果分片键的基数太小，则可能因为无法分裂而会出现 jumbo chunk（超大块）的问题**。例如，对 `db.users` 使用 gender（性别）作为分片键，由于同一种性别的用户数可能达到数千万，分裂程序并不知道如何对分片键（gender）的一个单值进行切分，因此最终导致在一个 chunk 上集中存储了大量的 user 记录（总大小超过 64MB）。
 
@@ -268,7 +273,8 @@ sh.addTagRange("other.systemLogs",{shardKey:MinKey},{shardKey:MaxKey},"olap")
 
 **均衡器运行于 Primary Config Server（配置服务器的主节点）上**，而该节点也同时会控制 chunk 数据的搬迁流程。
 
-![mongodb-shards-balance]()
+![mongodb-shards-balance](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-balance.png)
+
 
 流程说明：
 
@@ -342,14 +348,15 @@ db.settings.update(
 
 #### 容灾级别
 
-![mongodb-shards-dr]
+![mongodb-shards-dr](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-dr.png)
+
 
 #### RPO&RTO
 
 - RPO（Recovery Point Objective）：即**数据恢复点目标，主要指的是业务系统所能容忍的数据丢失量**。
 - RTO（Recovery Time Objective）：即**恢复时间目标，主要指的是所能容忍的业务停止服务的最长时间**，也就是从灾难发生到业务系统恢复服务功能所需要的最短时间周期。
 
-![mongodb-shards-dr2]
+![mongodb-shards-dr2](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-dr2.png)
 
 #### MongoDB 两地三中心方案：复制集跨中心部署
 
@@ -357,7 +364,7 @@ db.settings.update(
 
 **双中心双活＋异地热备=两地三中心**：
 
-![mongodb-shards-dr3]
+![mongodb-shards-dr3](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-dr3.png)
 
 MongoDB 集群两地三中心部署的考量点
 
@@ -375,7 +382,7 @@ MongoDB 集群两地三中心部署的考量点
 - 3 台 Linux 虚拟机，准备 MongoDB 环境，配置环境变量。
 - 一定要版本一致（重点）
 
-![mongodb-rs-dr]()
+![mongodb-shards-dr](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-dr.png)
 
 配置域名解析
 
@@ -467,4 +474,4 @@ for(var i=1;i<1000;i++){
 
 [全球多写集群方案](https://www.processon.com/view/link/6239de277d9c08070e59dc0d)，必须用到分片集群。
 
-![mongodb-shards-global-multi]()
+![mongodb-shards-global-multi](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-global-multi.png)

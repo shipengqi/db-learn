@@ -31,7 +31,8 @@ weight: 3
 
 通过将多个操作符组合到聚合管道中，用户可以构建出足够复杂的数据处理管道以提取数据并进行分析。
 
-![mongodb-aggregation]()
+![mongodb-aggregation](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-aggregation.png)
+
 
 聚合管道的语法：
 
@@ -52,7 +53,7 @@ db.students.aggregate([
 ]);
 ```
 
-![mongodb-aggregate-demo]()
+![mongodb-aggregate-demo](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-aggregate-demo.png)
 
 #### 常用的聚合阶段运算符
 

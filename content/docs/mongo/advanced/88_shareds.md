@@ -9,7 +9,7 @@ draft: true
 - 3 台 Linux 虚拟机，准备 MongoDB 环境，配置环境变量。
 - **一定要版本一致（重点）**
 
-![mongodb-shareds-cluster]()
+![mongodb-shareds-cluster](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shareds-cluster.png)
 
 ## 配置域名解析
 

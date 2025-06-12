@@ -17,7 +17,7 @@ typedef struct redisObject {
     unsigned encoding:4;
     // 指向底层实现数据结构的指针
     void *ptr;
-    unsigned lru:LRU_BITS;  // LRU时间或LFU数据（24位）
+    unsigned lru:LRU_BITS;  // LRU 时间或 LFU 数据（24位）
     int refcount;           // 引用计数
 } robj;
 ```

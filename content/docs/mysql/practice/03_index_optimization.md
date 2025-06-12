@@ -106,7 +106,7 @@ SHOW WARNINGS;
 `SHOW WARNINGS` 的 message 可以看到表示查询被优化成了 `select 1 AS 'id','film1' AS 'name' from dual`。
 
 
-3. `eq_ref`：**主键索引**或**唯一二级索引的所有列**都被被连接使用，最多只会返回一条符合条件的记录。这可能是在 `const` 之外最好的联接类型了，简单的 `select` 查询不会出现这种类型。
+3. `eq_ref`：**主键索引或唯一二级索引的所有列都被被连接使用**，最多只会返回一条符合条件的记录。这可能是在 `const` 之外最好的联接类型了，简单的 `select` 查询不会出现这种类型。
 
 ```sql
 EXPLAIN SELECT * FROM film_actor LEFT JOIN film ON film_actor.film_id = film.id;
@@ -118,7 +118,7 @@ EXPLAIN SELECT * FROM film_actor LEFT JOIN film ON film_actor.film_id = film.id;
 
 - `film` 表对应的 type 是 `eq_ref`，因为关联的条件使用的是 `film` 表的主键 `id`，所以会使用主键索引来查询数据。使用主键来查询，只会返回一条记录，速度还是很快的。
 
-4. `ref`：相比 `eq_ref`，不使用唯一索引，而是使用二级索引或者唯一性索引的部分前缀，索引要和某个值相比较，可能会找到多个符合条件的行。
+4. `ref`：相比 `eq_ref`，**不使用唯一索引，而是使用二级索引或者唯一性索引的部分前缀**，索引要和某个值相比较，**可能会找到多个符合条件的行**。
 
 ```sql
 -- name 是普通索引
@@ -216,7 +216,7 @@ EXPLAIN SELECT * FROM actor;
 文件排序方式：
 
 - 单路排序：是一次性取出（聚簇索引）满足条件行的**所有字段**，然后在 sort buffer 中进行排序；trace 工具可以看到 `sort_mode` 信息里显示 `<sort_key, additional_fields>` 或者 `<sort_key,packed_additional_fields>`，`sort_key` 就表示排序的 `key`，`additional_fields` 表示表中的其他字段。
-- 双路排序（又叫**回表排序模式**）：是首先根据相应的条件取出（聚簇索引）相应的**排序字段**和可以直接定位行数据的**主键 ID**，然后在 sort buffer 中进行排序，排序完后需要回表去取回其它需要的字段；trace 工具可以看到 `sort_mode` 信息里显示 `<sort_key, rowid>`，`sort_key` 就表示排序的 `key`，`rowid` 表示主键 ID。占用内存空间小，但是需要多回表一次。
+- 双路排序（又叫**回表排序模式**）：是首先根据相应的条件取出（聚簇索引）相应的**排序字段**和可以直接定位行数据的**主键 ID，然后在 sort buffer 中进行排序，排序完后需要回表去取回其它需要的字段**；trace 工具可以看到 `sort_mode` 信息里显示 `<sort_key, rowid>`，`sort_key` 就表示排序的 `key`，`rowid` 表示主键 ID。占用内存空间小，但是需要多回表一次。
 
 判断使用哪种排序模式：
 

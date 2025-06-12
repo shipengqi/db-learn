@@ -14,7 +14,7 @@ MongoDB 从 3.0 开始引入可插拔存储引擎的概念，主要有 MMAPV1、
 
 **理想情况下，MongoDB 可以提供近似内存式的读写性能**。WiredTiger 引擎实现了数据的二级缓存，第一层是操作系统的页面缓存，第二层则是引擎提供的内部缓存。
 
-**MongoDB 为了尽可能保证业务查询的“热数据”能快速被访问，其内部缓存的默认大小达到了内存的一半**，该值由`wiredTigerCacheSize` 参数指定，其默认的计算公式如下：
+**MongoDB 为了尽可能保证业务查询的“热数据”能快速被访问，其内部缓存的默认大小达到了内存的一半**，该值由 `wiredTigerCacheSize` 参数指定，其默认的计算公式如下：
 
 ```javascript
 wiredTigerCacheSize=Math.max(0.5*(RAM-1GB),256MB)
@@ -22,7 +22,7 @@ wiredTigerCacheSize=Math.max(0.5*(RAM-1GB),256MB)
 
 #### 写缓冲
 
-**当数据发生写入时，MongoDB 并不会立即持久化到磁盘上，而是先在内存中记录这些变更，之后通过C heckPoint 机制将变化的数据写入磁盘**。这么处理主要有以下两个原因：
+**当数据发生写入时，MongoDB 并不会立即持久化到磁盘上，而是先在内存中记录这些变更，之后通过 CheckPoint 机制将变化的数据写入磁盘**。这么处理主要有以下两个原因：
 
 - 如果每次写入都触发一次磁盘 I/O，那么开销太大，而且响应时延会比较大。
 - 多个变更的写入可以尽可能进行 I/O 合并，降低资源负荷。
@@ -47,7 +47,7 @@ MongoDB 单机下保证数据可靠性的机制包括以下两个部分。
 对于类似于订单系统这样的业务场景，由于数据的重要性，插入数据时直接指定 `journal：true`，这样可以保证数据的可靠性。
 {{< /callout >}}
 
-![wiredtiger-journal]()
+![wiredtiger-journal](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/wiredtiger-journal.png)
 
 WiredTiger 写入数据的流程：
 
@@ -59,7 +59,7 @@ WiredTiger 写入数据的流程：
 
 **Journal 日志的刷新周期可以通过参数 `storage.journal.commitIntervalMs` 指定**，MongoDB 3.4 及以下版本的默认值是 50ms，而 3.6 版本之后调整到了 100ms。由于 Journal 日志采用的是顺序 I/O 写操作，频繁地写入对磁盘的影响并不是很大。
 
-**CheckPoint 的刷新周期可以调整 `storage.syncPeriodSecs` 参数（默认值 60s），在 MongoDB 3.4 及以下版本中，当 Journal 日志达到 2GB 时同样会触发 CheckPoint 行为。如果应用存在大量随机写入，则 CheckPoint 可能会造成磁盘 I/O 的抖动。在磁盘性能不足的情况下，问题会更加显著，此时适当缩短 CheckPoint 周期可以让写入平滑一些。
+**CheckPoint 的刷新周期可以调整 `storage.syncPeriodSecs` 参数（默认值 60s）**，在 MongoDB 3.4 及以下版本中，当 Journal 日志达到 2GB 时同样会触发 CheckPoint 行为。如果应用存在大量随机写入，则 CheckPoint 可能会造成磁盘 I/O 的抖动。在磁盘性能不足的情况下，问题会更加显著，此时适当缩短 CheckPoint 周期可以让写入平滑一些。
 
 ## 多文档事务
 
@@ -165,7 +165,7 @@ db.user.insertOne({name:"小明"},{writeConcern:{w:3,wtimeout:3000}})
 
 **合理的 ReadPreference 可以极大地扩展复制集的读性能，降低访问延迟**。
 
-![mongodb-read-preference]()
+![mongodb-read-preference](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-read-preference.png)
 
 `readPreference` 场景举例：
 
@@ -252,7 +252,7 @@ rs0:PRIMARY> db.user.find().readPref("secondary") # {count:2} 可见
 - 为 2 个较差的节点打上 `{purpose: "analyse"}`；
 - 在线应用读取时指定 `online`，报表读取时指定 `analyse`。
 
-![mongodb-read-tag]()
+![mongodb-read-tag](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-read-tag.png)
 
 ```javascript
 // 为复制集节点添加标签
@@ -373,7 +373,7 @@ db.orders.find({oid:101}).readPref("secondary").readConcern("majority")
 
 **只读取大多数节点确认过的数据。和 `majority` 最大差别是保证绝对的操作线性顺序** ：
 
-![mongodb-linearizable]()
+![mongodb-linearizable](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-linearizable.png)
 
 - 在写操作自然时间后面的发生的读，一定可以读到之前的写。
 - **只对读取单个文档时有效**。
