@@ -792,8 +792,8 @@ db.getProfilingStatus()
 ```bash
 > db.setProfilingLevel(2)
 {
-    "was" : 0,
-    "slowms" : 100,
+    "was" : 0, 
+    "slowms" : 100, # 默认 100 ms
     "sampleRate" : 1,
     # ...
 }
@@ -822,3 +822,221 @@ db.setProfilingLevel(1,{slowms:500,sampleRate:0.5})
 ```javascript
 db.system.profile.find().limit(5).sort({ts:-1}).pretty()
 ```
+
+查询结果示例：
+
+```javascript
+{
+    "op" : "insert",
+    "ns" : "test.emp",
+    "command" : {
+      "insert" : "emp",
+      "documents" : [
+          {
+            "_id" : ObjectId("642c23309900000000000000"),
+            "name" : "guanyu",
+            "age" : 20
+          }
+      ],
+      "ordered" : true,
+      lsid: {
+        "id" : UUID("00000000-0000-0000-0000-000000000000")
+      },
+      txnNumber: NumberLong(1),
+      // ...
+    },   
+}    
+```
+
+- `op`：操作类型，描述增加、删除、修改、查询。
+- `ns`：名称空间，格式为 `{db}.{collection}`。
+- `command`：原始的命令文档。
+- `cursorid`：游标ID。
+- `numYield`：操作数，大于0表示等待锁或者是磁盘I/O操作。
+- `nreturned`：返回条目数。
+- `keysExamined`：扫描索引条目数，如果比nreturned大出很多，则说明查询效率不高。docsExamined：扫描文档条目数，如果比nreturned大出很多，则说明查询效率不高。
+- `locks`：锁占用的情况。
+- `storage`：存储引擎层的执行信息。
+- `responseLength`：响应数据大小（字节数），一次性查询太多的数据会影响性能，可以使用limit、batchSize进行一些限制。
+- `millis`：命令执行的时长，单位是毫秒。
+- `planSummary`：查询计划的概要，如IXSCAN表示使用了索引扫描。
+- `execStats`：执行过程统计信息。
+- `ts`：命令执行的时间点。
+
+`system.profile` 是一个集合，可以像查询普通集合一样加上过滤条件，例如查询 `shop` 库的 `user` 集合的 `update` 操作：
+
+```javascript
+db.system.profile.find({op: "update", ns: "shop.user"})
+```
+
+{{< callout type="info" >}}
+- **`system.profile` 是一个 1MB 的固定大小的集合**，随着记录日志的增多，一些旧的记录会被滚动删除。
+- 在线上开启 Profiler 模块需要非常谨慎，这是因为其对 MongoDB 的性能影响比较大。**建议按需部分开启，同时 `slowms` 的值不要设置太低**。
+- `sampleRate` 的默认值是 1.0，该字段可以控制记录日志的命令数比例，但只有在 MongoDB 4.0 版本之后才支持。
+- **Profiler 模块的设置是内存级的，重启服务器后会自动恢复默认状态**。
+{{< /callout >}}
+
+#### db.currentOp()
+
+**Profiler 模块所记录的日志都是已经发生的事情，`db.currentOp()` 命令则与此相反，它可以用来查看数据库当前正在执行的一些操作**。想象一下，当数据库系统的 CPU 发生骤增时，我们最想做的无非是快速找到问题的根源，这时 `db.currentOp` 就派上用场了。
+
+**`db.currentOp()` 读取的是当前数据库的命令快照，该命令可以返回许多有用的信息**，比如：
+
+- 操作的运行时长，快速发现耗时漫长的低效扫描操作。
+- 执行计划信息，用于判断是否命中了索引，或者存在锁冲突的情况。
+- 操作 ID、时间、客户端等信息，方便定位出产生慢操作的源头。
+
+```bash
+> db.currentOP()
+{
+  "inprog": [
+    {
+      "type": "op",
+      "host": "mongodb1.example.com:27017",
+      "desc": "conn12345",
+      "connectionId": 12345,
+      "client": "192.168.1.100:54216",
+      "clientMetadata": {
+        "application": {
+          "name": "MyApp"
+        },
+        "driver": {
+          "name": "nodejs",
+          "version": "4.1.0"
+        }
+      },
+      "active": true,
+      "currentOpTime": "2023-05-15T08:42:17.123Z",
+      "opid": 678910,
+      "secs_running": 5,
+      "microsecs_running": NumberLong(5123456),
+      "op": "update",
+      "ns": "mydb.users",
+      "command": {
+        "q": {
+          "value": {
+            "$gt" : 59.32656132664
+          }
+        },
+        "u": {
+          "$inc": {
+            "value": 82.3154654541
+          }
+        },
+        "multi": true,
+        "upsert": true
+      },
+      "planSummary": "COLLSCAN",
+      "locks": {
+        "Global": "r",
+        "Database": "r",
+        "Collection": "r"
+      },
+      "waitingForLock": false,
+      "numYields": 12,
+      "lockStats": {
+        "Global": {
+          "acquireCount": { "r": NumberLong(13) }
+        },
+        "Database": {
+          "acquireCount": { "r": NumberLong(13) }
+        },
+        "Collection": {
+          "acquireCount": { "r": NumberLong(13) }
+        }
+      }
+    },
+    # ...
+  ],
+  # ...
+}
+```
+
+对示例操作的解读如下:
+
+1. 从 `ns、op` 字段获知，当前进行的操作正在对 `mydb.users` 集合执行 `update` 命令。
+2. `command` 字段显示了其原始信息。其中，`command.q` 和 `command.u` 分别展示了 `update` 的查询条件和更新操作。
+3. `"planSummary"："COLLSCAN"` 说明情况并不乐观，update没有利用索引而是正在全表扫描。
+4. `microsecs_running：NumberLong（5123456）`表示操作运行了 5123ms，注意这里的单位是微秒。
+
+优化方向：
+
+- value 字段**加上索引**。
+- 如果更新的数据集非常大，要避免大范围 `update` 操作，**切分成小批量的操作**。
+
+** `opid` 表示当前操作在数据库进程中的唯一编号**。如果已经发现该操作正在导致数据库系统响应缓慢，则可以考虑将其“杀”死：
+
+```javascript
+db.killOp(678910)
+```
+
+**`db.currentOp` 默认输出当前系统中全部活跃的操作**，由于返回的结果较多，可以指定一些过滤条件：
+
+- 查看等待锁的增加、删除、修改、查询操作
+
+```javascript
+db.currentOp({
+    waitingForLock:true,
+    $or:[
+        {op:{$in:["insert","update","remove"]}},
+        {"query.findandmodify":{$exists:true}}
+    ]
+})
+```
+
+- 查看执行时间超过 1s 的操作
+
+```javascript
+db.currentOp({
+    secs_running:{$gt:1}
+})
+```
+
+- 查看 `test` 数据库中的操作
+
+```javascript
+db.currentOp({
+    ns:/test/
+})
+```
+
+
+currentOp 命令输出说明
+- `currentOp.type`：操作类型，可以是 op、idleSession、idleCursor 的一种，一般的操作信息以 op 表示。其为 MongoDB 4.2 版本新增功能。
+- `currentOp.host`：主机的名称。
+- `currentOp.desc`：连接描述，包含 connectionId。
+- `currentOp.connectionId`：客户端连接的标识符。
+- `currentOp.client`：客户端主机和端口。
+- `currentOp.appName`：应用名称，一般是描述客户端类型。
+- `currentOp.clientMetadata`：关于客户端的附加信息，可以包含驱动的版本。
+- `currentOp.currentOpTime`：操作的开始时间。MongoDB 3.6 版本新增功能。
+- `currentOp.lsid`：会话标识符。MongoDB 3.6 版本新增功能。
+- `currentOp.opid`：操作的标志编号。
+- `currentOp.active`：操作是否活跃。如果是空闲状态则为 `false`。
+- `currentOp.secs_running`：操作持续时间（以秒为单位）。
+- `currentOp.microsecs_running`：操作持续时间（以微秒为单位）。
+- `currentOp.op`：标识操作类型的字符串。可能的值是："none" "update" "insert" "query" "command" "getmore" "remove" "killcursors"。其中，command 操作包括大多数命令，如 `createIndexes` 和 `findAndModify`。
+- `currentOp.ns`：操作目标的集合命名空间。
+- `currentOp.command`：操作的完整命令对象的文档。如果文档大小超过 1KB，则会使用一种 `$truncate` 形式表示。
+- `currentOp.planSummary`：查询计划的概要信息。
+- `currentOp.locks`：当前操作持有锁的类型和模式。
+- `currentOp.waitingForLock`：是否正在等待锁。
+- `currentOp.numYields`：当前操作执行 yield（让步）的次数。一些锁互斥或者磁盘 I/O 读取都会导致该值大于 0。
+- `currentOp.lockStats`：当前操作持有锁的统计。
+- `currentOp.lockStats.acquireCount`：操作以指定模式获取锁的次数。
+- `currentOp.lockStats.acquireWaitCount`：操作获取锁等待的次数，等待是因为锁处于冲突模式。`acquireWaitCount` 小于或等于 `acquireCount`。
+- `currentOp.lockStats.timeAcquiringMicros`：操作为了获取锁所花费的累积时间（以微秒为单位）。`timeAcquiringMicros` 除以 `acquireWaitCount` 可估算出平均锁等待时间。
+- `currentOp.lockStats.deadlockCount`：在等待锁获取时，操作遇到死锁的次数。
+
+
+{{< callout type="info" >}}
+
+- **`db.currentOp` 返回的是数据库命令的瞬时状态**，因此，如果数据库压力不大，则通常只会返回极少的结果。
+- 如果启用了复制集，那么 `currentOp` 还会返回一些复制的内部操作（针对 `local.oplog.rs`），需要做一些筛选。
+- `db.currentOp` 的结果是一个 BSON 文档，如果大小超过 16MB，则会被压缩。可以使用聚合操作 `$currentOp` 获得完整的结果。
+{{< /callout >}}
+
+### 性能问题排查
+
+- [记一次 MongoDB 占用 CPU 过高问题的排查](https://cloud.tencent.com/developer/article/1495820)
+- [MongoDB线上案例：一个参数提升16倍写入速度](https://cloud.tencent.com/developer/article/1857119)

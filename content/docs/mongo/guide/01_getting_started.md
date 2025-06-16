@@ -360,3 +360,54 @@ db.pizzas.bulkWrite([
    }}
 ])
 ```
+
+#### 可控的执行顺序
+
+- 有序模式（`ordered: true`）：
+
+操作按顺序执行，适合有依赖关系的场景（如先删除再插入）。
+
+- 无序模式（`ordered: false`）：
+
+操作并行执行，最大化吞吐量，适合独立操作。
+
+#### bulkWrite 是非原子性的
+
+默认情况下：**`bulkWrite` 不是原子性的**。
+
+如果中间某个操作失败，已执行的操作不会回滚（部分成功）。
+
+例如：批量插入 10 个文档，第 5 个失败时，前 4 个仍会写入。
+
+- 有序模式（`ordered: true`）：
+
+操作按顺序执行，遇到错误会停止后续操作（但**已执行的不会回滚**）。
+
+- 无序模式（`ordered: false`）：
+
+操作**并行执行**，失败的操作不影响其他操作。
+
+#### 如果实现整个 bulkWrite 完全原子化
+
+利用多文档事务：
+
+```javascript
+const session = db.getMongo().startSession();
+session.startTransaction();
+try {
+  db.collection.bulkWrite([...], { session });
+  session.commitTransaction();
+} catch (error) {
+  session.abortTransaction();
+}
+```
+
+#### 批量操作的优势
+
+- 减少网络开销：
+
+将多个操作合并为一个请求发送到服务器，避免多次网络往返延迟（尤其在高延迟环境中优势明显）。
+
+- 批量处理优化：
+
+MongoDB 会对批量操作进行内部优化（如顺序写入、减少锁竞争），比单条操作更高效。

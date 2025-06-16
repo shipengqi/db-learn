@@ -394,7 +394,7 @@ binlog 的 `expire_logs_days` 如何设置，一般最好比全量备份的间�
 
 假设我们有一个事务 T，它修改了两行数据 A 和 B，并且同时开启了 redo log 和 binlog。
 
-- 如果先写 redo log 再写 binlog，并且在写完 redo log 后数据库发生了宕机，那么在重启后，根据 redo log 可以恢复 A 和 B 的修改，但是 binlog 中没有记录数据 A 和 B 的修改信息，导致备份或者从库中没有 A 和 B 的修改
+- 如果先写 redo log 再写 binlog，并且在写完 redo log 后数据库发生了宕机，那么在重启后，根据 redo log 可以恢复 A 和 B 的修改，但是 binlog 中没有记录数据 A 和 B 的修改信息，导致备份或者从库中没有 A 和 B 的修改。
 - 如果先写 binlog 再写 redo log，并且在写完 binlog 后数据库发生了宕机，那么在重启后，根据 redo log 无法恢复 A 和 B 的修改，但是 binlog 中有记录 A 和 B 的修改信息，导致备份或者从库中有 A 和 B 的修改。
 
 所以如果不使用“两阶段提交”，那么数据库的状态就有可能和用它的日志恢复出来的库的状态不一致。

@@ -33,7 +33,7 @@ MongoDB 与传统 RDBMS 仍然存在不少差异：
 
 **基于灵活的 JSON 文档模型，非常适合敏捷式的快速开发**。
 
-![mongodb-rdb](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-rdb.jpg)
+![mongodb-rdb](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-rdb.png)
 
 - 简单直观：从错综复杂的关系模型到一目了然的对象模型。
 - 快速：最简单快速的开发方式。JSON 结构和对象模型接近，开发代码量低。通常后端返回给前端的数据，都是 JSON 格式，基本上可以直接使用，不用再做转换。
@@ -58,6 +58,20 @@ MongoDB 的集合结构可灵活的修改，可以在集合中添加一个 `vers
 
 **没有某个业务场景必须要使用 MongoDB 才能解决，但使用 MongoDB 通常能让你以更低的成本解决问题**。如果你不清楚当前业务是否适合使用 MongoDB,可以通过做几道选择题来辅助决策。
 
-![mongodb-select](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/select.png)
+![mongodb-select](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-select.png)
 
 只要有一项需求满足就可以考虑使用 MongoDB，匹配越多，选择 MongoDB 越合适。基本上 MongoDB 已经可以取代 MySQL 了。
+
+#### MongoDB VS MySQL
+
+性能：
+
+MongoDB 的性能要优于 MySQL，MongoDB 天然支持分片集群，天然支持高可用（复制集）。
+
+MySQL 的集群架构比较麻烦，做分库分表还需要中间件，而且处理海量数据的性能很差。MySQL 的定位就是一个单机数据库。
+
+开发：
+
+MongoDB 灵活的 schema，添加字段，添加内嵌文档无需修改，不会影响其他文档。非常适合敏捷开发。
+
+MySQL 加一个字段需要修改表结构，如果要像 MongoDB 那样添加一个内嵌文档，可能需要一个关联表，一个新的表来存储内嵌文档。

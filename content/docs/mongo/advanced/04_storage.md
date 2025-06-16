@@ -59,13 +59,13 @@ WiredTiger 写入数据的流程：
 
 **Journal 日志的刷新周期可以通过参数 `storage.journal.commitIntervalMs` 指定**，MongoDB 3.4 及以下版本的默认值是 50ms，而 3.6 版本之后调整到了 100ms。由于 Journal 日志采用的是顺序 I/O 写操作，频繁地写入对磁盘的影响并不是很大。
 
-**CheckPoint 的刷新周期可以调整 `storage.syncPeriodSecs` 参数（默认值 60s）**，在 MongoDB 3.4 及以下版本中，当 Journal 日志达到 2GB 时同样会触发 CheckPoint 行为。如果应用存在大量随机写入，则 CheckPoint 可能会造成磁盘 I/O 的抖动。在磁盘性能不足的情况下，问题会更加显著，此时适当缩短 CheckPoint 周期可以让写入平滑一些。
+**CheckPoint 的刷新周期可以调整 `storage.syncPeriodSecs` 参数（默认值 60s）**，在 MongoDB 3.4 及以下版本中，当 Journal 日志达到 2GB 时同样会触发 CheckPoint 行为。如果**应用存在大量随机写入，则 CheckPoint 可能会造成磁盘 I/O 的抖动**。在磁盘性能不足的情况下，问题会更加显著，此时适当缩短 CheckPoint 周期可以让写入平滑一些。
 
 ## 多文档事务
 
 事务（transaction）是传统数据库所具备的一项基本能力，其根本目的是为数据的可靠性与一致性提供保障。而在通常的实现中，**事务包含了一个系列的数据库读写操作，这些操作要么全部完成，要么全部撤销**。例如，在电子商城场景中，当顾客下单购买某件商品时，除了生成订单，还应该同时扣减商品的库存，这些操作应该被作为一个整体的执行单元进行处理，否则就会产生不一致的情况。
 
-**在 MongoDB 中，对单个文档的操作是原子的**。由于可以在单个文档结构中使用内嵌文档和数组来获得数据之间的关系，而不必跨多个文档和集合进行范式化，所以这种单文档原子性避免了许多实际场景中对多文档事务的需求。
+**在 MongoDB 中，对单个文档的操作是原子的**。由于可以在**单个文档结构中使用内嵌文档和数组来获得数据之间的关系，而不必跨多个文档和集合进行范式化**，所以这种单文档原子性避免了许多实际场景中对多文档事务的需求。
 
 对于那些需要对多个文档（在单个或多个集合中）进行原子性读写的场景，MongoDB 支持多文档事务。而使用分布式事务，事务可以跨多个操作、集合、数据库、文档和分片使用。
 
@@ -83,8 +83,8 @@ WiredTiger 写入数据的流程：
 | 事务属性 | 支持程度 |
 | --- | --- |
 | A 原子性 | 单文档支持：1.x 就已经支持。<br /> 复制集多表多行：4.0。<br /> 分片集群多表多行：4.2 |
-| C 一致性 | `writeConcern`、`readConcern`：3.2 |
-| I 隔离性 | `readConcern`：3.2 |
+| C 一致性 | `writeConcern`、`readConcern` |
+| I 隔离性 | `readConcern` |
 | D 持久性 | Journal and Replication |
 
 #### 使用
@@ -100,9 +100,52 @@ try (ClientSession clientSession = client.startSession()) {
 }
 ```
 
-#### writeConcern
+### 事务的隔离级别
 
-**`writeConcern` 决定一个写操作落到多少个节点上才算成功**。MongoDB支持客户端灵活配置写入策略（`writeConcern`），以满足不同场景的需求。
+- 事务完成前，事务外的操作对该事务所做的修改不可访问
+
+```javascript
+// 主节点
+db.tx.insertMany([{ x: 1 }, { x: 2 }])
+var session = db.getMongo().startSession()
+// 开启事务
+session.startTransaction()
+
+var coll = session.getDatabase("test").getCollection("tx")
+// 事务内修改 {x:1, y:1}
+coll.updateOne({x: 1}, {$set: {y: 1}})
+// 事务内查询 {x:1}
+coll.findOne({x: 1})  // {x:1, y:1}
+
+// 事务外查询 {x:1}
+db.tx.findOne({x: 1})  // {x:1}
+
+// 提交事务
+session.commitTransaction()
+
+// 或者回滚事务
+session.abortTransaction()
+```
+
+- 如果事务内使用 `{readConcern: "snapshot"}`，则可以达到可重复读 Repeatable Read。
+
+```javascript
+var session = db.getMongo().startSession()
+session.startTransaction({ readConcern: {level: "snapshot"}, writeConcern: {w: "majority"}})
+
+var coll = session.getDatabase('test').getCollection("tx")
+
+coll.findOne({x: 1}) 
+db.tx.updateOne({x: 1}, {$set: {y: 2}})
+db.tx.findOne({x: 1})
+coll.findOne({x: 1})  
+
+session.abortTransaction()
+```
+
+### writeConcern
+
+**`writeConcern` 决定一个写操作落到多少个节点上才算成功**。MongoDB 支持客户端灵活配置写入策略（`writeConcern`），以满足不同场景的需求。
 
 语法格式：
 
@@ -144,11 +187,11 @@ db.user.insertOne({name:"小明"},{writeConcern:{w:3,wtimeout:3000}})
 {{< callout type="info" >}}
 - 虽然多于半数的 `writeConcern` 都是安全的，但通常只会**设置 `majority`，因为这是等待写入延迟时间最短的选择**； 
 - **不要设置 `writeConcern` 等于总节点数**，因为一旦有一个节点故障，所有写操作都将失败；
-- `writeConcern` 虽然会增加写操作延迟时间，但并不会显著增加集群压力，因此无论是否等待，写操作最终都会复制到所有节点上。设置 `writeConcern` 只是让写操作等待复制后再返回而已；
+- **`writeConcern` 虽然会增加写操作延迟时间，但并不会显著增加集群压力**，因此无论是否等待，写操作最终都会复制到所有节点上。**设置 `writeConcern` 只是让写操作等待复制后再返回而已**；
 - **重要数据应用 `{w: "majority"}`，普通数据可以应用 `{w: 1}` 以确保最佳性能**。
 {{< /callout >}}
 
-#### readPreference
+### readPreference
 
 在读取数据的过程中我们需要关注以下两个问题： 
 
@@ -194,7 +237,7 @@ Mongo Shell：
 db.collection.find().readPref("secondary")
 ```
 
-##### 从节点读测试
+#### 从节点读测试
 
 1. 主节点写入 `{count:1}`, 观察该条数据在各个节点均可见 
 
@@ -238,7 +281,7 @@ rs0:SECONDARY> db.fsyncUnlock()
 rs0:PRIMARY> db.user.find().readPref("secondary") # {count:2} 可见
 ```
 
-##### Tag
+#### Tag
 
 **`readPreference` 只能控制使用一类节点。Tag 则可以将节点选择控制到一个或几个节点**。考虑以下场景：
 
@@ -275,17 +318,17 @@ db.collection.find({}).readPref( "secondary", [ {purpose: "online"} ] )
 {{< /callout >}}
 
 
-#### readConcern
+### readConcern
 
-在 **`readPreference` 选择了指定的节点后，`readConcern` 决定这个节点上的数据哪些是可读的**，类似于关系数据库的**隔离级别**。可选值包括：
+**`readConcern` 决定这个节点上的数据哪些是可读的，类似于事务隔离级别**。可选值包括：
 
 - `available`：**读取所有可用的数据**。
 - `local`：**读取所有可用且属于当前分片的数据**。
 - `majority`：**读取在大多数节点上提交完成的数据**。**数据读一致性的充分保证**。
 - `linearizable`：可线性化读取文档，仅支持从主节点读。
-- `snapshot`：**读取最近快照中的数据，仅可用于多文档事务**，最高隔离级别，类似 MySQL 中的**串行化隔离级别**。
+- `snapshot`：**读取最近快照中的数据，仅可用于多文档事务**，类似 MySQL 中的**串行化隔离级别**。
 
-##### local 和 available
+#### local 和 available
 
 **在复制集中 local 和 available 是没有区别的，两者的区别主要体现在分片集上**。
 
@@ -296,8 +339,8 @@ db.collection.find({}).readPref( "secondary", [ {purpose: "online"} ] )
   - 所有对 chunk x 的读写操作仍然进入 shard1；
   - config 中记录的信息 chunk x 仍然属于 shard1；
 - 此时如果读 shard2，则会体现出 `local` 和 `available` 的区别：
-  - `local`：只取应该由 shard2 负责的数据（不包括 x）；
-  - `available`：shard2 上有什么就读什么（包括 x）；
+  - **`local`：只取应该由 shard2 负责的数据（不包括 x）**；
+  - **`available`：shard2 上有什么就读什么（包括 x）**；
 
 {{< callout type="info" >}}
 - 虽然看上去总是应该选择 `local`，但毕竟对结果集进行过滤会造成额外消耗。在一些无关紧要的场景（例如统计）下，也可以考虑 `available`。
@@ -306,19 +349,18 @@ db.collection.find({}).readPref( "secondary", [ {purpose: "online"} ] )
 {{< /callout >}}
 
 
-##### majority
+#### majority
 
-**只读取大多数据节点上都提交了的数据**。
+**读取大多数据节点上都提交了的数据**。类似于读已提交隔离级别，不过在集群中多数节点都已提交。
 
 如何实现？
 
 节点上维护多个 x 版本（MVCC 机制），MongoDB 通过维护多个快照来链接不同的版本：
 
-- **每个被大多数节点确认过的版本都是一个快照**；
+- **每个 “被大多数节点确认过的版本” 都是一个快照**，注意是大多数节点都确认过的版本；
 - 快照持续到没有人使用为止才被删除；
 
 **测试 readConcern: majority vs local**：
-
 
 1. 将复制集中的两个从节点使用 `db.fsyncLock()` 锁住写入（模拟同步延迟）
 2. 测试
@@ -331,18 +373,18 @@ rs0:PRIMARY> db.user.find().readConcern("majority") # 都不到 {count:10}，因
 
 `update` 与 `remove` 与上同理。
 
-##### majority 与脏读
+#### majority 避免脏读问题
 
 MongoDB 中的回滚：
 
 - 写操作到达大多数节点之前都是不安全的，一旦主节点崩溃，而从节点还没复制到该次操作，刚才的写操作就丢失了；
 - 把一次写操作视为一个事务，从事务的角度，可以认为事务被回滚了。
 
-所以从分布式系统的角度来看，事务的提交被提升到了分布式集群的多个节点级别的“提交”，而不再是单个节点上的“提交”。
+所以**从分布式系统的角度来看，事务的提交被提升到了分布式集群的多个节点级别的“提交”，而不再是单个节点上的“提交”**。
 
 在可能发生回滚的前提下考虑脏读问题：
 
-- 如果在一次写操作到达大多数节点前读取了这个写操作，然后因为系统故障该操作回滚了，则发生了脏读问题；
+- **如果在一次写操作到达大多数节点前读取了这个写操作，然后因为系统故障该操作回滚了，则发生了脏读问题**；
 
 **使用 `{readConcern: "majority"}` 可以有效避免脏读**。
 
@@ -369,7 +411,7 @@ db.orders.insert({oid:101,sku:"kite",q:1},{writeConcern:{w:"majority"}})
 db.orders.find({oid:101}).readPref("secondary").readConcern("majority")
 ```
 
-##### linearizable
+#### linearizable
 
 **只读取大多数节点确认过的数据。和 `majority` 最大差别是保证绝对的操作线性顺序** ：
 
@@ -379,7 +421,7 @@ db.orders.find({oid:101}).readPref("secondary").readConcern("majority")
 - **只对读取单个文档时有效**。
 - 可能导致非常慢的读，因此总是建议配合使用 `maxTimeMS`。
 
-##### snapshot
+#### snapshot
 
 `{readConcern: "snapshot"}` 只在多文档事务中生效。将一个事务的 `readConcern` 设置为 `snapshot`，将保证在事务中的读：
 
@@ -388,49 +430,6 @@ db.orders.find({oid:101}).readPref("secondary").readConcern("majority")
 - 不出现幻读。
 
 因为所有的读都将使用同一个快照，直到事务提交为止该快照才被释放。
-
-#### 事务的隔离级别
-
-- 事务完成前，事务外的操作对该事务所做的修改不可访问
-
-```javascript
-// 主节点
-db.tx.insertMany([{ x: 1 }, { x: 2 }])
-var session = db.getMongo().startSession()
-// 开启事务
-session.startTransaction()
-
-var coll = session.getDatabase("test").getCollection("tx")
-// 事务内修改 {x:1, y:1}
-coll.updateOne({x: 1}, {$set: {y: 1}})
-// 事务内查询 {x:1}
-coll.findOne({x: 1})  // {x:1, y:1}
-
-// 事务外查询 {x:1}
-db.tx.findOne({x: 1})  // {x:1}
-
-// 提交事务
-session.commitTransaction()
-
-// 或者回滚事务
-session.abortTransaction()
-```
-
-- 如果事务内使用 `{readConcern: "snapshot"}`，则可以达到可重复读 Repeatable Read
-
-```javascript
-var session = db.getMongo().startSession()
-session.startTransaction({ readConcern: {level: "snapshot"}, writeConcern: {w: "majority"}})
-
-var coll = session.getDatabase('test').getCollection("tx")
-
-coll.findOne({x: 1}) 
-db.tx.updateOne({x: 1}, {$set: {y: 2}})
-db.tx.findOne({x: 1})
-coll.findOne({x: 1})  
-
-session.abortTransaction()
-```
 
 ### 事务超时
 
@@ -441,10 +440,11 @@ session.abortTransaction()
 ### 事务的错误处理
 
  MongoDB 的事务错误处理机制不同于关系数据库： 
-- 当一个事务开始后，如果事务要修改的文档在事务外部被修改过，则事务修改这个文档时会触发 Abort 错误，因为此时的修改冲突了。这种情况下，只需要简单地重做事务就可以了； 
+
+- 当一个事务开始后，**如果事务要修改的文档在事务外部被修改过**，则事务修改这个文档时会**触发 Abort 错误**，因为此时的修改冲突了（**这种直接避免了幻读问题**）。这种情况下，只需要简单地重做事务就可以了。 
 - 如果一个事务已经开始修改一个文档，在事务以外尝试修改同一个文档，则事务以外的修改会等待事务完成才能继续进行。
 
-#### 写冲突测试
+### 写冲突测试
 
 开 3 个 mongo shell 均执行下述语句：
 

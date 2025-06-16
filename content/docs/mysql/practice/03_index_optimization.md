@@ -197,8 +197,8 @@ EXPLAIN SELECT * FROM actor;
 - Using index：使用**覆盖索引**，避免访问了表的数据行，效率不错。
 - Using where：表示使用了 `where` 过滤，并且**查询的列未被索引覆盖**。
 - Usering index condition：表示使用了**索引下推**优化。
-- Using temporary：要创建一张临时表来处理查询。出现这种情况一般是要进行优化的，首先是想到**用索引来优化**。例如 `EXPLAIN SELECT DISTINCT name FROM actor;` `actor.name` 没有索引，此时创建了张临时表来 `distinct`。可以为 `name` 列创建索引，然后再去重，MySQL 在扫描索引树的过程中就可以直接去重。因为索引是有序的，相同的记录是在一起的，相同的记录直接扔掉就可以了。
-- Using filesort：将用外部排序而不是索引排序，数据较小时在内存排序，否则需要在磁盘完成排序。这种情况下一般也是要考虑使用索引来优化。索引本身就是排好序的。
+- **Using temporary**：要创建一张临时表来处理查询。出现这种情况**一般是要进行优化的**，首先是想到**用索引来优化**。例如 `EXPLAIN SELECT DISTINCT name FROM actor;` `actor.name` 没有索引，此时创建了张临时表来 `distinct`。可以为 `name` 列创建索引，然后再去重，MySQL 在扫描索引树的过程中就可以直接去重。**因为索引是有序的，相同的记录是在一起的，相同的记录直接扔掉就可以了**。
+- **Using filesort**：将用外部排序而不是索引排序，数据较小时在内存排序，否则需要在磁盘完成排序。这种情况下一般也是要考虑使用索引来优化。**索引本身就是排好序的**。
 - Using join buffer：使用连接缓存。
 - Select tables optimized away：使用某些聚合函数（比如 `max`、`min`）来访问存在索引的某个字段。
 
@@ -215,7 +215,7 @@ EXPLAIN SELECT * FROM actor;
 
 文件排序方式：
 
-- 单路排序：是一次性取出（聚簇索引）满足条件行的**所有字段**，然后在 sort buffer 中进行排序；trace 工具可以看到 `sort_mode` 信息里显示 `<sort_key, additional_fields>` 或者 `<sort_key,packed_additional_fields>`，`sort_key` 就表示排序的 `key`，`additional_fields` 表示表中的其他字段。
+- 单路排序：是一次性取出（聚簇索引）**满足条件行的所有字段**，然后在 sort buffer 中进行排序；trace 工具可以看到 `sort_mode` 信息里显示 `<sort_key, additional_fields>` 或者 `<sort_key,packed_additional_fields>`，`sort_key` 就表示排序的 `key`，`additional_fields` 表示表中的其他字段。
 - 双路排序（又叫**回表排序模式**）：是首先根据相应的条件取出（聚簇索引）相应的**排序字段**和可以直接定位行数据的**主键 ID，然后在 sort buffer 中进行排序，排序完后需要回表去取回其它需要的字段**；trace 工具可以看到 `sort_mode` 信息里显示 `<sort_key, rowid>`，`sort_key` 就表示排序的 `key`，`rowid` 表示主键 ID。占用内存空间小，但是需要多回表一次。
 
 判断使用哪种排序模式：
@@ -274,7 +274,7 @@ select * from employees ORDER BY name limit 90000,5;
 select * from employees e inner join (select id from employees order by name limit 90000,5) ed on e.id = ed.id;
 ```
 
-优化后的语句全部都走了索引，其中 `(select id from employees order by name limit 90000,5)` 使用了覆盖索引来优化，查询的字段只有 id 字段，而且排好了序。`(select id from employees order by name limit 90000,5) ed` 产生的临时表只有 5 条记录，然后再根据主键 id 去 `employees` 表中查询对应的记录。
+优化后的语句全部都走了索引，其中 `(select id from employees order by name limit 90000,5)` **使用了覆盖索引来优化**，查询的字段只有 id 字段，而且排好了序。`(select id from employees order by name limit 90000,5) ed` 产生的临时表只有 5 条记录，然后再根据主键 id 去 `employees` 表中查询对应的记录。
 
 ### JOIN 关联查询优化
 
@@ -408,7 +408,7 @@ SQL 的大致流程如下：
 
 `join buffer` 就是执行连接查询前申请的一块固定大小的内存，先把**若干条驱动表结果集中的记录装在这个 `join buffer` 中**，然后开始扫描被驱动表，**每一条被驱动表的记录一次性和 join buffer 中的多条驱动表记录做匹配**，因为匹配的过程都是在内存中完成的，所以这样可以显著减少被驱动表的 I/O 代价。
 
-`join_buffer` 的大小是由参数 `join_buffer_size` 设定的，默认值是 `256k`。如果放不下表 `t2` 的所有数据话，策略很简单，就是**分段放**。
+**`join_buffer` 的大小是由参数 `join_buffer_size` 设定的，默认值是 `256k`**。如果放不下表 `t2` 的所有数据话，策略很简单，就是**分段放**。
 
 比如 `t2` 表有 1000 行记录， `join_buffer` 一次只能放 800 行数据，那么执行过程就是先往 `join_buffer` 里放 800 行记录，然后从 `t1` 表里取数据跟 `join_buffer` 中数据对比得到部分结果，然后清空 `join_buffer`，再放入 `t2` 表剩余 200 行记录，再次从 `t1` 表里取数据跟 `join_buffer` 中数据对比。所以就多扫了一次 `t1` 表。
 
