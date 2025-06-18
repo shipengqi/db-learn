@@ -87,14 +87,14 @@ redis> incr codehole
 
 #### 应用场景
 
-单值缓存：
+##### 单值缓存
 
 ```bash
 set key value
 get ket
 ```
 
-对象缓存：
+##### 对象缓存
 
 ```bash
 set user:1 value (json string)
@@ -105,7 +105,7 @@ mset user:1:name guanzhu user:1:balance 6666
 mget user:1:name user:1:balance
 ```
 
-分布式锁：
+##### 分布式锁
 
 ```bash
 setnx product:10000 true   # 返回 1 代表获取锁成功
@@ -117,22 +117,30 @@ del product:10000
 set product:10000 true ex 10 ns # 加上过期时间，避免锁未释放导致死锁
 ```
 
-计数器：
+##### 计数器
 
 ```bash
 incr aticle:readcount:{articleId}
 get aticle:readcount:{articleId}
 ```
 
-session 共享：spring session + redis 实现 session 共享
+##### session 共享
 
-分布式全局 ID：
+spring session + redis 实现 session 共享
+
+##### 分布式全局 ID
 
 ```bash
 incrby orderId 1000  // 相当于批量生成了 1000 个 ID
 ```
 
-服务端在内存中将 ID 去加 1
+服务端在内存中将 ID 去加 1，例如服务端从 Redis 取 1000 个，Redis 执行 `incrby orderId 1000`，然后服务端在内存中执行一千次 `+ 1` 之后再去取新的一批 ID。这种方式有两个问题：
+
+1. 分布式的环境下 ID 不是连续的。
+2. 如果 ID 没有用完服务挂了，比如 ID 还有 500 个的时候服务挂了，那就会浪费 500 个 ID。
+
+这种要根据业务场景来使用。
+
 
 ### 列表（list）
 
@@ -210,6 +218,39 @@ redis> llen books
 (integer) 0
 ```
 
+#### 应用场景
+
+##### 微博和微信公众号消息流
+
+刘备关注了 MacTalk，备胎说车等大 V
+
+1. 刘备如何拿到关注的大 V 发的消息。例如，MacTalk 发微博，消息 ID 为 10018，可以创建一个 list 来存储刘备关注的大 V 发的消息。
+
+```bash
+LPUSH msg:{刘备-ID} 10018
+```
+
+2. 备胎说车发微博，消息 ID 为 10086
+
+```bash
+LPUSH msg:{刘备-ID} 10086
+```
+
+3. 查看最新微博消息
+
+```bash
+LRANGE  msg:{刘备-ID}  0  4
+```
+
+如果一个大 V 有几千万的粉丝，那如果大 V 发一个消息，要给几千万的用户都去推送消息？
+
+活跃用户使用 push 的方式，不活跃的用户使用 pull 的方式。
+
+push 的方式比较简单，用户上线可以直接使用 `lrange` 命令来获取自己的消息流。
+
+pull 的方式，是从每个关注的大 V 的消息列表中，取出最新的消息来进行拉取。然后进行一个排序。
+
+
 ### 哈希（hash）
 
 Redis 的字典相当于 Java 语言里面的 HashMap，它是无序字典。内部实现结构上同 Java 的 HashMap 也是一致的，同样的 `数组 + 链表` 二维结构。第一维 hash 的数组位置碰撞时，就会将碰撞的元素使用链表串接起来。
@@ -257,6 +298,47 @@ Hash 结构中的单个子 key 也可以进行计数，它对应的指令是 hin
 (integer) 30
 ```
 
+#### 应用场景
+
+##### 对象缓存
+
+```bash
+HMSET user {userId}:name guanyu {userId}:balance 6666
+HMSET user 1:name guanyu 1:balance 6666
+HMGET user 1:name 1:balance
+```
+
+要避免大 key。
+
+##### 购物车
+
+1. 以用户 ID 作为 key，商品 ID 作为 field，商品数量作为 value。
+2. 商品数量可以使用 `hincrby` 来增减。
+3. 可以使用 `hdel` 来删除商品。
+4. 可以使用 `hgetall` 来获取购物车中的所有商品。
+
+```bash
+# 添加商品
+hset cart:1001 10001 1  # 1001 是用户 ID，10001 商品 ID，1 数量
+
+# 增加商品数量
+hincrby cart:1001 10001 1
+
+# 减少商品数量
+hincrby cart:1001 10001 -1
+
+# 获得购物车商品总数
+hlen cart:1001
+
+# 删除商品
+hdel cart:1001 10001
+
+# 获取购物车中的所有商品
+hgetall cart:1001
+```
+
+业务中这些数据最终还是要存储到数据库中。
+
 ### 集合（set）
 
 Redis 的集合相当于 Java 语言里面的 HashSet，它内部的键值对是无序的唯一的。它的内部实现相当于一个**特殊的字典，字典中所有的 value 都是一个值 NULL**。
@@ -285,6 +367,128 @@ redis> scard books  # 获取长度相当于 count()
 redis> spop books  # 弹出一个
 "java"
 ```
+
+假设现在有两个集合，一个是 `books1`，里面有 `python`、`java`、`golang`，另一个是 `books2`，里面有 `java`、`golang`、`rust`。
+
+
+交集：
+
+```bash
+sinter books1 books2  # 求两个集合的交集
+
+# 输出
+1) "java"
+2) "golang"
+```
+
+并集：
+
+```bash
+sunion books1 books2  # 求两个集合的并集
+
+# 输出
+1) "java"
+2) "python"
+3) "golang"
+4) "rust"
+```
+
+差集：
+
+```bash
+sdiff books1 books2  # 求两个集合的差集
+
+# 输出
+1) "python"
+2) "rust"
+```
+
+#### 应用场景
+
+##### 抽奖小程序
+
+1. 点击参与抽奖则加入到集合中。
+
+```bash
+sadd key {userid}
+```
+
+2. 查看参与抽奖所有用户
+
+```bash
+smembers key
+```
+
+3. 抽取 count 名中奖用户
+
+```bash
+srandmember key count
+
+# 从集合中随机抽取 count 个元素，并且将抽取的元素从集合中移除
+# 针对那种中奖之后不能参与其他抽奖的场景
+spop key count  
+```
+
+##### 微信微博点赞、收藏
+
+1. 点赞
+
+```bash
+sadd like:{消息 ID} {用户 ID}
+```
+
+2. 取消点赞
+
+```bash
+srem like:{消息 ID} {用户 ID}
+```
+
+3. 检查用户是否点过赞，是否点亮点赞的 button
+
+```bash
+sismember like:{消息 ID} {用户 ID}
+```
+
+4. 获取点赞用户列表
+
+```bash
+smembers like:{消息 ID}
+```
+
+5. 获取点赞用户数
+
+```bash
+scard like:{消息 ID}
+```
+
+##### 集合操作实现微博关注模型
+
+1. 刘备关注的人：`liubeiSet -> {guojia, xushu}`
+2. 杨过关注的人: `yangguoSet--> {liubei, baiqi, guojia, xushu}`
+3. 郭嘉关注的人: `guojiaSet-> {liubei, yangguo, baiqi, xushu, xunyu}`
+4. 刘备和杨过老师共同关注: `SINTER zhugeSet yangguoSet--> {guojia, xushu}`
+5. 刘备关注的人（郭嘉、徐庶）也关注了他（杨过）
+
+```bash
+SISMEMBER guojiaSet yangguo 
+SISMEMBER xushuSet yangguo
+```
+
+6. 刘备可能认识的人: `SDIFF yangguoSet zhugeSet -> {liubei, baiqi}`
+
+##### 集合操作实现电商商品筛选
+
+```bash
+sadd brand:huawei p40
+sadd brand:xiaomi mi-10
+sadd brand:iphone iphone12
+sadd os:android p40 mi-10
+sadd cpu:brand:intel p40 mi-10
+sadd ram:8G p40 mi-10 iphone12
+```
+
+筛选出安卓手机、intel CPU、8G 内存的商品: `sinter os:android cpu:brand:intel ram:8G {p40，mi-10}`
+
 
 ### 有序集合（zset）
 
@@ -333,6 +537,15 @@ redis> zrange books 0 -1
 1) "java cookbook"
 2) "think in java"
 ```
+
+#### 应用场景
+
+##### 新闻排行榜
+
+1. 点击新闻：`zincrby hotNews:20190819 1 守护香港`
+2. 展示当日排行前十：`zrevrange hotNews:20190819 0 9 WITHSCORES`
+3. 七日搜索榜单计算：`zunionstore hotNews:20190813-20190819 7 hotNews:20190813 hotNews:20190814... hotNews:20190819`
+4. 展示七日排行前十: `zrevrange hotNews:20190813-20190819 0 9 WITHSCORES`
 
 ### 容器型数据结构
 

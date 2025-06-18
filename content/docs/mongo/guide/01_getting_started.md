@@ -225,7 +225,7 @@ db.coll.count({x: 100});
 
 | 操作符 | 格式 | 描述 |
 | --- | --- | --- |
-| `$set` | `{$set: {field: value}}` | 指定一个键并更新值，若键不存在则创建 |
+| `$set` | `{$set: {field: value}}` | 指定一个键并更新值，**若键不存在则创建** |
 | `$unset` | `{$unset: {field: 1}}` | 删除一个键 |
 | `$inc` | `{$inc: {field: value}}` | 对数值类型进行增减 |
 | `$rename` | `{$rename: {old_field_name: new_field_name}}` | 修改字段名称 |
@@ -260,7 +260,7 @@ db.books.updateOne({_id:ObjectId("642e62ec933c0dca8f8e9f60")},{$inc:{favCount:1}
 - `writeConcern`：可选。一个文档，用于指定写入操作的安全级别。可以指定写入操作需要到达的节点数或等待写入操作的时间。
 - `collation`：可选。一个文档，用于指定用于查询的排序规则。例如，可以通过指定 `locale` 属性来指定语言环境，从而实现基于区域设置的排序。
 - `arrayFilters`：可选。一个数组，用于指定要更新的数组元素。数组元素是通过使用更新操作符 `$[]` 和 `$` 来指定的。
-- `hint`：一个文档或字符串，用于指定查询使用的索引。该参数仅在 MongoDB 4.2.1 及以上版本中可用。
+- `hint`：一个文档或字符串，**用于指定查询使用的索引**。该参数仅在 MongoDB 4.2.1 及以上版本中可用。
 
 #### 更新多个文档
 
@@ -375,32 +375,17 @@ db.pizzas.bulkWrite([
 
 默认情况下：**`bulkWrite` 不是原子性的**。
 
-如果中间某个操作失败，已执行的操作不会回滚（部分成功）。
+**如果中间某个操作失败，已执行的操作不会回滚（部分成功）**。
 
 例如：批量插入 10 个文档，第 5 个失败时，前 4 个仍会写入。
 
 - 有序模式（`ordered: true`）：
 
-操作按顺序执行，遇到错误会停止后续操作（但**已执行的不会回滚**）。
+操作按顺序执行，**遇到错误会停止后续操作**（但**已执行的不会回滚**）。
 
 - 无序模式（`ordered: false`）：
 
-操作**并行执行**，失败的操作不影响其他操作。
-
-#### 如果实现整个 bulkWrite 完全原子化
-
-利用多文档事务：
-
-```javascript
-const session = db.getMongo().startSession();
-session.startTransaction();
-try {
-  db.collection.bulkWrite([...], { session });
-  session.commitTransaction();
-} catch (error) {
-  session.abortTransaction();
-}
-```
+操作**并行执行**，**失败的操作不影响其他操作**。
 
 #### 批量操作的优势
 

@@ -455,7 +455,7 @@ server_id=单独设置一个
 
 如果要扩展到一主多从的集群架构，其实就比较简单了，只需要增加一个 binlog 复制就行了。
 
-但是如果我们的集群是已经运行过一段时间，这时候如果要扩展新的从节点就有一个问题，之前的数据没办法从 binlog 来恢复了。这时候在扩展新的 slav e节点时，就需要增加一个数据复制的操作。
+但是如果我们的集群是已经运行过一段时间，这时候如果要扩展新的从节点就有一个问题，之前的数据没办法从 binlog 来恢复了。这时候在扩展新的 slave 节点时，就需要增加一个数据复制的操作。
 
 ​MySQL 的数据备份恢复操作相对比较简单，可以通过 SQL 语句直接来完成。具体操作可以使用 MySQL 的 `bin` 目录下的 `mysqldump` 工具：
 
@@ -483,7 +483,8 @@ MySQL 的主从集群，是有丢失数据的风险的。
 
 MySQL 主从集群默认采用的是一种异步复制的机制。主服务在执行用户提交的事务后，写入 binlog 日志，然后就给客户端返回一个成功的响应了。而 binlog 会由一个 dump 线程异步发送给 Slave 从服务。
 
-![mysql-copy-async]()
+![mysql-copy-async](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mysql-copy-async.png)
+
 
 由于这个发送 binlog 的过程是异步的。主服务在向客户端反馈执行结果时，是不知道 binlog 是否同步成功了的。这时候如果**主服务宕机了，而从服务还没有备份到新执行的 binlog，那就有可能会丢数据**。
 
@@ -491,7 +492,7 @@ MySQL 主从集群默认采用的是一种异步复制的机制。主服务在�
 
 ​半同步复制机制是一种介于异步复制和全同步复制之前的机制。主库在执行完客户端提交的事务后，并不是立即返回客户端响应，而是**等待至少 N 个从库接收并写到 relay log 中，才会返回给客户端**。MySQL 在等待确认时，默认会等 10 秒，如果超过 10 秒没有收到 ack，就会降级成为异步复制（也就是说超时了以后 master 就不等了，直接返回客户端去了，也不会当做失败来处理）。
 
-![mysql-copy-halfsync]()
+![mysql-copy-halfsync](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mysql-copy-halfsync.png)
 
 这种半同步复制相比异步复制，能够有效的提高数据的安全性。但是这种安全性也不是绝对的，他只保证事务提交后的 binlog 至少传输到了一个从库，并且并不保证从库应用这个事务的 binlog 是成功的。另一方面，半同步复制机制也会造成一定程度的延迟，这个延迟时间最少是一个 TCP/IP 请求往返的时间。整个服务的性能是会有所下降的。而当从服务出现问题时，主服务需要等待的时间就会更长，要等到从服务的服务恢复或者请求超时才能给用户响应。
 
@@ -499,13 +500,14 @@ MySQL 主从集群默认采用的是一种异步复制的机制。主服务在�
 
 MySQL 5.7 版本前的半同步复制机制是**有损的**，这种半同步复制在 Master 发生宕机时，**Slave 会丢失最后一批提交的数据**
 
-![mysql-lossy-semi-sync]()
+![mysql-lossy-semi-sync](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mysql-lossy-semi-sync.png)
+
 
 有损半同步是在 Master 事务提交后，即步骤 4 后，等待 Slave 返回 ACK，表示至少有 Slave 接收到了二进制日志，如果这时二进制日志还未发送到 Slave，Master 就发生宕机，则此时 Slave 就会丢失 Master 已经提交的数据。
 
 MySQL 5.7 版本之后，引入了无损半同步复制的机制。
 
-![mysql-lossless-semi-sync]()
+![mysql-lossless-semi-sync](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mysql-lossless-semi-sync.png)
 
 无损半同步复制 WAIT ACK 发生在事务提交之前，这样即便 Slave 没有收到二进制日志，但是 Master 宕机了，由于最后一个事务还没有提交，所以本身这个数据对外也不可见，不存在丢失的问题。
 
@@ -613,7 +615,7 @@ slave-parallel-workers = 16
 
 一种常见的业务读写分离的架构设计：
 
-![mysql-read-write-separation]()
+![mysql-read-write-separation](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mysql-read-write-separation.png)
 
 引入了 Load Balance 负载均衡的组件，这样 Server 对于数据库的请求不用关心后面有多少个从机，对于业务来说也就是透明的，只需访问 Load Balance 服务器的 IP 或域名就可以。
 
@@ -638,7 +640,8 @@ slave-parallel-workers = 16
 
 多源复制允许在不同 MySQL 实例上的数据同步到 1 台 MySQL 实例上，方便在 1 台 Slave 服务器上进行一些统计查询，如常见的 OLAP 业务查询。
 
-![mysql-multi-source]()
+![mysql-multi-source](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mysql-multi-source.png)
+
 
 上图显示了订单库、库存库、供应商库，通过多源复制同步到了一台 MySQL 实例上，接着就可以通过 MySQL 8.0 提供的复杂 SQL 能力，对业务进行深度的数据分析和挖掘。
 
@@ -673,11 +676,12 @@ MySQL **主从复制是高可用的技术基础**，高可用套件是 MySQL 高
 
 [MHA（Master High Availability）](https://github.com/yoshinorim/mha4mysql-manager) 是一款开源的 MySQL 高可用程序，它为 MySQL 数据库主从复制架构提供了 automating master failover 的功能。它由两大组件所组成，MHA Manger 和 MHA Node。
 
-MHA Manager 可以单独部署在一台独立的机器上管理多个 master-slave 集群，也可以部署在一台 slave 节点上。MHA Manager会定时探测集群中的 master 节点，当 master 出现故障时，它可以自动将最新数据的 slave 提升为新的master，然后将所有其他的 slave 重新指向新的 master。整个故障转移过程对应用程序完全透明。
+MHA Manager 可以单独部署在一台独立的机器上管理多个 master-slave 集群，也可以部署在一台 slave 节点上。MHA Manager会定时探测集群中的 master 节点，当 master 出现故障时，它可以自动将最新数据的 slave 提升为新的 master，然后将所有其他的 slave 重新指向新的 master。整个故障转移过程对应用程序完全透明。
 
 而 MHA Node 部署在每台 MySQL 服务器上，MHA Manager 通过执行 Node 节点的脚本完成 failover 切换操作。
 
-![mysql-mha]()
+![mysql-mha](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mysql-mha.png)
+
 
 MHA Manager 和 MHA Node 的通信是采用 ssh 的方式，也就是**需要在生产环境中打通 MHA Manager 到所有 MySQL 节点的 ssh 策略，那么这里就存在潜在的安全风险**。
 
