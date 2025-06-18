@@ -85,6 +85,55 @@ redis> incr codehole
 (error) ERR increment or decrement would overflow
 ```
 
+#### 应用场景
+
+单值缓存：
+
+```bash
+set key value
+get ket
+```
+
+对象缓存：
+
+```bash
+set user:1 value (json string)
+
+# 这种方式适合修改比较频繁的场景，可以单独修改某个字段
+# 上面的方式是整个对象一起修改，再转成字符串存储
+mset user:1:name guanzhu user:1:balance 6666
+mget user:1:name user:1:balance
+```
+
+分布式锁：
+
+```bash
+setnx product:10000 true   # 返回 1 代表获取锁成功
+setnx product:10000 true   # 返回 0 代表获取锁失败
+
+# 释放锁
+del product:10000
+
+set product:10000 true ex 10 ns # 加上过期时间，避免锁未释放导致死锁
+```
+
+计数器：
+
+```bash
+incr aticle:readcount:{articleId}
+get aticle:readcount:{articleId}
+```
+
+session 共享：spring session + redis 实现 session 共享
+
+分布式全局 ID：
+
+```bash
+incrby orderId 1000  // 相当于批量生成了 1000 个 ID
+```
+
+服务端在内存中将 ID 去加 1
+
 ### 列表（list）
 
 Redis 的列表相当于 Java 语言里面的 `LinkedList`，注意**它是链表而不是数组**。这意味着 list 的插入和删除操作非常快，时间复杂度为 `O(1)`，但是索引定位很慢，时间复杂度为 `O(n)`，这点让人非常意外。

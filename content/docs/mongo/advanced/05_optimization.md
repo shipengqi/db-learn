@@ -382,7 +382,8 @@ weight: 5
 
 ### 树状结构模型
 
-![mongodb-tree-model]()
+![mongodb-tree-model](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-tree-model.png)
+
 
 这种也不复杂，就是每一个节点就是一个文档，只不过增加了 `parent` 字段：
 
@@ -662,7 +663,8 @@ db.categories.insertMany( [
 
 ### 影响 MongoDB 性能的因素
 
-![mongodb-perf-factors]()
+![mongodb-perf-factors](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-perf-factors.png)
+
 
 **网络问题是第一个要排查的问题**，网络没有问题再从客户端、服务端去排查问题。
 
@@ -694,7 +696,7 @@ mongostat -h 192.168.65.174 --port 28017 -ufox -pfox --authenticationDatabase=ad
 - `--discover`：启用自动发现，可展示集群中所有分片节点的状态。
 - `-n 300 2`：表示输出 300 次，每次间隔 2s。也可以不指定 “-n 300”，此时会一直保持输出。
 
-![mongodb-mongostat]()
+![mongodb-mongostat](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-mongostat.png)
 
 指标说明：
 
@@ -723,7 +725,7 @@ mongostat -h 192.168.65.174 --port 28017 -ufox -pfox --authenticationDatabase=ad
 需要关注的指标：
 
 - 插入、删除、修改、查询的速率是否产生较大波动，是否超出预期。
-- **qrw、arw：队列是否较高，若长时间大于 0 则说明此时读写速度较慢**。
+- **qrw、arw：代表目前正在排队(queue)的 read 和 write 请求数量。队列是否较高，若长时间大于 0 则说明此时读写速度较慢**。
 - conn：连接数是否太多。
 - **dirty：如果这个百分比过高，说明内存中的数据刷盘的效率不高，磁盘 IO 可能存在瓶颈**。
 - netIn、netOut：是否超过网络带宽阈值。
@@ -747,7 +749,8 @@ mongotop -h 192.168.65.174 --port=28017 -ufox -pfox --authenticationDatabase=adm
 
 默认情况下，mongotop 会持续地每秒输出当前的热点表：
 
-![mongodb-mongotop]()
+![mongodb-mongotop](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-mongotop.png)
+
 
 指标说明：
 
