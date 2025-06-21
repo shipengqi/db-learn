@@ -99,7 +99,7 @@ ShardingSphere-Proxy 定位为透明化的数据库代理端，通过实现数�
 - 兼容 MariaDB 等基于 MySQL 协议的数据库，以及 openGauss 等基于 PostgreSQL 协议的数据库；
 - 适用于任何兼容 MySQL/PostgreSQL 协议的的客户端，如：MySQL Command Client, MySQL Workbench, Navicat 等。
 
-![sharding-proxy]()
+![sharding-proxy](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/sharding-proxy.png)
 
 #### ShardingSphere 混合部署架构
 
@@ -118,7 +118,7 @@ ShardingJDBC 跟客户端在一起，使用更加灵活。而 ShardingProxy 是�
 
 ​由于 ShardingJDBC 和 ShardingProxy 都支持通过 Governance Center，将配置信息交个第三方服务管理，因此，也就自然支持了通过 Governance Center 进行整合的混合部署架构。
 
-![sharding-mixed]()
+![sharding-mixed](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/sharding-mixed.png)
 
 ### ShardingSphere 的核心概念
 
@@ -126,7 +126,7 @@ ShardingJDBC 跟客户端在一起，使用更加灵活。而 ShardingProxy 是�
 
 这是设计分库分表方案时经常会提到的概念。**其中垂直分片表示按照业务的纬度，将不同的表拆分到不同的库当中**。这样可以减少每个数据库的数据量以及客户端的连接数，提高查询效率。而**水平分表表示按照数据的纬度，将原本存在同一张表中的数据，拆分到多张子表当中。每个子表只存储一份的数据**。这样可以将数据量分散到多张表当中，减少每一张表的数据量，提升查询效率。
 
-![sharding-split]()
+![sharding-split](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/sharding-split.png)
 
 #### ShardingSphere 实现分库分表的核心概念
 
@@ -141,3 +141,14 @@ ShardingJDBC 跟客户端在一起，使用更加灵活。而 ShardingProxy 是�
 ### ShardingJDBC 客户端分库分表机制
 
 ### ShardingProxy 服务端分库分表机制
+
+​ShardingSphere-Proxy，早前版本就叫做 ShardingProxy。定位为一个透明化的数据库代理，目前提供 MySQL 和 PostgreSQL 协议，透明化数据库操作。简单理解就是，他会部署成一个 MySQL 或者 PostgreSQL 的数据库服务，**应用程序只需要像操作单个数据库一样去访问 ShardingSphere-proxy，由 ShardingProxy 去完成分库分表功能**。
+
+
+### ShardinSphere 中的分布式事务机制
+
+由于 ShardingSphere 是需要操作分布式的数据库集群，所以数据库内部的本地事务机制是无法保证 ShardingProxy 中的事务安全的，这就需要引入分布式事务管理机制，保证 ShardingProxy 中的 SQL 语句执行的原子性。也就是说，在ShardingProxy 中打开分布式事务机制后，你就不需要考虑 SQL 语句执行时的分布式事务问题了。
+
+#### XA 事务
+
+XA 是由 X/Open Group 组织定义的，处理分布式事务的标准。主流的关系型数据库产品都实现了 XA 协议。例如，MySQL 从 5.0.3 版本开始，就已经可以直接支持 XA 事务了。但是要注意，只有 InnoDB 引擎才提供支持：
