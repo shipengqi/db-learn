@@ -92,14 +92,14 @@ Create Table: CREATE TABLE `t` (
 
 ### IP 地址字段设计
 
-IP 也是可以使用整型来存储的，因为 IP 地址本身是一个**变长字段**，如果使用 `INT` 存储，就是占用固定的 4 个字节。这种方法比使用字符串更节省空间且查询效率更高。
+IP 也是可以使用整型来存储的，因为 IP 地址本身是一个**变长字段**，如果**使用 `INT` 存储，就是占用固定的 4 个字节**（IP 地址最大为 `255.255.255.255`，二进制形式 `11111111 11111111 11111111 11111111`）。这种方法比使用字符串更节省空间且查询效率更高。
 
 存储 IP 地址的表结构：
 
 ```sql
 CREATE TABLE `network_logs` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    ip_address INT UNSIGNED,  -- 存储转换后的IP整数值
+    ip_address INT UNSIGNED,  -- 存储转换后的 IP 整数值
     -- 其他字段...
     INDEX (ip_address)        -- 为提高查询效率添加索引
 );

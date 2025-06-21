@@ -663,8 +663,9 @@ db.categories.insertMany( [
 
 ### 影响 MongoDB 性能的因素
 
-![mongodb-perf-factors](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-perf-factors.png)
-
+<div class="img-zoom">
+  <img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-perf-factors.png" alt="mongodb-perf-factors">
+</div>
 
 **网络问题是第一个要排查的问题**，网络没有问题再从客户端、服务端去排查问题。
 
@@ -967,7 +968,7 @@ db.system.profile.find({op: "update", ns: "shop.user"})
 - value 字段**加上索引**。
 - 如果更新的数据集非常大，要避免大范围 `update` 操作，**切分成小批量的操作**。
 
-** `opid` 表示当前操作在数据库进程中的唯一编号**。如果已经发现该操作正在导致数据库系统响应缓慢，则可以考虑将其“杀”死：
+**`opid` 表示当前操作在数据库进程中的唯一编号**。如果已经发现该操作正在导致数据库系统响应缓慢，则可以考虑将其“杀”死：
 
 ```javascript
 db.killOp(678910)

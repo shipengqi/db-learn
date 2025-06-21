@@ -47,25 +47,47 @@ GET key:requests:user_id
 对于更复杂的漏斗限流逻辑（如动态调整速率），可以使用 Redis 的 Lua 脚本来实现。Lua 脚本可以在服务器端原子地执行多个命令，避免了多命令执行中的竞态条件。
 
 ```lua
-local key = KEYS[1]
-local rate = tonumber(ARGV[1])  -- 每秒允许的请求数
-local capacity = tonumber(ARGV[2])  -- 漏斗容量
-local current = tonumber(redis.call('get', key) or "0")
-local timestamp = tonumber(redis.call('get', key .. ':timestamp') or "0")
-local now = tonumber(redis.call('time')[1])
- 
-if now > timestamp + 1 then  -- 重置漏斗状态（每秒重置一次）
-    current = 0
-    timestamp = now
+--[[
+漏斗限流算法核心逻辑：
+1. KEYS[1] 限流器唯一标识
+2. ARGV[1] rate 每秒允许的请求数
+3. ARGV[2] capacity 漏斗总容量
+--]]
+local key = KEYS[1]  -- 限流器存储 key，例如: user_123_api_limit
+local rate = tonumber(ARGV[1])  -- 漏嘴流速（每秒允许请求数）
+local capacity = tonumber(ARGV[2])  -- 漏斗总容量（最大突发请求数）
+
+-- 获取当前漏斗状态
+local current = tonumber(redis.call('get', key) or "0")  -- 当前剩余容量
+local timestamp = tonumber(redis.call('get', key .. ':timestamp') or "0")  -- 上次更新时间戳
+local now = tonumber(redis.call('time')[1])  -- 当前 Redis 服务器时间（秒）
+
+-- 时间窗口检测（每秒重置一次漏斗）
+if now > timestamp + 1 then
+    -- 距离上次请求超过 1 秒，重置漏斗
+    current = capacity  -- 恢复漏斗最大容量
+    timestamp = now  -- 记录新时间窗口起点
+    
+    -- 打印调试信息（生产环境需移除）
+    -- redis.log(redis.LOG_NOTICE, "漏斗重置 current:"..current.." timestamp:"..timestamp)
 end
- 
-if current < capacity then  -- 如果当前请求数小于容量，则允许请求
-    current = current + 1
-    redis.call('setex', key, 1, current)  -- 设置过期时间为1秒，以便每秒重置一次
-    redis.call('setex', key .. ':timestamp', 1, timestamp)  -- 设置时间戳的过期时间为1秒
-    return 1  -- 允许请求
+
+-- 计算剩余容量（核心算法）
+if current > 0 then
+    -- 漏斗有剩余容量时：
+    local allowed = 1  -- 允许本次请求
+    current = current - 1  -- 消耗 1 个容量单位
+    
+    -- 更新存储（带1秒过期时间）
+    redis.call('setex', key, 1, current)  -- 存储剩余容量
+    redis.call('setex', key .. ':timestamp', 1, timestamp)  -- 存储时间窗口起点
+    
+    -- 返回允许请求，并返回剩余容量
+    return {1, current}  -- 第一个值1表示允许，第二个值返回剩余容量
 else
-    return 0  -- 拒绝请求
+    -- 漏斗容量已耗尽
+    -- 返回拒绝请求，并返回剩余容量
+    return {0, 0}
 end
 ```
 

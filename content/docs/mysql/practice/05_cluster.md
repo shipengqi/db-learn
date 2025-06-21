@@ -509,7 +509,7 @@ MySQL 5.7 版本之后，引入了无损半同步复制的机制。
 
 ![mysql-lossless-semi-sync](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mysql-lossless-semi-sync.png)
 
-无损半同步复制 WAIT ACK 发生在事务提交之前，这样即便 Slave 没有收到二进制日志，但是 Master 宕机了，由于最后一个事务还没有提交，所以本身这个数据对外也不可见，不存在丢失的问题。
+无损半同步复制 WAIT ACK 发生在事务提交之前，这样即便 Slave 没有收到二进制日志，但是 Master 宕机了，***由于最后一个事务还没有提交，所以本身这个数据对外也不可见**，不存在丢失的问题。
 
 #### 搭建半同步复制集群
 
