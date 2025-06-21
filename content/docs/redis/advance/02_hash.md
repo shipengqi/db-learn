@@ -68,8 +68,10 @@ rehash 进行期间，查找某个 key 的操作，Redis 会先去 `ht[0]` 数�
 
 **rehash 由主线程控制，不会有并发安全的问题**。
 {{< /callout >}}
- 
-![redisdb-dict](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redisdb-dict.jpg)
+
+<div class="img-zoom">
+  <img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redisdb-dict.jpg" alt="redisdb-dict">
+</div>
  
 ## 扩容条件
 

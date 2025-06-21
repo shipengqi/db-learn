@@ -3,8 +3,9 @@ title: MySQL 日志机制
 weight: 7
 ---
 
-
-![arch](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/arch.png)
+<div class="img-zoom">
+  <img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/arch.png" alt="arch">
+</div>
 
 ## redo log
 

@@ -3,7 +3,9 @@ title: Redis Object
 weight: 3
 ---
 
-![redisdb-dict](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redisdb-dict.jpg)
+<div class="img-zoom">
+  <img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redisdb-dict.jpg" alt="redisdb-dict">
+</div>
 
 Redis 在存储 value 时，会把 value 包装成一个 RedisObject 数据结构，RedisObject 是 Redis 中所有 key 和 value 的基础数据结构。比如简单动态字符串（SDS）、双端链表、字典、压缩列表、整数集合，等等。
 
