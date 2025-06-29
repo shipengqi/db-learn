@@ -31,7 +31,7 @@ user:{uid}:friends:messages:{mid} 简化为 u:{uid}:fr:m:{mid}。
 在 Redis 中，一个字符串最大 512MB，一个二级数据结构（例如 hash、list、set、zset）可以存储大约 40 亿个 (2^32-1) 个元素，但实际中如果下面两种情况，我就会认为它是 bigkey。
 
 1. 字符串类型：它的 big 体现在单个 value 值很大，一般认为超过 10KB 就是 bigkey。
-2. 非字符串类型：哈希、列表、集合、有序集合，它们的big体现在元素个数太多。
+2. 非字符串类型：哈希、列表、集合、有序集合，它们的 big 体现在元素个数太多。
 
 一般来说，string 类型控制在 10KB 以内，hash、list、set、zset 元素个数不要超过5000。
 

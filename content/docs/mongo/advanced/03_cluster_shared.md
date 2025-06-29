@@ -39,7 +39,7 @@ Mongos 至少需要 2 个节点，避免单点故障，内存不需要太大（4
 
 - **数据分片**：分片用于存储真正的数据，并提供最终的数据读写访问。分片仅仅是一个逻辑的概念，它**可以是一个单独的 mongod 实例，也可以是一个复制集**。图中的 Shard1、Shard2 都是一个复制集分片。在生产环境中也**一般会使用复制集的方式，这是为了防止数据节点出现单点故障**。
 - **配置服务器**（Config Server）：配置服务器包含多个节点，并组成一个复制集结构，对应于图中的 ConfigReplSet。**配置复制集中保存了整个分片集群中的元数据，其中包含各个集合的分片策略，以及分片的路由表等**。
-- **查询路由**（mongos）：**mongos 是分片集群的访问入口，其本身并不持久化数据**。mongos 启动后，会从配置服务器中加载元数据。之后 mongos 开始提供访问服务，并将用户的请求正确路由到对应的分片。在分片集群中可以部署多个mongos 以分担客户端请求的压力。
+- **查询路由**（mongos）：**mongos 是分片集群的访问入口，其本身并不持久化数据**。mongos 启动后，会从配置服务器中加载元数据。之后 mongos 开始提供访问服务，并将用户的请求正确路由到对应的分片。在分片集群中可以部署多个 mongos 以分担客户端请求的压力。
 
 ## 搭建分片集群
 
@@ -364,7 +364,9 @@ db.settings.update(
 
 **双中心双活＋异地热备=两地三中心**：
 
-![mongodb-shards-dr3](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-dr3.png)
+<div class="img-zoom">
+  <img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-dr3.png" alt=mongodb-shards-dr3">
+</div>
 
 MongoDB 集群两地三中心部署的考量点
 
@@ -474,4 +476,6 @@ for(var i=1;i<1000;i++){
 
 [全球多写集群方案](https://www.processon.com/view/link/6239de277d9c08070e59dc0d)，必须用到分片集群。
 
-![mongodb-shards-global-multi](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-global-multi.png)
+<div class="img-zoom">
+  <img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-global-multi.png" alt=mongodb-shards-global-multi">
+</div>

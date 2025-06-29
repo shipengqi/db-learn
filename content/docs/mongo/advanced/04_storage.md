@@ -80,12 +80,12 @@ WiredTiger 写入数据的流程：
 
 ### MongoDB 对事务支持
 
-| 事务属性 | 支持程度 |
-| --- | --- |
-| A 原子性 | 单文档支持：1.x 就已经支持。<br /> 复制集多表多行：4.0。<br /> 分片集群多表多行：4.2 |
-| C 一致性 | `writeConcern`、`readConcern` |
-| I 隔离性 | `readConcern` |
-| D 持久性 | Journal and Replication |
+| 事务属性 | MongoDB | MySQL |
+| --- | --- | --- |
+| A 原子性 | 单文档支持：1.x 就已经支持。<br /> 复制集多表多行：4.0。<br /> 分片集群多表多行：4.2 | undo log |
+| C 一致性 | `writeConcern`、`readConcern` | 无损半同步复制/MGR |
+| I 隔离性 | `readConcern` | MVCC |
+| D 持久性 | Journal and Replication | redo log and binlog |
 
 #### 使用
 

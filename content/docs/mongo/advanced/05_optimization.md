@@ -960,7 +960,7 @@ db.system.profile.find({op: "update", ns: "shop.user"})
 
 1. 从 `ns、op` 字段获知，当前进行的操作正在对 `mydb.users` 集合执行 `update` 命令。
 2. `command` 字段显示了其原始信息。其中，`command.q` 和 `command.u` 分别展示了 `update` 的查询条件和更新操作。
-3. `"planSummary"："COLLSCAN"` 说明情况并不乐观，update没有利用索引而是正在全表扫描。
+3. `"planSummary"："COLLSCAN"` 说明情况并不乐观，`update` 没有利用索引而是正在全表扫描。
 4. `microsecs_running：NumberLong（5123456）`表示操作运行了 5123ms，注意这里的单位是微秒。
 
 优化方向：

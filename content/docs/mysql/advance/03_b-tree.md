@@ -71,7 +71,9 @@ B+ 树是 B 树的变种，主要区别：
 
 目录项记录只有**主键值和页的编号两个列**，而普通的用户记录的列是用户自己定义的，可能包含很多列，另外还有 InnoDB 自己添加的隐藏列。
 
-![b-plus-tree-demo](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/b-plus-tree-demo.png)
+<div class="img-zoom">
+  <img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/b-plus-tree-demo.png" alt="b-plus-tree-demo">
+</div>
 
 上图中，如果用户记录的主键值在 `[1, 320)` 之间，则到页 30 中查找更详细的目录项记录，如果主键值不小于 320 的话，就到页 32 中查找更详细的目录项记录。
 
@@ -120,7 +122,9 @@ B+ 树的形成过程：
 - **主键值**
 - 页号
 
+{{< callout type="info" >}}
 **把主键值也添加到二级索引内节点中的目录项记录**，这样就能保证 B+ 树每一层节点中各条目录项记录除页号这个字段外是**唯一**的，因为对于二级索引，**索引列是会有相同的值的，插入数据时，无法判断插入哪个页**。
+{{< /callout >}}
 
 **一个页面最少存储 2 条记录**。
 
@@ -244,7 +248,13 @@ SELECT * FROM person_info WHERE name > 'Asa' AND name < 'Barlow' AND birthday > 
 1. 通过条件 `name > 'Asa' AND name < 'Barlow'` 来对 name 进行范围查找，查找的结果可能有多条 name 值不同的记录，
 1. 对这些 name 值不同的记录继续通过 `birthday > '1980-01-01'` 条件继续过滤。
 
+
+
+{{< callout type="info" >}}
 对于联合索引 `idx_name_birthday_phone_number` 来说，**只能用到 name 列的部分，而用不到 birthday 列的部分，因为只有 name 值相同的情况下才能用 birthday 列的值进行排序**。
+
+由于 name 值不相同，birthday 列的值肯定是无序的，无法再使用二分查找这种方式来定位了。
+{{< /callout >}}
 
 ### 精确匹配某一列并范围匹配另外一列
 

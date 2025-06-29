@@ -80,7 +80,7 @@ var cs = db.collection.watch([], {resumeAfter: <_id>})
 
 - 分析平台 
 
-例如需要基于增量去分析用户的一些行为，可以基于 ChangeStreams 把数据拉出来，推到下游的计算平台， 比如 类似 Flink、Spark 等计算平台等等。
+例如需要基于增量去分析用户的一些行为，可以基于 ChangeStreams 把数据拉出来，推到下游的计算平台， 比如类似 Flink、Spark 等计算平台等等。
 
 - 数据同步 
 
