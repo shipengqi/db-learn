@@ -29,7 +29,7 @@ typedef struct redisObject {
   - 在 LFU 模式下：
     - 16 bits: 最近访问时间（分钟级）
     - 8 bits: 访问频率计数器（logarithmic counter）
-- `refcount`: 引用计数，用于内存管理。当 `refcount` 为 0 时，对象会被释放。
+- `refcount`: 引用计数，用于内存管理。**当 `refcount` 为 0 时，对象会被释放**。
 
 
 ```bash

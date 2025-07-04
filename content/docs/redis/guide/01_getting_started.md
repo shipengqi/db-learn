@@ -466,7 +466,7 @@ scard like:{消息 ID}
 1. 刘备关注的人：`liubeiSet -> {guojia, xushu}`
 2. 杨过关注的人: `yangguoSet--> {liubei, baiqi, guojia, xushu}`
 3. 郭嘉关注的人: `guojiaSet-> {liubei, yangguo, baiqi, xushu, xunyu}`
-4. 刘备和杨过老师共同关注: `SINTER zhugeSet yangguoSet--> {guojia, xushu}`
+4. 刘备和杨过共同关注: `SINTER liubeiSet yangguoSet--> {guojia, xushu}`
 5. 刘备关注的人（郭嘉、徐庶）也关注了他（杨过）
 
 ```bash
@@ -474,7 +474,7 @@ SISMEMBER guojiaSet yangguo
 SISMEMBER xushuSet yangguo
 ```
 
-6. 刘备可能认识的人: `SDIFF yangguoSet zhugeSet -> {liubei, baiqi}`
+6. 刘备可能认识的人: `SDIFF yangguoSet liubeiSet -> {liubei, baiqi}`
 
 ##### 集合操作实现电商商品筛选
 
