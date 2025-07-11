@@ -21,6 +21,8 @@ title: Database learning
 
 ## 推荐和参考
 
+- MySQL 实战宝典
 - SQL 必知必会
+- 从根上理解 MySQL
 - Redis 深度历险
 - Redis 设计与实现
