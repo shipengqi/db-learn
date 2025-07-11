@@ -1,0 +1,113 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Database Learning – MySQL</title><link>https://shipengqi.github.io/db-learn/docs/mysql/</link><description>Recent content in MySQL on Database Learning</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><atom:link href="https://shipengqi.github.io/db-learn/docs/mysql/index.xml" rel="self" type="application/rss+xml"/><item><title>使用指南</title><link>https://shipengqi.github.io/db-learn/docs/mysql/guide/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://shipengqi.github.io/db-learn/docs/mysql/guide/</guid><description>
+&lt;h1>安装 MySQL&lt;/h1>&lt;p>&lt;code>MySQL&lt;/code> 的大部分安装包都包含了服务器程序和客户端程序&lt;/p>
+&lt;blockquote>
+&lt;p>注意，&lt;strong>在 Linux 下使用 RPM 安装，有时需要分别安装服务器 RPM 包和客户端 RPM 包&lt;/strong>。&lt;/p>
+&lt;/blockquote>
+&lt;h2>MySQL 的安装目录&lt;span class="hx-absolute -hx-mt-20" id="mysql-的安装目录">&lt;/span>
+&lt;a href="#mysql-%e7%9a%84%e5%ae%89%e8%a3%85%e7%9b%ae%e5%bd%95" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h2>&lt;p>Linux 下的安装目录一般为 &lt;code>/usr/local/mysql/&lt;/code>。Windows 一般为 &lt;code>C:\Program Files\MySQL\MySQL Server x.x&lt;/code>
+（记住你自己的安装目录）。&lt;/p>
+&lt;h3>bin 目录&lt;span class="hx-absolute -hx-mt-20" id="bin-目录">&lt;/span>
+&lt;a href="#bin-%e7%9b%ae%e5%bd%95" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h3>&lt;p>打开 &lt;code>/usr/local/mysql/bin&lt;/code>，执行 &lt;code>tree&lt;/code>：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;pre>&lt;code>.
+├── mysql
+├── mysql.server -&amp;gt; ../support-files/mysql.server
+├── mysqladmin
+├── mysqlbinlog
+├── mysqlcheck
+├── mysqld # mysql 的服务端程序
+├── mysqld_multi # 运行多个 MySQL 服务器进程
+├── mysqld_safe
+├── mysqldump
+├── mysqlimport
+├── mysqlpump
+... (省略其他文件)
+0 directories, 40 files&lt;/code>&lt;/pre>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>这个目录一般需要配置到环境变量的 &lt;code>PATH&lt;/code> 中，Linux 中各个路径以 &lt;code>:&lt;/code> 分隔。也可以选择不配：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/mysql/bin&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;h4>mysqld&lt;span class="hx-absolute -hx-mt-20" id="mysqld">&lt;/span>
+&lt;a href="#mysqld" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h4>&lt;p>&lt;code>mysqld&lt;/code> 是 MySQL 服务端程序。不常用。&lt;/p>
+&lt;h4>mysqld_safe&lt;span class="hx-absolute -hx-mt-20" id="mysqld_safe">&lt;/span>
+&lt;a href="#mysqld_safe" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h4>&lt;p>&lt;code>mysqld_safe&lt;/code> 是一个启动脚本，最终也是调用 &lt;code>mysqld&lt;/code>，但是还会另外一个监控进程，在服务器进程挂了的时候，可以帮助重启服务器进程。
+&lt;code>mysqld_safe&lt;/code> 启动服务端程序时，会将服务端程序的出错信息和其他诊断信息重定向到某个文件中，产生出错日志，这样可以方便找出发生错误的原因。&lt;/p>
+&lt;h4>mysql.server&lt;span class="hx-absolute -hx-mt-20" id="mysqlserver">&lt;/span>
+&lt;a href="#mysqlserver" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h4>&lt;p>&lt;code>mysql.server&lt;/code> 也是一个启动脚本，会间接的调用 &lt;code>mysqld_safe&lt;/code>，使用 &lt;code>mysql.server&lt;/code> 启动服务端程序：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mysql.server start&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>&lt;code>mysql.server&lt;/code> 文件其实是一个链接文件，它的实际文件是 &lt;code>../support-files/mysql.server&lt;/code>。&lt;/p>
+&lt;h4>client&lt;span class="hx-absolute -hx-mt-20" id="client">&lt;/span>
+&lt;a href="#client" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h4>&lt;p>&lt;code>bin&lt;/code> 目录下的 &lt;code>mysql&lt;/code>、&lt;code>mysqladmin&lt;/code>、&lt;code>mysqldump&lt;/code>、&lt;code>mysqlcheck&lt;/code> 都是客户端程序，启动客户端程序连接服务器进程：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mysql --host&lt;span class="o">=&lt;/span>&amp;lt;主机名&amp;gt; --user&lt;span class="o">=&lt;/span>&amp;lt;用户名&amp;gt; --password&lt;span class="o">=&lt;/span>&amp;lt;密码&amp;gt;&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>注意：&lt;/p>
+&lt;ul>
+&lt;li>最好不要在一行命令中输入密码，可能会导致密码泄露。&lt;/li>
+&lt;li>如果使用的是类 UNIX 系统，并且省略 &lt;code>-u&lt;/code> 参数后，会把你&lt;strong>登陆操作系统的用户名当作 MySQL 的用户名&lt;/strong>去处理。&lt;/li>
+&lt;/ul>
+&lt;h2>连接服务器&lt;span class="hx-absolute -hx-mt-20" id="连接服务器">&lt;/span>
+&lt;a href="#%e8%bf%9e%e6%8e%a5%e6%9c%8d%e5%8a%a1%e5%99%a8" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h2>&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mysql -hlocalhost -uroot -p123456&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;blockquote>
+&lt;p>注意，不推荐使用 &lt;code>-p&lt;/code> 输入密码。&lt;code>-p&lt;/code> 和密码值之间不能有空白字符（其他参数名之间可以有空白字符）。
+如果服务端和客户端安装在同一台机器上，&lt;code>-h&lt;/code> 参数可以省略。&lt;/p>
+&lt;/blockquote>
+&lt;p>退出：&lt;code>quit&lt;/code>，&lt;code>exit&lt;/code>，&lt;code>\q&lt;/code> 任意指令都可以关闭连接。&lt;/p>
+&lt;p>Windows 下可以使用 mysql shell：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="se">\s&lt;/span>ql
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">\c&lt;/span>onnect --mysql root@localhost&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div></description></item><item><title>核心设计与原理</title><link>https://shipengqi.github.io/db-learn/docs/mysql/advance/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://shipengqi.github.io/db-learn/docs/mysql/advance/</guid><description/></item><item><title>实战</title><link>https://shipengqi.github.io/db-learn/docs/mysql/practice/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://shipengqi.github.io/db-learn/docs/mysql/practice/</guid><description/></item></channel></rss>

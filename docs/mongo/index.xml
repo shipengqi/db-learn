@@ -1,0 +1,467 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Database Learning – MongoDB</title><link>https://shipengqi.github.io/db-learn/docs/mongo/</link><description>Recent content in MongoDB on Database Learning</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><atom:link href="https://shipengqi.github.io/db-learn/docs/mongo/index.xml" rel="self" type="application/rss+xml"/><item><title>使用指南</title><link>https://shipengqi.github.io/db-learn/docs/mongo/guide/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://shipengqi.github.io/db-learn/docs/mongo/guide/</guid><description>
+&lt;h2>安装配置&lt;span class="hx-absolute -hx-mt-20" id="安装配置">&lt;/span>
+&lt;a href="#%e5%ae%89%e8%a3%85%e9%85%8d%e7%bd%ae" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h2>&lt;p>环境准备：&lt;/p>
+&lt;ul>
+&lt;li>Linux 系统： centos7&lt;/li>
+&lt;li>安装 MongoDB 社区版&lt;/li>
+&lt;/ul>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 查看 Linux 版本&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="o">[&lt;/span>root@hadoop01 soft&lt;span class="o">]&lt;/span>&lt;span class="c1"># cat /etc/redhat-release &lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">CentOS Linux release 7.9.2009 &lt;span class="o">(&lt;/span>Core&lt;span class="o">)&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>下载地址：https://www.mongodb.com/try/download/community，其中 MongoDB Atlas 是 MongoDB 的云服务，可以提供一个 512MB 的免费数据库。&lt;/p>
+&lt;p>MongoDB Community Edition 是一个开源的、免费的社区版。Tools 里面是一些工具，例如 MongoDB Compass 是一个可视化工具，可以方便的查看数据库中的数据。&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 下载 MongoDB&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">wget https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-rhel70-6.0.5.tgz
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">tar -zxvf mongodb-linux-x86_64-rhel70-6.0.5.tgz&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>&lt;strong>启动 MongoDB Server&lt;/strong>：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 创建 dbpath 和 logpath&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">mkdir -p /mongodb/data /mongodb/log
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 进入 mongodb 目录，启动 mongodb 服务&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">bin/mongod --port&lt;span class="o">=&lt;/span>&lt;span class="m">27017&lt;/span> --dbpath&lt;span class="o">=&lt;/span>/mongodb/data --logpath&lt;span class="o">=&lt;/span>/mongodb/log/mongodb.log &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--bind_ip&lt;span class="o">=&lt;/span>0.0.0.0 --fork&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;ul>
+&lt;li>&lt;code>--dbpath&lt;/code>: 指定数据文件存放目录。&lt;/li>
+&lt;li>&lt;code>--logpath&lt;/code>: 指定日志文件，注意是指定文件不是目录。&lt;/li>
+&lt;li>&lt;code>--logappend&lt;/code>: 使用追加的方式记录日志。&lt;/li>
+&lt;li>&lt;code>--port&lt;/code>: 指定端口，默认为 27017。&lt;/li>
+&lt;li>&lt;code>--bind_ip&lt;/code>: 默认只监听 &lt;code>localhost&lt;/code> 网卡。&lt;/li>
+&lt;li>&lt;code>--fork&lt;/code>: 后台启动。&lt;/li>
+&lt;li>&lt;code>--auth&lt;/code>: 开启认证模式。&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>添加环境变量&lt;/strong>：&lt;/p>
+&lt;p>修改 &lt;code>/etc/profile&lt;/code>，添加环境变量,方便执行 MongoDB 命令：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="nb">export&lt;/span> &lt;span class="nv">MONGODB_HOME&lt;/span>&lt;span class="o">=&lt;/span>/usr/local/soft/mongodb
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nv">PATH&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="nv">$PATH&lt;/span>:&lt;span class="nv">$MONGODB_HOME&lt;/span>/bin&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>&lt;code>source /etc/profile&lt;/code> 重新加载环境变量。&lt;/p>
+&lt;p>&lt;strong>使用配置文件启动服务&lt;/strong>，编辑 &lt;code>/mongodb/conf/mongo.conf&lt;/code> 文件，&lt;strong>必须是 yaml 格式&lt;/strong>，内容如下：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">systemLog&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">destination&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">file&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">path&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">/mongodb/log/mongod.log&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># log path&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">logAppend&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kc">true&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">storage&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dbPath&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">/mongodb/data&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># data directory&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">engine&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">wiredTiger &lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c">#存储引擎&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">journal&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c">#是否启用journal日志&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">enabled&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kc">true&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">net&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">bindIp&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">0.0.0.0&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">port&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">27017&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># port&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">processManagement&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">fork&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kc">true&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>系统日志 &lt;code>systemLog&lt;/code>：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>logAppend&lt;/strong>：是否启用日志追加模式。&lt;/li>
+&lt;/ul>
+&lt;p>存储 &lt;code>storage&lt;/code>：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>dbPath&lt;/strong>：数据文件存放目录。&lt;/li>
+&lt;li>&lt;strong>engine&lt;/strong>：存储引擎，默认为 &lt;code>wiredTiger&lt;/code>。&lt;/li>
+&lt;li>&lt;strong>journal&lt;/strong>：是否启用 journal 日志。journal 日志是 MongoDB 的一种日志机制，&lt;strong>类似于 MySQL 的 redo log&lt;/strong>。MongoDB 在写入数据时，先写入缓冲区，默认是 100ms 刷盘一次，这就意味着在这 100ms 内，如果服务器宕机，那么数据就会丢失。如果业务对数据的可靠性要求比较高，那么最好开启 journal 日志。如果是存储日志之类的，那么可以不开启 journal 日志。&lt;/li>
+&lt;/ul>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 启动 mongodb 服务&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">bin/mongod -f /mongodb/conf/mongo.conf&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>&lt;strong>关闭 MongoDB 服务&lt;/strong>：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mongod --port&lt;span class="o">=&lt;/span>&lt;span class="m">27017&lt;/span> --dbpath&lt;span class="o">=&lt;/span>/mongodb/data --shutdown
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 或者&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 进入 mongosh&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">bin/mongosh
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 关闭服务&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&amp;gt; use admin
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 关闭 MongoDB server 服务&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">admin&amp;gt; db.shutdownServer&lt;span class="o">()&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;h3>mongosh 使用&lt;span class="hx-absolute -hx-mt-20" id="mongosh-使用">&lt;/span>
+&lt;a href="#mongosh-%e4%bd%bf%e7%94%a8" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h3>&lt;p>mongosh 是 MongoDB 的交互式 JavaScript Shell 界面，它为系统管理员提供了强大的界面，并为开发人员提供了直接测试数据库查询和操作的方法。&lt;/p>
+&lt;p>下载地址：https://www.mongodb.com/try/download/shell&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># centos7 安装 mongosh&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">wget https://downloads.mongodb.com/compass/mongodb-mongosh-1.8.0.x86_64.rpm
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">yum install -y mongodb-mongosh-1.8.0.x86_64.rpm
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 连接 mongodb server端&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># --port:指定端口，默认为 27017&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># --host:连接的主机地址，默认 127.0.0.1&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">mongosh --host&lt;span class="o">=&lt;/span>192.168.65.206 --port&lt;span class="o">=&lt;/span>&lt;span class="m">27017&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">mongosh 192.168.65.206:27017
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 指定 uri 方式连接&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">mongosh mongodb://192.168.65.206:27017/test&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;h4>常用命令&lt;span class="hx-absolute -hx-mt-20" id="常用命令">&lt;/span>
+&lt;a href="#%e5%b8%b8%e7%94%a8%e5%91%bd%e4%bb%a4" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h4>&lt;ul>
+&lt;li>&lt;code>show dbs | show databases&lt;/code>：显示所有数据库。&lt;/li>
+&lt;li>&lt;code>use &amp;lt;dbname&amp;gt;&lt;/code>：切换到指定数据库。&lt;/li>
+&lt;li>&lt;code>db.dropDatabase()&lt;/code>：删除当前数据库。&lt;/li>
+&lt;li>&lt;code>show collections | show tables&lt;/code>：显示当前数据库中的所有集合。&lt;/li>
+&lt;li>&lt;code>db.&amp;lt;collectionName&amp;gt;.stat()&lt;/code>：显示集合详情。&lt;/li>
+&lt;li>&lt;code>db.&amp;lt;collectionName&amp;gt;.drop()&lt;/code>：删除集合。&lt;/li>
+&lt;li>&lt;code>show users&lt;/code>：显示当前数据库中的所有用户。&lt;/li>
+&lt;li>&lt;code>show roles&lt;/code>：显示当前数据库中的所有角色。&lt;/li>
+&lt;li>&lt;code>show profile&lt;/code>：显示最近发生的操作。&lt;/li>
+&lt;li>&lt;code>load('&amp;lt;filename&amp;gt;')&lt;/code>：加载并执行 JavaScript 文件。&lt;/li>
+&lt;li>&lt;code>exit | quit&lt;/code>：退出 mongosh。&lt;/li>
+&lt;li>&lt;code>help&lt;/code>：显示帮助信息。&lt;/li>
+&lt;li>&lt;code>db.help()&lt;/code>：显示当前数据库的帮助信息。&lt;/li>
+&lt;li>&lt;code>db.&amp;lt;collectionName&amp;gt;.help()&lt;/code>：显示集合的帮助信息。&lt;/li>
+&lt;li>&lt;code>db.version()&lt;/code>：显示 MongoDB 版本信息。&lt;/li>
+&lt;/ul>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="c1">#查看所有库&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">show dbs
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 切换到指定数据库，不存在则创建&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">use &lt;span class="nb">test&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 删除当前数据库 &lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">db.dropDatabase&lt;span class="o">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">#查看集合&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">show collections
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">#创建集合&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">db.createCollection&lt;span class="o">(&lt;/span>&lt;span class="s2">&amp;#34;emp&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">#删除集合&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">db.emp.drop&lt;span class="o">()&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>创建集合语法：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">db.createCollection&lt;span class="o">(&lt;/span>name, options&lt;span class="o">)&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>options 参数：&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>capped&lt;/code>：布尔类型，（可选）如果为 &lt;code>true&lt;/code>，则创建固定集合。固定集合是指有着固定大小的集合，当达到最大值时，它会自动覆盖最早的文档。&lt;/li>
+&lt;li>autoIndexId：指定是否自动创建 _id 字段的索引。&lt;/li>
+&lt;li>size：（可选）为固定集合指定一个最大值（以字节计）。如果 &lt;code>capped&lt;/code> 为 &lt;code>true&lt;/code>，需要指定该字段。&lt;/li>
+&lt;/ul>
+&lt;h3>安全认证&lt;span class="hx-absolute -hx-mt-20" id="安全认证">&lt;/span>
+&lt;a href="#%e5%ae%89%e5%85%a8%e8%ae%a4%e8%af%81" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h3>&lt;p>用用户名和密码来认证用户身份是 MongoDB 中最常用的安全认证方式。可以通过以下步骤实现：&lt;/p>
+&lt;ul>
+&lt;li>创建一个管理员用户（root）并设置密码，具有所有数据库的管理权限。&lt;/li>
+&lt;li>创建一个或多个普通用户，指定相应的数据库和集合权限，并设置密码。&lt;/li>
+&lt;/ul>
+&lt;p>启用认证后，客户端连接 MongoDB 服务器时需要提供用户名和密码才能成功连接。&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 设置管理员用户名密码需要切换到 admin 库&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">use admin
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 创建管理员&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">db.createUser&lt;span class="o">({&lt;/span>user:&lt;span class="s2">&amp;#34;fox&amp;#34;&lt;/span>,pwd:&lt;span class="s2">&amp;#34;fox&amp;#34;&lt;/span>,roles:&lt;span class="o">[&lt;/span>&lt;span class="s2">&amp;#34;root&amp;#34;&lt;/span>&lt;span class="o">]})&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 查看当前数据库所有用户信息 &lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">show users
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 显示可设置权限&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">show roles
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 显示所有用户&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">db.system.users.find&lt;span class="o">()&lt;/span> &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;h4>常用权限&lt;span class="hx-absolute -hx-mt-20" id="常用权限">&lt;/span>
+&lt;a href="#%e5%b8%b8%e7%94%a8%e6%9d%83%e9%99%90" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h4>&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>权限名&lt;/th>
+&lt;th>描述&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>read&lt;/td>
+&lt;td>允许用户读取指定数据库&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>readWrite&lt;/td>
+&lt;td>允许用户读写指定数据库&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>dbAdmin&lt;/td>
+&lt;td>允许用户在指定数据库中执行管理函数，如索引创建、删除，查看统计或访问 &lt;code>system.profile&lt;/code>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>dbOwner&lt;/td>
+&lt;td>允许用户在指定数据库中执行任意操作，增、删、改、查等&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>userAdmin&lt;/td>
+&lt;td>允许用户向 &lt;code>system.users&lt;/code> 集合写入，可以在指定数据库里创建、删除和管理用户&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>clusterAdmin&lt;/td>
+&lt;td>只在 &lt;code>admin&lt;/code> 数据库中可用，赋予用户所有分片和复制集相关函数的管理权限&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>readAnyDatabase&lt;/td>
+&lt;td>只在 &lt;code>admin&lt;/code> 数据库中可用，赋予用户所有数据库的读权限&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>readWriteAnyDatabase&lt;/td>
+&lt;td>只在 &lt;code>admin&lt;/code> 数据库中可用，赋予用户所有数据库的读写权限&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>userAdminAnyDatabase&lt;/td>
+&lt;td>只在 &lt;code>admin&lt;/code> 数据库中可用，赋予用户所有数据库的 &lt;code>userAdmin&lt;/code> 权限&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>dbAdminAnyDatabase&lt;/td>
+&lt;td>只在 &lt;code>admin&lt;/code> 数据库中可用，赋予用户所有数据库的 &lt;code>dbAdmin&lt;/code> 权限&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>root&lt;/td>
+&lt;td>只在 &lt;code>admin&lt;/code> 数据库中可用。超级账号，超级权限&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>修改用户操作权限：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">db.grantRolesToUser&lt;span class="o">(&lt;/span> &lt;span class="s2">&amp;#34;fox&amp;#34;&lt;/span> , &lt;span class="o">[&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">{&lt;/span> role: &lt;span class="s2">&amp;#34;clusterAdmin&amp;#34;&lt;/span>, db: &lt;span class="s2">&amp;#34;admin&amp;#34;&lt;/span> &lt;span class="o">}&lt;/span> ,
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">{&lt;/span> role: &lt;span class="s2">&amp;#34;userAdminAnyDatabase&amp;#34;&lt;/span>, db: &lt;span class="s2">&amp;#34;admin&amp;#34;&lt;/span>&lt;span class="o">}&lt;/span>,
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">{&lt;/span> role: &lt;span class="s2">&amp;#34;readWriteAnyDatabase&amp;#34;&lt;/span>, db: &lt;span class="s2">&amp;#34;admin&amp;#34;&lt;/span>&lt;span class="o">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="o">])&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>删除用户：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">db.dropUser&lt;span class="o">(&lt;/span>&lt;span class="s2">&amp;#34;fox&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 删除当前数据库所有用户&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">db.dropAllUser&lt;span class="o">()&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>用户认证，返回 1 表示认证成功：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">db.auth&lt;span class="o">(&lt;/span>&lt;span class="s2">&amp;#34;fox&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;fox&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="c1"># 认证成功返回 1&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>创建应用数据库用户：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 创建数据库&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">use mydb
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 创建用户&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">db.createUser&lt;span class="o">({&lt;/span>user:&lt;span class="s2">&amp;#34;fox&amp;#34;&lt;/span>,pwd:&lt;span class="s2">&amp;#34;fox&amp;#34;&lt;/span>,roles:&lt;span class="o">[&lt;/span>&lt;span class="s2">&amp;#34;readWrite&amp;#34;&lt;/span>&lt;span class="o">]})&lt;/span> &lt;span class="c1"># 读写权限&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;h4>MongoDB 启用鉴权&lt;span class="hx-absolute -hx-mt-20" id="mongodb-启用鉴权">&lt;/span>
+&lt;a href="#mongodb-%e5%90%af%e7%94%a8%e9%89%b4%e6%9d%83" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h4>&lt;p>默认情况下，MongoDB 不会启用鉴权，以鉴权模式启动 MongoDB：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 启动 mongodb 服务&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">bin/mongod -f /mongodb/conf/mongo.conf --auth&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;p>启用鉴权之后，连接 MongoDB 的相关操作都需要提供身份认证：&lt;/p>
+&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mongosh 192.168.65.206:27017 -u fox -p fox --authenticationDatabase&lt;span class="o">=&lt;/span>admin&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;h3>Docker 安装&lt;span class="hx-absolute -hx-mt-20" id="docker-安装">&lt;/span>
+&lt;a href="#docker-%e5%ae%89%e8%a3%85" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h3>&lt;div class="hextra-code-block hx-relative hx-mt-6 first:hx-mt-0 hx-group/code">
+&lt;div>&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 拉取 mongo 镜像&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">docker pull mongo:6.0.5
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 运行 mongo 镜像&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">docker run --name mongo-server -p 29017:27017 &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>-e &lt;span class="nv">MONGO_INITDB_ROOT_USERNAME&lt;/span>&lt;span class="o">=&lt;/span>fox &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>-e &lt;span class="nv">MONGO_INITDB_ROOT_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>fox &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>-d mongo:6.0.5 --wiredTigerCacheSizeGB &lt;span class="m">1&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1"># 连接 mongo 容器&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">mongosh ip:29017 -u fox -p fox&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>&lt;div class="hextra-code-copy-btn-container hx-opacity-0 hx-transition group-hover/code:hx-opacity-100 hx-flex hx-gap-1 hx-absolute hx-m-[11px] hx-right-0 hx-top-0">
+&lt;button
+class="hextra-code-copy-btn hx-group/copybtn hx-transition-all active:hx-opacity-50 hx-bg-primary-700/5 hx-border hx-border-black/5 hx-text-gray-600 hover:hx-text-gray-900 hx-rounded-md hx-p-1.5 dark:hx-bg-primary-300/10 dark:hx-border-white/10 dark:hx-text-gray-400 dark:hover:hx-text-gray-50"
+title="Copy code"
+>
+&lt;div class="copy-icon group-[.copied]/copybtn:hx-hidden hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;div class="success-icon hx-hidden group-[.copied]/copybtn:hx-block hx-pointer-events-none hx-h-4 hx-w-4">&lt;/div>
+&lt;/button>
+&lt;/div>
+&lt;/div>
+&lt;div class="hx-overflow-x-auto hx-mt-6 hx-flex hx-rounded-lg hx-border hx-py-2 ltr:hx-pr-4 rtl:hx-pl-4 contrast-more:hx-border-current contrast-more:dark:hx-border-current hx-border-blue-200 hx-bg-blue-100 hx-text-blue-900 dark:hx-border-blue-200/30 dark:hx-bg-blue-900/30 dark:hx-text-blue-200">
+&lt;div class="ltr:hx-pl-3 ltr:hx-pr-2 rtl:hx-pr-3 rtl:hx-pl-2">&lt;div class="hx-select-none hx-text-xl" style="font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';">ℹ️&lt;/div>&lt;/div>
+&lt;div class="hx-w-full hx-min-w-0 hx-leading-7">
+&lt;div class="hx-mt-6 hx-leading-7 first:hx-mt-0">&lt;p>&lt;code>--wiredTigerCacheSizeGB&lt;/code> 选项用于设置 WiredTiger 引擎的缓存大小。&lt;/p>
+&lt;p>WiredTiger 引擎使用缓存来提高读取性能。通过设置 &lt;code>--wiredTigerCacheSizeGB&lt;/code>，可以指定 WiredTiger 引擎的缓存大小，以提高读取性能。&lt;/p>
+&lt;p>默认情况下，MongoDB 会将 &lt;code>wiredTigerCacheSizeGB&lt;/code> 设置为与主机总内存成比例的值（&lt;code>RAM - 1/2&lt;/code>，大概占机器一半的运行内存），而不考虑你可能对容器施加的内存限制。&lt;/p>
+&lt;p>&lt;code>MONGO_INITDB_ROOT_USERNAME&lt;/code> 和 &lt;code>MONGO_INITDB_ROOT_PASSWORD&lt;/code> 都存在就会启用身份认证（&lt;code>mongod --auth&lt;/code>）&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;h2>常用工具&lt;span class="hx-absolute -hx-mt-20" id="常用工具">&lt;/span>
+&lt;a href="#%e5%b8%b8%e7%94%a8%e5%b7%a5%e5%85%b7" class="subheading-anchor" aria-label="Permalink for this section">&lt;/a>&lt;/h2>&lt;p>官方 GUI COMPASS，MongoDB 图形化管理工具。下载地址：https://www.mongodb.com/zh-cn/products/compass。&lt;/p>
+&lt;p>MongoDB Database Tools，下载地址：https://www.mongodb.com/try/download/database-tools。&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>文件名称&lt;/th>
+&lt;th>描述&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>mongostat&lt;/td>
+&lt;td>数据库性能监控工具&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>mongotop&lt;/td>
+&lt;td>热点表监控工具&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>mongodump&lt;/td>
+&lt;td>数据库逻辑备份工具&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>mongorestore&lt;/td>
+&lt;td>数据库逻辑恢复工具&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>mongoimport&lt;/td>
+&lt;td>数据导入工具&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>mongoexport&lt;/td>
+&lt;td>数据导出工具&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>bsondump&lt;/td>
+&lt;td>BSON 格式转换工具&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>mongofiles&lt;/td>
+&lt;td>GridFS 文件管理工具&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table></description></item><item><title>核心设计与原理</title><link>https://shipengqi.github.io/db-learn/docs/mongo/advanced/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://shipengqi.github.io/db-learn/docs/mongo/advanced/</guid><description/></item></channel></rss>

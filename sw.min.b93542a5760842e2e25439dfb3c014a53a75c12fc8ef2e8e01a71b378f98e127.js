@@ -1,1 +1,0 @@
-if(navigator.serviceWorker){navigator.serviceWorker.register("/db-learn/sw.js",{scope:"/db-learn/"});}
