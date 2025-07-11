@@ -1,106 +1,160 @@
 ---
 title: 事务
+weight: 13
 ---
 
-为了确保连续多个操作的原子性，一个成熟的数据库通常都会有事务支持，Redis 也支持简单的事务模型。
+事务表示一组动作，要么全部执行，要么全部不执行。
 
-## 使用
+## Redis 事务
 
-每个事务的操作都有 `begin`、`commit` 和 `rollback` 三个指令：
+Redis 提供了简单的事务功能，将一组需要一起执行的命令放到 `multi` 和 `exec` 两个命令之间。
 
-- `begin` 事务的开始
-- `commit` 事务的提交
-- `rollback` 事务的回滚
+`multi` 命令代表事务开始，`exec` 命令代表事务结束，如果要停止事务的执行，可以使用 `discard` 命令代替 `exec` 命令即可。它们之间的命令是原子顺序执行的，例如：
 
-```java
-begin();
-try {
-    command1();
-    command2();
-    ....
-    commit();
-} catch(Exception e) {
-    rollback();
-}
+```bash
+redis> multi
+OK
+redis> sadd u:a:follow ub
+QUEUED
+redis> sadd u:b:fans ua
+QUEUED
 ```
 
-Redis 在形式上看起来也差不多，分别是 `multi/exec/discard`。
+命令返回的是 `QUEUED`，代表命令并**没有真正执行，而是暂时保存在 Redis 中的一个缓存队列**（所以 **`discard` 也只是丢弃这个缓存队列中的未执行命令**，并**不会回滚已经操作过的数据**，这一点要和关系型数据库的 rollback 操作区分开）。
 
-- `multi` 事务的开始
-- `exec` 事务的执行
-- `discard` 事务的丢弃
+如果此时另一个客户端执行 `sismember u:a:follow ub` 返回结果应该为 0，因为上面的命令还没有执行。
 
-```sh
-> multi
-OK
-> incr books
-QUEUED
-> incr books
-QUEUED
-> exec
+```bash
+redis> sismember u:a:follow ub
+(integer) 0
+```
+
+只有当执行 `exec` 命令后，会将缓存队列中的命令按照顺序执行，并返回执行结果。
+
+```bash
+redis> exec
+1) (integer) 1
+2) (integer) 1
+```
+
+另一个客户端：
+
+```bash
+redis> sismember u:a:follow ub
 (integer) 1
-(integer) 2
 ```
 
-上面的指令演示了一个完整的事务过程，所有的指令在 `exec` 之前不执行，而是缓存在服务器的一个事务队列中，服务器一旦收到 `exec` 指令，才
-开执行整个事务队列，执行完毕后一次性返回所有指令的运行结果。因为 Redis 的单线程特性，它不用担心自己在执行队列的时候被其它指令打搅，可
-以保证他们能得到的**原子性**执行。
 
-## 原子性
+如果事务中的命令出现错误,Redis 的处理机制也不尽相同。如果是 MySQL 数据库，事务中的错误会导致整个事务的执行失败，并且会回滚到事务开始之前的状态。
 
-```sh
-> multi
+而 Redis 中，事务中的错误分为两种情况：
+
+1. 命令错误
+
+例如下面操作错将 `set` 写成了 `sett`，属于语法错误，会造成整个事务无法执行，key 和counter 的值未发生变化：
+
+```bash
+redis> set txkey hello
 OK
-> set books iamastring
+redis> set txcount 100
+OK
+redis> mget txkey txcount
+1) "hello"
+2) "100"
+
+
+redis> multi
+OK
+redis> set k v
 QUEUED
-> incr books
+redis> sett txkey world
+(error) ERR unknown command `sett`, with args beginning with: `txkey`, `world`, 
+redis> incr txcount
 QUEUED
-> set poorman iamdesperate
-QUEUED
-> exec
-1) OK
-2) (error) ERR value is not an integer or out of range
-3) OK
-> get books
-"iamastring"
->  get poorman
-"iamdesperate
+redis> exec
+(error) EXECABORT Transaction discarded because of previous errors.
+redis> mget txkey txcount
+1) "hello"
+2) "100"
 ```
 
-`QUEUED` 是一个简单字符串，同 OK 是一个形式，它表示指令已经被服务器缓存到队列里了。
+可以看出，对于**命令错误，Redis 会将整个事务的放弃，不执行任何命令**，并且返回错误信息。
 
-上面的例子是事务执行到中间遇到失败了，因为不能对一个字符串进行数学运算，事务在遇到指令执行失败后，后面的指令还继续执行，
-所以 `poorman` 的值能继续得到设置。
+2. 运行时错误
 
-到这里，应该明白 **Redis 的事务根本不能算"原子性"，而仅仅是满足了事务的"隔离性"，隔离性中的串行化 —— 当前执行的事务有着不被其
-它事务打断的权利**。
+例如用户 B 在添加粉丝列表时，误把 `sadd` 命令 (针对集合) 写成了 `zadd` 命令 (针对有序集合)，这种就是运行时命令，因为语法是正确的：
 
-## discard(丢弃)
+```bash
+redis> multi
+OK
+redis> sadd u:a:follow ub
+QUEUED
+redis> zadd u:b:fans 1 uc
+QUEUED
+redis> exec
+1) (integer) 1
+2) (error) WRONGTYPE Operation against a key holding the wrong kind of value
+redis> sismember u:c:follow ub
+(integer) 1
+```
 
-**`discard` 指令，用于丢弃事务缓存队列中的所有指令，在 `exec` 执行之前**。
+`u:b:fans` 在前面已经是一个集合了，但是 `zadd` 是操作有序集合的命令，虽然命令没有错，但是运行时会出现错误。
 
-```sh
-> get books
+可以看出，命令没有错，在运行时才出现的错误，Redis 会**将其他命令正常执行**，并没有全部回滚。如果碰到这种问题，需要开发人员根据具体情况进行处理。
+
+### watch 命令
+
+有些应用场景需要在事务之前，确保事务中的 key 没有被其他客户端修改过，才执行事务，否则不执行 (类似乐观锁)。
+
+可以使用 `watch` 命令来实现，例如：
+
+客户端 1：
+
+```bash
+redis> set testwatch java
+OK
+redis> watch testwatch
+OK
+redis> multi
+OK
+redis>
+```
+
+客户端 2：
+
+```bash
+redis> append testwatch python
+(integer) 10
+```
+
+客户端 1：
+
+```bash
+redis> append testwatch jedis
+QUEUED
+redis> exec
 (nil)
-> multi
-OK
-> incr books
-QUEUED
-> incr books
-QUEUED
-> discard
-OK
-> get books
-(nil)
+redis> get testwatch
+"javapython"
 ```
 
-## 优化
+可以看到“客户端-1”在执行 `multi` 之前执行了 `watch` 命令，“客户端-2”在“客户端-1”执行 `exec` 之前修改了 key 值，造成“客户端-1”事务没有执行 ( `exec` 结果为 `nil`，就是因为 `watch` 命令观察到 key 值被修改了，导致事务没有执行)。
 
-上面的 Redis 事务在发送每个指令到事务缓存队列时都要经过一次网络读写，当一个事务内部的指令较多时，需要的网络 IO 时间也会线性增长。所以
-通常 Redis 的客户端在执行事务时都会结合 `pipeline` 一起使用，这样可以将多次 IO 操作压缩为单次 IO 操作。比如 Python 的 Redis 客
-户端时执行事务时是要强制使用 `pipeline` 的。
+{{< callout type="info" >}}
+Redis 禁止在 `multi` 和 `exec` 之间执行 `watch` 指令，而必须在 `multi` 之前做好盯住关键变量，否则会出错。
+{{< /callout >}}
 
-```py
+## Pipeline 和事务的区别
+
+1. pipeline 是客户端的行为，对于服务器来说无法区分客户端发送来的查询命令是以普通命令的形式还是以 pipeline 的形式发送到服务器的。
+2. 事务则是实现在服务器端的行为，用户执行 `MULTI` 命令时，服务器会将对应这个用户的客户端对象设置为一个特殊的状态，在这个状态下后续用户执行的查询命令不会被真的执行，而是被服务器缓存起来，直到用户执行 `EXEC` 命令为止，服务器会将这个用户对应的客户端对象中缓存的命令按照提交的顺序依次执行。
+3. 应用 pipeline 可以提服务器的吞吐能力，并提高 Redis 处理查询请求的能力。但是无法保证原子性。
+
+## 优化 
+
+可以**将事务和 pipeline 结合起来**使用，**减少事务的命令在网络上的传输时间**，将多次网络 IO 缩减为一次网络 IO。
+
+```python
 pipe = redis.pipeline(transaction=true)
 pipe.multi()
 pipe.incr("books")
@@ -108,45 +162,6 @@ pipe.incr("books")
 values = pipe.execute()
 ```
 
-## Watch
+## 总结
 
-考虑到一个业务场景，Redis 存储了我们的账户余额数据，它是一个整数。现在有两个并发的客户端要对账户余额进行修改操作，这个修改不是一个
-简单的 incrby 指令，而是要对余额乘以一个倍数。Redis 可没有提供 multiplyby 这样的指令。我们需要先取出余额然后在内存里乘以倍数，再将
-结果写回 Redis。
-
-这就会出现并发问题，因为有多个客户端会并发进行操作。我们可以通过 Redis 的分布式锁来避免冲突，这是一个很好的解决方案。**分布式锁是一
-种悲观锁，那是不是可以使用乐观锁的方式来解决冲突**？
-
-Redis 提供了这种 `watch` 的机制，它就是一种乐观锁。有了 `watch` 又多了一种可以用来解决并发修改的方法。 `watch` 的使用方式如下：
-
-```py
-while True:
-    do_watch()
-    commands()
-    multi()
-    send_commands()
-    try:
-        exec()
-        break
-    except WatchError:
-        continue
-```
-
-**`watch` 会在事务开始之前盯住 1 个或多个关键变量，当事务执行时，也就是服务器收到了 `exec` 指令要顺序执行缓存的事务队列时，Redis 会
-检查关键变量自 `watch` 之后，是否被修改了 (包括当前事务所在的客户端)**。如果关键变量被人动过了，`exec` 指令就会返回 `null` 回复告知
-客户端事务执行失败，这个时候客户端一般会选择重试。
-
-```sh
-> watch books
-OK
-> incr books  # 被修改了
-(integer) 1
-> multi
-OK
-> incr books
-QUEUED
-> exec  # 事务执行失败
-(nil)
-```
-
-> **Redis 禁止在 `multi` 和 `exec` 之间执行 `watch` 指令，而必须在 `multi` 之前做好盯住关键变量，否则会出错**。
+Redis 的事务过于简单，可以使用 Lua 脚本实现复杂的事务。

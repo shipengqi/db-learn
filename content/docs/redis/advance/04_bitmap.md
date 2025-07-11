@@ -1,273 +1,128 @@
 ---
 title: 位图
-wight: 4
+weight: 4
 ---
 
-位图不是特殊的数据结构，它的内容其实就是普通的字符串，也就是 `byte` 数组。
-在日常开发中，可能会有一些 `bool` 型数据需要存取，如果使用普通的 `key/value` 方式存储，会浪费很多存储空间,比如签到记录，签
-了是 `true`，没签是 `false`，记录 365 天。如果每个用户存储 365 条记录，当用户量很庞大的时候，需要的存储空间是惊人的。
+位图不是特殊的数据结构，它的内容其实就是普通的字符串，也就是 **`byte` 数组**。
 
-对于这种操作，Redis 提供了位操作，这样每天的签到记录只占据一个位，用 1 表示已签到，0 表示没签，那么 365 天就是 365 个 bit，46 个字节
-就可以完全容纳下，大大节约了存储空间。
+在日常开发中，可能会有一些 `bool` 型数据需要存取，如果使用普通的 `key/value` 方式存储，会浪费很多存储空间,比如签到记录，签了是 `true`，没签是 `false`，记录 365 天。如果每个用户存储 365 条记录，当用户量很庞大的时候，需要的存储空间是惊人的。
 
-### SETBIT
+对于这种操作，Redis 提供了位操作，这样每天的签到记录只占据一个位，用 1 表示已签到，0 表示没签，那么 365 天就是 365 个 bit，46 个字节就可以完全容纳下，大大节约了存储空间。
 
-Redis 的位数组是自动扩展，如果设置了某个偏移位置超出了现有的内容范围，就会自动将位数组进行零扩充。
-
-```bash
-SETBIT key offset value
+```
+11001101010010
 ```
 
-设置指定偏移量上的 bit 的值。`value` 的值是 `0` 或 `1`。当 `key` 不存在时，自动生成一个新的 key。
-`offset` 参数的取值范围为大于等于 `0`，小于 `2^32`(bit 映射限制在 512 MB 以内)。
+当我们要统计月活的时候，因为需要去重，需要使用 `set` 来记录所有活跃用户的 id，这非常浪费内存。这时就可以考虑使用位图来标记用户的活跃状态。每个用户会都在这个位图的一个确定位置上，0 表示不活跃，1 表示活跃。然后到月底遍历一次位图就可以得到月度活跃用户数。不过这个方法也是有条件的，那就是 `userid` 是整数连续的（用户 id 作为 offset），并且活跃占比较高，否则可能得不偿失。
+
+## 基本使用
+
+Redis 的位数组是**自动扩展**的，如果设置了某个偏移位置超出了现有的内容范围，就会自动将位数组进行零扩充。
+
+### setbit
+
+设置指定偏移量上的 bit 的值：
+
+```
+setbit key offset 0|1
+```
+
+- 当 key 不存在时，**自动创建一个新的 key**。
+- `offset` 参数的取值范围为大于等于 `0`，小于 `2^32`(bit 映射限制在 `512MB` 以内)。
 
 ```bash
-redis> SETBIT testbit 100 1
+# 日活场景，设置 11 月 11 日用户 100 的登录状态为 1
+redis> setbit login_11_11 100 1
 (integer) 0
-redis> GETBIT testbit 100
+redis> getbit login_11_11 100
 (integer) 1
-redis> GETBIT testbit 101
+redis> getbit login_11_11 101
 (integer) 0 # bit 默认被初始化为 0
+redis> strlen login_11_11 # 查看长度
+(integer) 13 # 13 个字节
+redis> type login_11_11 # 查看类型
+string # 字符串类型
+redis> get login_11_11 # 查看值
+"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01" # 13 个字节的字符串
 ```
 
-### GETBIT
+{{< callout type="info" >}}
+上面的 length 之所以是 13 个字节，是因为 `100` 表示的是偏移量为 `100` 的 bit，而一个字节有 8 个 bit，所以需要 13 个字节才能表示偏移量为 `100` 的 bit。
+{{< /callout >}}
 
-获取指定偏移量上的位 bit 的值。
+### getbit
 
-```bash
-GETBIT key offset
-```
-
-如果 `offset` 比字符串值的长度大，或者 `key` 不存在时，返回 `0`。
+获取指定偏移量上的 bit 的值：
 
 ```bash
-redis> EXISTS testbit2
+redis> exists testbit2
 (integer) 0
-redis> GETBIT testbit2 100
+redis> getbit testbit2 100
 (integer) 0
-
-redis> SETBIT testbit2 100 1
+redis> setbit testbit2 100 1
 (integer) 0
-redis> GETBIT bit 100
+redis> getbit testbit2 100
 (integer) 1
 ```
 
-### BITPOS
+**`offset` 比字符串值的长度大，或者 key 不存在时，返回 `0`**。
 
-获取 key 里面第一个被设置为 `1` 或者 `0` 的 `bit` 位。
-`BITPOS` 可以用来做查找，例如，查找用户从哪一天开始第一次签到。如果指定了范围参数 `start`, `end`，就可以统计在某个时间范围内
-用户签到了多少天，用户自某天以后的哪天开始签到。
+### 统计
+
+- 统计指令 `bitcount` 用来统计指定位置范围内 1 的个数。
+- `bitop` 指令用来对多个 `bit` 数组进行位运算。
+
+比如可以通过 `bitcount` 统计用户一共签到了多少天，如果指定了范围参数 `[start, end]`，就可以统计在某个时间范围内用户签到了多少天。
+
+**`start` 和 `end` 参数是字节索引，也就是说指定的位范围必须是 8 的倍数**，而不能任意指定。
 
 ```bash
-BITPOS key value start end
+redis> setbit login_11_11 100 1 # 模拟用户 100 签到
+(integer) 0
+redis> setbit login_11_11 101 1 # 模拟用户 101 签到
+(integer) 0
+redis> setbit login_11_11 102 1 # 模拟用户 102 签到
+(integer) 0
+redis> setbit login_11_11 103 1 # 模拟用户 103 签到
+(integer) 0
+redis> bitcount login_11_11 # 统计 bit 为 1 的数量，没有指定范围，默认是整个字符串
+(integer) 4
+redis> strlen login_11_11 # 查看长度
+(integer) 13 # 13 个字节
+redis> bitcount login_11_11 0 12 # 0 是第一个字节，12 是最后一个字节，统计 0-12 字节范围内 bit 为 1 的数量
+(integer) 4
 ```
 
-`value` 是 `0` 或者 `1`。如果我们在空字符串或者 `0` 字节的字符串里面查找 `bit` 为 `1` 的内容，那么结果将返回 `-1`。
-`start` 和 `end` 也可以包含负值，负值将从字符串的末尾开始计算，`-1` 是字符串的最后一个字节，`-2` 是倒数第二个，等等。
-`start` 和 `end` 参数是字节索引，也就是说指定的位范围必须是 8 的倍数，而不能任意指定。
-不存在的 `key` 将会被当做空字符串来处理。
+假设要统计用户连续登录的情况，比如用户 100 连续登录了 5 天，用户 101 连续登录了 3 天。
 
-```bash
-redis> SET testbit3 hello
-OK
-redis> BITPOS testbit3 1 # 第一个 1 位
-(integer) 1
-redis> BITPOS testbit3 0 # 第一个 0 位
-(integer) 0
-redis> SET mykey "\xff\xf0\x00"
-OK
-redis> BITPOS mykey 0 # 查找字符串里面bit值为0的位置
-(integer) 12
-redis> SET mykey "\x00\xff\xf0"
-OK
-redis> BITPOS mykey 1 0 # 查找字符串里面bit值为1从第0个字节开始的位置
-(integer) 8
-redis> BITPOS mykey 1 2 # 查找字符串里面bit值为1从第2个字节(12)开始的位置
-(integer) 16
-redis> set mykey "\x00\x00\x00"
-OK
-redis> BITPOS mykey 1 # 查找字符串里面bit值为1的位置
-(integer) -1
+可以将几天的数据进行**位运算**，然后再统计结果中 1 的个数。
+
+```
+login_11_07: 0 1 0 1 1 1 0 1 1 1 0 1 0 0 0 1
+login_11_08: 0 0 0 1 0 1 0 1 1 1 0 1 0 0 0 1
+login_11_09: 1 0 0 1 1 0 0 1 1 1 0 1 0 0 0 1
+login_11_10: 1 1 0 1 0 1 0 1 1 1 0 1 0 0 0 1
+login_11_11: 1 1 0 1 0 0 0 1 1 1 0 1 0 0 0 1
+----------------------------------------------
+             0 0 0 1 0 0 0 1 1 1 0 1 0 0 0 1 # 按位与运算，连续登录的人数
+             1 1 0 1 1 1 0 1 1 1 0 1 0 0 0 1 # 按位或运算，只要有一天登录，就为 1，可以用来统计周活，月活等
 ```
 
-### BITOP
-
-对一个或多个保存二进制位的字符串 `key` 进行位元操作，并将结果保存到 `destkey` 上。处理不同长度的字符串时，较短的那个字符串所缺少的部分
-会被看作 `0`，空的 `key` 也被看作是包含 `0` 的字符串序列。
+`bitop` 示例：
 
 ```bash
-BITOP operation destkey key [key ...]
-```
-
-`operation`有四种操作可选：
-
-- `AND`，对一个或多个 `key` 值求逻辑并。
-- `OR`，对一个或多个 `key` 值求逻辑或。
-- `XOR`，对一个或多个 `key` 值求逻辑异或。
-- `NOT`，对给定 `key` 值求逻辑非，**注意 `NOT` 操作，只可以接收一个 `key` 作为输入，其他三个操作一个或多个**。
-
-`BITOP` 的复杂度为 `O(N)`，当处理大型矩阵(matrix)或者进行大数据量的统计时，最好将任务指派到 `slave` 进行，避免阻塞主节点。
-
-```bash
-redis> SETBIT testbit1 0 1        # testbit1 = 1001
+redis> setbit login_11_10 100 1 # 模拟用户 100 签到
 (integer) 0
-redis> SETBIT testbit1 3 1
+redis> setbit login_11_10 101 1 # 模拟用户 101 签到
 (integer) 0
-redis> SETBIT testbit2 0 1        # testbit2 = 1101
+redis> setbit login_11_10 102 1 # 模拟用户 102 签到
 (integer) 0
-redis> SETBIT testbit2 1 1
-(integer) 0
-redis> SETBIT testbit2 3 1
-(integer) 0
-redis> BITOP AND andresult testbit1 testbit2
-(integer) 1
-redis> GETBIT andresult 0      # andresult = 1001
-(integer) 1
-redis> GETBIT andresult 1
-(integer) 0
-redis> GETBIT andresult 2
-(integer) 0
-redis> GETBIT andresult 3
-(integer) 1
-```
-
-### BITCOUNT
-
-可以用来做高位统计，例如，统计用户一共签到了多少天。
-计算指定 key 中，比特位被设置为 `1` 的数量。指定可选参数 `start` 和 `end` 时只统计指定位上的字符，否则统计全部。
-
-```bash
-BITPOS key value start end
-```
-
-```bash
-redis> BITCOUNT testbit4
-(integer) 0
-
-redis> SETBIT testbit4 0 1          # 0001
-(integer) 0
-
-redis> BITCOUNT testbit4
-(integer) 1
-
-redis> SETBIT testbit4 3 1          # 1001
-(integer) 0
-
-redis> BITCOUNT testbit4
-(integer) 2
-```
-
-### BITFIELD
-
-`SETBIT` 和 `GETBIT` 都只能操作一个 `bit`，如果要操作多个 `bit` 就使用 `BITFIELD`。
-
-`BITFIELD` 有四个子指令：
-
-- `GET type offset`，返回指定的位域
-- `SET type offset value`，设置指定位域的值并返回它的原值
-- `INCRBY type offset increment`，自增或自减（如果 increment 为负数）指定位域的值并返回它的新值
-- `OVERFLOW [WRAP|SAT|FAIL]`，溢出策略子指令，通过设置溢出行为来改变调用 INCRBY 指令的后序操作
-
-`GET`，`SET`，`INCRBY` 最多只能处理 64 个连续的位，超过 64 位，就得使用多个子指令，`BITFIELD` 可以一次执行多个子指令。
-
-#### `GET` 子指令
-
-```bash
-redis> set w hello
-OK
-redis> BITFIELD w get u4 0  # 从第一个位开始取 4 个位，结果是无符号数 (u)
-(integer) 6
-redis> BITFIELD w get u3 2  # 从第三个位开始取 3 个位，结果是无符号数 (u)
-(integer) 5
-redis> BITFIELD w get i4 0  # 从第一个位开始取 4 个位，结果是有符号数 (i)
-1) (integer) 6
-redis> BITFIELD w get i3 2  # 从第三个位开始取 3 个位，结果是有符号数 (i)
-1) (integer) -3
-
-# 执行多个子命令
-redis> BITFIELD w get u4 0 get u3 2 get i4 0 get i3 2
-1) (integer) 6
-2) (integer) 5
-3) (integer) 6
-4) (integer) -3
-```
-
-有符号数最多可以获取 64 位，无符号数只能获取 63 位 (Redis 中的 `integer` 是有符号数，最大 64 位，不能传递 64 位无符号值)。如果超
-出位数限制， Redis 就会告诉你参数错误。
-
-#### SET 子指令
-
-`SET` 子指令将第二个字符 `e` 改成 `a`，`a` 的 `ASCII` 码是 `97`：
-
-```bash
-redis> BITFIELD w set u8 8 97  # 从第 8 个位开始，将接下来的 8 个位用无符号数 97 替换
-1) (integer) 101
-redis> get w
-"hallo"
-```
-
-#### INCRBY 子指令
-
-它用来对指定范围的位进行自增操作。既然提到自增，就有可能出现溢出。如果增加了正数，会出现上溢，如果增加的是负数，就会出现下溢出。
-Redis 默认的处理是折返。如果出现了溢出，就将溢出的符号位丢掉。如果是 8 位无符号数 255，加 1 后就会溢出，会全部变零。如果是 8 位有符
-号数 127，加 1 后就会溢出变成 `-128`。
-
-```bash
-redis> set w hello
-OK
-redis> bitfield w incrby u4 2 1  # 从第三个位开始，对接下来的 4 位无符号数 +1
-1) (integer) 11
-redis> bitfield w incrby u4 2 1
-1) (integer) 12
-redis> bitfield w incrby u4 2 1
-1) (integer) 13
-redis> bitfield w incrby u4 2 1
-1) (integer) 14
-redis> bitfield w incrby u4 2 1
-1) (integer) 15
-redis> bitfield w incrby u4 2 1  # 溢出折返
-1) (integer) 0
-```
-
-##### OVERFLOW 子指令
-
-用户可以使用 `OVERFLOW` 来选择溢出行为，默认是折返 (wrap)。
-
-- `WRAP` 回环/折返 算法，默认是 `WRAP`，适用于有符号和无符号整型两种类型。对于无符号整型，回环计数将对整型最大值进行取模
-操作（C 语言的标准行为）。对于有符号整型，上溢从最负的负数开始取数，下溢则从最大的正数开始取数，例如，如果 i8 整型的值设为 127，自
-加 1 后的值变为 `-128`。
-- `SAT` 饱和截断算法，下溢之后设为最小的整型值，上溢之后设为最大的整数值。例如，i8 整型的值从 120 开始加 10 后，结果是 127，继续增
-加，结果还是保持为 127。下溢也是同理，但量结果值将会保持在最负的负数值。
-- `FAIL` 失败算法，这种模式下，在检测到上溢或下溢时，不做任何操作。相应的返回值会设为 NULL，并返回给调用者。
-
-```bash
-redis> set w hello
-OK
-redis> bitfield w overflow sat incrby u4 2 1
-1) (integer) 11
-redis> bitfield w overflow sat incrby u4 2 1
-1) (integer) 12
-redis> bitfield w overflow sat incrby u4 2 1
-1) (integer) 13
-redis> bitfield w overflow sat incrby u4 2 1
-1) (integer) 14
-redis> bitfield w overflow sat incrby u4 2 1
-1) (integer) 15
-redis> bitfield w overflow sat incrby u4 2 1  # 保持最大值
-1) (integer) 15
-
-redis> set w hello
-OK
-redis> bitfield w overflow fail incrby u4 2 1
-1) (integer) 11
-redis> bitfield w overflow fail incrby u4 2 1
-1) (integer) 12
-redis> bitfield w overflow fail incrby u4 2 1
-1) (integer) 13
-redis> bitfield w overflow fail incrby u4 2 1
-1) (integer) 14
-redis> bitfield w overflow fail incrby u4 2 1
-1) (integer) 15
-redis> bitfield w overflow fail incrby u4 2 1  # 不执行
-1) (nil)
+redis> bitop and login_11_10-11 login_11_10 login_11_11 # 按位与运算，连续登录的人数，and 表示按位与运算，结果保存在 login_11_10-11 中
+(integer) 13
+redis> bitcount login_11_10-11 # 统计连续登录的人数
+(integer) 3
+redis> bitop or login_11_10-11-active login_11_10 login_11_11 # 按位或运算，只要有一天登录，就为 1，or 表示按位或运算，结果保存在 login_11_10-11-active 中
+(integer) 13
+redis> bitcount login_11_10-11-active
+(integer) 4
 ```
