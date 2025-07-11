@@ -153,6 +153,8 @@ show variables like '%log_bin%';
 - `ROW`：基于行的复制，日志中会记录成每一行数据被修改的形式，然后在 slave 端再对相同的数据进行修改记录下每一行数据修改的细节，可以解决函数、存储过程等在 slave 机器的复制问题，但这种方式日志量较大，性能不如 `STATEMENT`。举个例子，假设 `update` 语句更新 `10` 行数据，`STATEMENT` 方式就记录这条 `update` 语句，而 `Row` 方式会记录被修改的 10 行数据。
 - `MIXED`：混合模式复制，实际就是前两种模式的结合，在 `MIXED` 模式下，MySQL 会根据执行的每一条具体的 SQL 语句来区分对待记录的日志形式，也就是在 `STATEMENT` 和 `ROW` 之间选择一种，如果 SQL 里有函数或一些在执行时才知道结果的情况，会选择 `ROW`，其它情况选择 `STATEMENT`，推荐使用这一种。
 
+**当表结构发生变化的时候，会使用 `STATEMENT` 合适**。
+
 ### binlog 的写入机制
 
 binlog 写入磁盘机制主要通过 `sync_binlog` 参数控制。与 redo log 类似，`sync_binlog` 也有三种取值：
