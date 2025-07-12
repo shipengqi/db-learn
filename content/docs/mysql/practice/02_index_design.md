@@ -41,6 +41,22 @@ latest_login_time>= xx
 
 `latest_login_time` 也是一个范围查找字段，如果把它放在联合索引里，如 `(province,city,sex,hobby,age,latest_login_time)`，`age` 和 `latest_login_time` 两个范围查找，显然是不行的。可以换一种思路，设计一个字段 `is_login_in_latest_7_days`，用户如果一周内有登录值就为 1，否则为 0，那么就可以把索引设计成 `(province,city,sex,hobby,is_login_in_latest_7_days,age)` 来满足上面那种场景。
 
+## 关联表建立索引
+
+```sql
+-- 用户-角色关联表（user_roles）
+CREATE TABLE user_roles (
+  user_id INT NOT NULL,
+  role_id INT NOT NULL,
+  PRIMARY KEY (user_id, role_id),  -- 联合主键
+  INDEX idx_role_id (role_id)      -- 反向查询索引
+);
+```
+
+- 若 `user_id` 查询频率 `> role_id`，则主键定义为 `PRIMARY KEY (user_id, role_id)`。
+- 通过 `user_id` 查 `role_id`，`PRIMARY KEY (user_id, role_id)`。
+- 通过 `role_id` 查 `user_id` 单独建 `INDEX (role_id)`。
+
 ## 只为用于搜索、排序或分组的列创建索引
 
 ## 不要在小基数字段上建立索引

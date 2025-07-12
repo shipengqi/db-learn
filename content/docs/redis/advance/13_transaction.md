@@ -3,7 +3,8 @@ title: 事务
 weight: 13
 ---
 
-事务表示一组动作，要么全部执行，要么全部不执行。
+事务表示一组动作，要么全部执行，要么全部不执行。**Redis 的事务总是具有 ACID 中的一致性和隔离性（单线程，不存在并发问题）**。开启持久化以后，Redis 事务也具有持久性。
+
 
 ## Redis 事务
 
@@ -51,7 +52,7 @@ redis> sismember u:a:follow ub
 
 1. 命令错误
 
-例如下面操作错将 `set` 写成了 `sett`，属于语法错误，会造成整个事务无法执行，key 和counter 的值未发生变化：
+例如下面操作错将 `set` 写成了 `sett`，属于语法错误，会造成整个事务无法执行，key 和 counter 的值未发生变化：
 
 ```bash
 redis> set txkey hello
@@ -100,7 +101,7 @@ redis> sismember u:c:follow ub
 
 `u:b:fans` 在前面已经是一个集合了，但是 `zadd` 是操作有序集合的命令，虽然命令没有错，但是运行时会出现错误。
 
-可以看出，命令没有错，在运行时才出现的错误，Redis 会**将其他命令正常执行**，并没有全部回滚。如果碰到这种问题，需要开发人员根据具体情况进行处理。
+可以看出，**命令没有错，在运行时才出现的错误，Redis 会将其他命令正常执行**，并没有全部回滚。如果碰到这种问题，需要开发人员根据具体情况进行处理。
 
 ### watch 命令
 
@@ -133,12 +134,12 @@ redis> append testwatch python
 redis> append testwatch jedis
 QUEUED
 redis> exec
-(nil)
+(nil) # 操作被打断了，返回 nil
 redis> get testwatch
 "javapython"
 ```
 
-可以看到“客户端-1”在执行 `multi` 之前执行了 `watch` 命令，“客户端-2”在“客户端-1”执行 `exec` 之前修改了 key 值，造成“客户端-1”事务没有执行 ( `exec` 结果为 `nil`，就是因为 `watch` 命令观察到 key 值被修改了，导致事务没有执行)。
+可以看到 “客户端-1” 在执行 `multi` 之前执行了 `watch` 命令，“客户端-2” 在 “客户端-1” 执行 `exec` 之前修改了 key 值，造成 “客户端-1” 事务没有执行 ( `exec` 结果为 `nil`，就是因为 `watch` 命令观察到 key 值被修改了，导致事务没有执行)。
 
 {{< callout type="info" >}}
 Redis 禁止在 `multi` 和 `exec` 之间执行 `watch` 指令，而必须在 `multi` 之前做好盯住关键变量，否则会出错。

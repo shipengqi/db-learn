@@ -194,7 +194,7 @@ redis> rpop books
 
 `lindex` 相当于 Java 链表的 `get(int index)` 方法，它需要对链表进行遍历，性能随着参数 `index` 增大而变差。
 
-`ltrim` 和字面上的含义不太一样，叫它 `lretain` (保留) 可能更合适一些，因为 `ltrim` 跟的两个参数 `start_index` 和 `end_index` 定义了一个区间，在这个区间内的值，`ltrim` 要保留，区间之外统统砍掉。可以通过 `ltrim` 来实现一个定长的链表，这一点非常有用。
+`ltrim` 的两个参数 `start_index` 和 `end_index` 定义了一个区间，在这个区间内的值，`ltrim` 要保留，区间之外统统砍掉。可以通过 `ltrim` 来实现一个定长的链表，这一点非常有用。
 
 **`index` 可以为负数，`index=-1` 表示倒数第一个元素，同样 `index=-2` 表示倒数第二个元素**。
 

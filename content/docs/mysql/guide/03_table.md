@@ -127,6 +127,13 @@ DROP TABLE 表1, 表2, ..., 表n;
 DROP TABLE first_table;
 ```
 
+{{< callout type="info" >}}
+- 在不再需要一张表的时候，用 `drop`；
+- 在想删除部分数据行时候，用 `delete`；
+- 在保留表而删除所有数据的时候用 `truncate`；
+{{< /callout >}}
+
+
 ### IF EXISTS
 
 和重复删除数据库一样，删除表时也可以使用 `IF EXISTS` 关键字，这样如果表存在，则删除表；如果表不存在，则不执行删除表的操作。
