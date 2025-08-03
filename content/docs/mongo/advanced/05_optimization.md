@@ -697,7 +697,7 @@ mongostat -h 192.168.65.174 --port 28017 -ufox -pfox --authenticationDatabase=ad
 - `--discover`：启用自动发现，可展示集群中所有分片节点的状态。
 - `-n 300 2`：表示输出 300 次，每次间隔 2s。也可以不指定 “-n 300”，此时会一直保持输出。
 
-![mongodb-mongostat](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-mongostat.png)
+![mongodb-mongostat](https://raw.gitcode.com/shipengqi/illustrations/blobs/dd137a9145214249a95e8e03928891d10c53495c/mongodb-mongostat.png)
 
 指标说明：
 

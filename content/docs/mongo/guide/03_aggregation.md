@@ -180,7 +180,7 @@ db.books.aggregate([
 ```javascript
 db.books.aggregate([
     {$match:{type:"technology"}}, // match 阶段筛选出 type 为 technology 的文档
-    {$count: "type_count"} // count 阶段返回聚合管道中剩余文档的计数，，并将该值分配给 type_count 字段
+    {$count: "type_count"} // count 阶段返回聚合管道中剩余文档的计数，并将该值分配给 type_count 字段
 ])
 ```
 
@@ -815,4 +815,4 @@ db.zips.aggregate( [
 
 - **方案一： `$sort + $limit`**：只排 Top N ，只要 N 条记录总和不超过 100MB 即可。
 - **方案二： `{allowDiskUse: true}`**：使用磁盘作为交换空间完成全量，超出 100MB 部分与磁盘交换排序。
-- **方案三： `索引排序`**：使用索引完成排序，没有内存限制
+- **方案三： `索引排序`**：使用索引完成排序，没有内存限制。

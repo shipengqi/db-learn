@@ -262,7 +262,7 @@ sh.addTagRange("other.systemLogs",{shardKey:MinKey},{shardKey:MaxKey},"olap")
 
 **在默认情况下，一个 chunk 的大小为 64 MB（MongoDB 6.0默认是 128M）**，该参数由配置的 `chunksize` 参数指定。如果持续地向该 chunk 写入数据，并导致数据量超过了 chunk 大小，则 MongoDB 会自动进行分裂，将该 chunk 切分为两个相同大小的 chunk。
 
-![mongodb-shards-split](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-split.png)
+![mongodb-shards-split](https://raw.gitcode.com/shipengqi/illustrations/blobs/aba8251d71d1868f2c8b69464e430e02bcef35f0/mongodb-shards-split.png)
 
 
 **chunk 分裂是基于分片键进行的，如果分片键的基数太小，则可能因为无法分裂而会出现 jumbo chunk（超大块）的问题**。例如，对 `db.users` 使用 gender（性别）作为分片键，由于同一种性别的用户数可能达到数千万，分裂程序并不知道如何对分片键（gender）的一个单值进行切分，因此最终导致在一个 chunk 上集中存储了大量的 user 记录（总大小超过 64MB）。
@@ -273,7 +273,7 @@ sh.addTagRange("other.systemLogs",{shardKey:MinKey},{shardKey:MaxKey},"olap")
 
 **均衡器运行于 Primary Config Server（配置服务器的主节点）上**，而该节点也同时会控制 chunk 数据的搬迁流程。
 
-![mongodb-shards-balance](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-balance.png)
+![mongodb-shards-balance](https://raw.gitcode.com/shipengqi/illustrations/blobs/91a1deafb7abf4dbf998aa9e764f4b01208b2acd/mongodb-shards-balance.png)
 
 
 流程说明：
@@ -348,7 +348,7 @@ db.settings.update(
 
 #### 容灾级别
 
-![mongodb-shards-dr](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-dr.png)
+![mongodb-shards-dr](https://raw.gitcode.com/shipengqi/illustrations/blobs/f0fa61d1c9f42e6eb6418fdb7ab5253f43704eb7/mongodb-shards-dr.png)
 
 
 #### RPO&RTO
@@ -356,7 +356,8 @@ db.settings.update(
 - RPO（Recovery Point Objective）：即**数据恢复点目标，主要指的是业务系统所能容忍的数据丢失量**。
 - RTO（Recovery Time Objective）：即**恢复时间目标，主要指的是所能容忍的业务停止服务的最长时间**，也就是从灾难发生到业务系统恢复服务功能所需要的最短时间周期。
 
-![mongodb-shards-dr2](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-dr2.png)
+![mongodb-shards-dr2](
+https://raw.gitcode.com/shipengqi/illustrations/blobs/657bd4d32d37ef09715a4f876f9c2ce195335bc7/mongodb-shards-dr2.png)
 
 #### MongoDB 两地三中心方案：复制集跨中心部署
 
@@ -365,7 +366,7 @@ db.settings.update(
 **双中心双活＋异地热备=两地三中心**：
 
 <div class="img-zoom">
-  <img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/mongodb-shards-dr3.png" alt=mongodb-shards-dr3">
+  <img src="https://raw.gitcode.com/shipengqi/illustrations/blobs/c804510a770d13f46b03181e7e354b939de307b7/mongodb-shards-dr3.png" alt=mongodb-shards-dr3">
 </div>
 
 MongoDB 集群两地三中心部署的考量点

@@ -4,7 +4,7 @@ weight: 7
 ---
 
 <div class="img-zoom">
-  <img src="https://raw.gitcode.com/shipengqi/illustrations/files/main/db/arch.png" alt="arch">
+  <img src="https://raw.gitcode.com/shipengqi/illustrations/blobs/a9a89112328b2232fb1eb7a8d35518a0da175151/arch.png" alt="arch">
 </div>
 
 ## redo log
@@ -73,7 +73,7 @@ show variables like '%innodb_log_file_size%';
 - `1`：默认值，表示每次事务提交时都将 redo log 直接持久化到磁盘，数据最安全，不会因为数据库宕机丢失数据，但是效率稍微差一点，线上系统推荐这个设置。
 - `2`：这是一个折中的选择，表示每次事务提交时都只是把 redo log 写到操作系统的缓存 Page Cache 里，这种情况如果数据库宕机是不会丢失数据的，但是操作系统如果宕机了，Page Cache 里的数据还没来得及写入磁盘文件的话就会丢失数据。
 
-![redo-log-policy](https://raw.gitcode.com/shipengqi/illustrations/files/main/db/redo-log-policy.png)
+![redo-log-policy](https://raw.gitcode.com/shipengqi/illustrations/blobs/955adeded0379bef65e4e12cba91cd41d538d5e3/redo-log-policy.png)
 
 查看 `innodb_flush_log_at_trx_commit` 的值：
 
@@ -153,7 +153,7 @@ show variables like '%log_bin%';
 - `ROW`：基于行的复制，日志中会记录成每一行数据被修改的形式，然后在 slave 端再对相同的数据进行修改记录下每一行数据修改的细节，可以解决函数、存储过程等在 slave 机器的复制问题，但这种方式日志量较大，性能不如 `STATEMENT`。举个例子，假设 `update` 语句更新 `10` 行数据，`STATEMENT` 方式就记录这条 `update` 语句，而 `Row` 方式会记录被修改的 10 行数据。
 - `MIXED`：混合模式复制，实际就是前两种模式的结合，在 `MIXED` 模式下，MySQL 会根据执行的每一条具体的 SQL 语句来区分对待记录的日志形式，也就是在 `STATEMENT` 和 `ROW` 之间选择一种，如果 SQL 里有函数或一些在执行时才知道结果的情况，会选择 `ROW`，其它情况选择 `STATEMENT`，推荐使用这一种。
 
-**当表结构发生变化的时候，会使用 `STATEMENT` 合适**。
+**当表结构发生变化的时候，会使用 `STATEMENT` 格式**。
 
 ### binlog 的写入机制
 
@@ -491,7 +491,7 @@ show variables like '%slow_query%';
 - `long_query_time`：慢查询日志的阈值，默认值为 `10`，单位为秒。意思是记录运行 10 秒以上的语句。
 - `log_queries_not_using_indexes`：未使用索引的查询也被记录到慢查询日志中（可选项）。
 - `log_output`：日志存储方式。`log_output='FILE'` 表示将日志存入文件，默认值是 `'FILE'`。`log_output='TABLE'` 表示将日志存入数据库。
-- `log_slow_admin_statements`：表示，是否将慢管理语句例如ANALYZE TABLE和ALTER TABLE等记入慢查询日志。
+- `log_slow_admin_statements`：表示，是否将慢管理语句例如 `ANALYZE TABLE` 和 `ALTER TABLE` 等记入慢查询日志。
 
 开启慢查询日志：
 

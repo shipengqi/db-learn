@@ -198,9 +198,9 @@ db.books.find().skip(16).limit(8)
 
 替代方案：**使用 `查询条件+唯一排序条件`**。例如： 
 
-第一页：`db.books.find({}).sort({_id: 1}).limit(10)`
-第二页：`db.books.find({_id: {$gt: <第一页最后一个_id>}}).sort({_id: 1}).limit(10)`; 
-第三页：`db.books.find({_id: {$gt: <第二页最后一个_id>}}).sort({_id: 1}).limit(10)`;
+- 第一页：`db.books.find({}).sort({_id: 1}).limit(10)`
+- 第二页：`db.books.find({_id: {$gt: <第一页最后一个_id>}}).sort({_id: 1}).limit(10)`; 
+- 第三页：`db.books.find({_id: {$gt: <第二页最后一个_id>}}).sort({_id: 1}).limit(10)`;
 
 **避免使用 count**：
 
