@@ -359,7 +359,7 @@ db.products.aggregate([{
 // 创建唯一索引
 db.values.createIndex({title:1},{unique:true})
 // 复合索引支持唯一性约束
-db.values.createIndex({title:1，type:1},{unique:true})
+db.values.createIndex({title:1,type:1},{unique:true})
 // 多键索引支持唯一性约束
 db.inventory.createIndex( { ratings: 1 },{unique:true} )
 ```

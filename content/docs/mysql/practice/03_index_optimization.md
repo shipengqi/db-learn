@@ -559,7 +559,7 @@ select * from t force index(a) where a between 10000 and 20000;/*Q2*/
 第二种方法就是，可以考虑修改语句，引导 MySQL 使用我们期望的索引。
 第三种方法是，在有些场景下，可以新建一个更合适的索引，来提供给优化器做选择，或删掉误用的索引。
 
-## MySQL数据库 cpu 飙升到 500% 的话怎么处理？
+## MySQL 数据库 cpu 飙升到 500% 的话怎么处理？
 
 1. 先用操作系统命令 top 命令观察是不是 mysqld 占用导致的，如果不是，找出占用高的进程，并进行相关处理。
 2. 如果是 mysqld 造成的，`show processlist`，看看里面跑的 session 情况，是不是有消耗资源的 SQL 在运行。
